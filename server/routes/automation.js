@@ -1,5 +1,6 @@
 import express from 'express';
 import automationScheduler from '../services/automationScheduler.js';
+import automationHistoryService from '../services/automationHistoryService.js';
 
 const router = express.Router();
 
@@ -703,6 +704,122 @@ router.get('/debug/scheduler-status', (req, res) => {
   } catch (error) {
     console.error('Error getting scheduler status:', error);
     res.status(500).json({ error: 'Failed to get scheduler status' });
+  }
+});
+
+// ============================================
+// Activity History Routes
+// ============================================
+
+// Get post activity history for a location
+router.get('/activity/posts/:locationId', async (req, res) => {
+  try {
+    const { locationId } = req.params;
+    const { userId, limit = 20, offset = 0 } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId query parameter is required'
+      });
+    }
+
+    console.log(`[Automation API] Fetching post activity for location ${locationId}, user ${userId}`);
+
+    const history = await automationHistoryService.getPostHistory(
+      locationId,
+      userId,
+      parseInt(limit),
+      parseInt(offset)
+    );
+
+    const stats = await automationHistoryService.getPostStats(locationId, userId);
+
+    res.json({
+      success: true,
+      history,
+      stats,
+      count: history.length,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (error) {
+    console.error('[Automation API] Error fetching post activity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch post activity history'
+    });
+  }
+});
+
+// Get reply activity history for a location
+router.get('/activity/replies/:locationId', async (req, res) => {
+  try {
+    const { locationId } = req.params;
+    const { userId, limit = 20, offset = 0 } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId query parameter is required'
+      });
+    }
+
+    console.log(`[Automation API] Fetching reply activity for location ${locationId}, user ${userId}`);
+
+    const history = await automationHistoryService.getReplyHistory(
+      locationId,
+      userId,
+      parseInt(limit),
+      parseInt(offset)
+    );
+
+    const stats = await automationHistoryService.getReplyStats(locationId, userId);
+
+    res.json({
+      success: true,
+      history,
+      stats,
+      count: history.length,
+      limit: parseInt(limit),
+      offset: parseInt(offset)
+    });
+  } catch (error) {
+    console.error('[Automation API] Error fetching reply activity:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch reply activity history'
+    });
+  }
+});
+
+// Get recent activity summary for a location (last 7 days)
+router.get('/activity/summary/:locationId', async (req, res) => {
+  try {
+    const { locationId } = req.params;
+    const { userId } = req.query;
+
+    if (!userId) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId query parameter is required'
+      });
+    }
+
+    console.log(`[Automation API] Fetching activity summary for location ${locationId}, user ${userId}`);
+
+    const summary = await automationHistoryService.getRecentActivitySummary(locationId, userId);
+
+    res.json({
+      success: true,
+      ...summary
+    });
+  } catch (error) {
+    console.error('[Automation API] Error fetching activity summary:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to fetch activity summary'
+    });
   }
 });
 

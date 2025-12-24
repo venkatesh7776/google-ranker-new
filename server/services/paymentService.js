@@ -80,7 +80,7 @@ export class PaymentService {
       const receipt = `rcpt_${timestamp}_${randomStr}`;
       
       const options = {
-        amount: Math.round(amount * 100), // Amount in paise, ensure it's an integer
+        amount: Math.round(amount), // Amount is already in paise (smallest unit), just ensure it's an integer
         currency: currency.toUpperCase(),
         receipt,
         notes: {

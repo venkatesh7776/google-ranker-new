@@ -503,11 +503,11 @@ const Billing = () => {
                     </div>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-semibold text-gray-900 mb-1">Email Support</p>
-                      <a 
-                        href="mailto:Support@lobaiseo.com" 
+                      <a
+                        href="mailto:support@googleranker.io"
                         className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline break-all"
                       >
-                        Support@lobaiseo.com
+                        support@googleranker.io
                       </a>
                     </div>
                   </div>

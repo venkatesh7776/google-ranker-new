@@ -352,7 +352,7 @@ const Reviews = () => {
 
       try {
         // Call backend AI service for more sophisticated reply suggestions
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
         const response = await fetch(`${backendUrl}/api/ai-reviews/reply-suggestions`, {
           method: 'POST',
           headers: {

@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { useParams, useSearchParams, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -29,9 +29,22 @@ interface AIReview {
 
 const PublicReviewSuggestions = () => {
   const { toast } = useToast();
+  const navigate = useNavigate();
   const { locationId } = useParams<{ locationId: string }>();
   const [searchParams] = useSearchParams();
-  
+
+  // Redirect to star rating page if no rating is provided (old QR codes)
+  useEffect(() => {
+    const rating = searchParams.get('rating');
+    if (!rating && locationId) {
+      console.log('🔄 No rating found, redirecting to star rating page');
+      const userId = searchParams.get('userId') || '';
+      const business = searchParams.get('business') || '';
+      const googleReviewLink = searchParams.get('googleReviewLink') || '';
+      navigate(`/star-rating/${locationId}?userId=${userId}&business=${business}&googleReviewLink=${googleReviewLink}`, { replace: true });
+    }
+  }, [locationId, searchParams, navigate]);
+
   // QR Code data state
   const [qrCodeData, setQrCodeData] = useState<any>(null);
   const [qrCodeLoading, setQrCodeLoading] = useState(true);
@@ -406,7 +419,7 @@ const PublicReviewSuggestions = () => {
                         });
                         
                         // Call backend to get Place ID
-                        fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}/api/places/get-place-id?business=${encodeURIComponent(businessName)}&location=${encodeURIComponent(location)}`)
+                        fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/places/get-place-id?business=${encodeURIComponent(businessName)}&location=${encodeURIComponent(location)}`)
                           .then(res => res.json())
                           .then(data => {
                             if (data.placeId) {

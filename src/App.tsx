@@ -11,6 +11,8 @@ import Dashboard from "./pages/Dashboard";
 import ProfileDetails from "./pages/ProfileDetails";
 import Posts from "./pages/Posts";
 import Reviews from "./pages/Reviews";
+import AutoPosting from "./pages/AutoPosting";
+import AutoReply from "./pages/AutoReply";
 import AskForReviews from "./pages/AskForReviews";
 import RequestForReviews from "./pages/RequestForReviews";
 import Settings from "./pages/Settings";
@@ -18,6 +20,9 @@ import AuditTool from "./pages/AuditTool";
 import Upgrade from "./pages/Upgrade";
 import Billing from "./pages/Billing";
 import PublicReviewSuggestions from "./pages/PublicReviewSuggestions";
+import StarRating from "./pages/StarRating";
+import FeedbackForm from "./pages/FeedbackForm";
+import Feedbacks from "./pages/Feedbacks";
 import { AuthProvider } from "./contexts/AuthContext";
 import { NotificationProvider } from "./contexts/NotificationContext";
 import { SubscriptionProvider } from "./contexts/SubscriptionContext";
@@ -77,6 +82,10 @@ const App = () => (
             <Route path="/public-reviews/:locationId" element={<PublicReviewSuggestions />} />
             <Route path="/review/:locationId" element={<PublicReviewSuggestions />} />
             
+            {/* Star Rating and Feedback Routes - No authentication required */}
+            <Route path="/star-rating/:locationId" element={<StarRating />} />
+            <Route path="/feedback/:locationId" element={<FeedbackForm />} />
+            
             {/* Protected Dashboard Routes - SubscriptionGuard is applied inside DashboardLayout */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
@@ -87,6 +96,9 @@ const App = () => (
               <Route path="profiles/:profileId" element={<ProfileDetails />} />
               <Route path="posts" element={<Posts />} />
               <Route path="reviews" element={<Reviews />} />
+              <Route path="auto-posting" element={<AutoPosting />} />
+              <Route path="auto-reply" element={<AutoReply />} />
+              <Route path="feedbacks" element={<Feedbacks />} />
               <Route path="ask-for-reviews" element={<AskForReviews />} />
               <Route path="request-reviews" element={<RequestForReviews />} />
               <Route path="settings" element={<Settings />} />

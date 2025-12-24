@@ -94,7 +94,7 @@ const AskForReviews = () => {
 
   // Auto-detect backend URL based on environment
   const backendUrl = window.location.hostname === 'localhost'
-    ? 'http://localhost:5001'
+    ? 'http://localhost:5000'
     : (import.meta.env.VITE_BACKEND_URL || 'https://pavan-client-backend-bxgdaqhvarfdeuhe.canadacentral-01.azurewebsites.net');
 
   // Filter accounts based on subscription limitations - memoize to prevent infinite re-renders
@@ -492,16 +492,19 @@ const AskForReviews = () => {
     setReviewLinkModalData({ ...reviewLinkModalData, isOpen: false });
     
     try {
-      console.log('🔍 Generating QR code for custom review suggestions page');
+      console.log('🔍 Generating QR code for star rating page (with feedback flow)');
       
-      // Create custom public review page URL with business info and Google review link
-      const frontendUrl = import.meta.env.PROD ? 'https://www.app.lobaiseo.com' : window.location.origin;
-      const publicReviewUrl = `${frontendUrl}/review/${location.locationId}?` +
+      // Get user ID for the URL
+      const userId = googleBusinessProfileService.getUserId();
+      
+      // Create star rating page URL (redirects to review or feedback based on rating)
+      const frontendUrl = import.meta.env.PROD ? 'https://googleranker.io' : window.location.origin;
+      const publicReviewUrl = `${frontendUrl}/star-rating/${location.locationId}?` +
+        `userId=${encodeURIComponent(userId || '')}&` +
         `business=${encodeURIComponent(location.displayName)}&` +
-        `location=${encodeURIComponent(location.address?.locality || location.address?.administrativeArea || 'Location')}&` +
         `googleReviewLink=${encodeURIComponent(googleReviewLink)}`;
       
-      console.log('🔍 Public review URL:', publicReviewUrl);
+      console.log('🔍 Star Rating URL:', publicReviewUrl);
       
       // Generate QR code for our custom page (not directly to Google)
       const qrCodeUrl = await QRCode.toDataURL(publicReviewUrl, {

@@ -79,7 +79,7 @@ async function checkLatestPayment() {
         console.log('');
       } else {
         console.log('❌ NO PROFILE COUNT IN ORDER NOTES\n');
-        console.log('This means the RAJATEST coupon bug is STILL happening!');
+        console.log('This means the PAVANTEST coupon bug is STILL happening!');
         console.log('The payment flow is not saving profileCount to order notes.\n');
 
         // Estimate from amount

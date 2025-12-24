@@ -66,9 +66,9 @@ class Config {
     const productionDefaults = {
       NODE_ENV: 'production',
       RUN_MODE: 'AZURE',
-      FRONTEND_URL: 'https://www.app.lobaiseo.com',
+      FRONTEND_URL: 'https://googleranker.io',
       BACKEND_URL: 'https://pavan-client-backend-bxgdaqhvarfdeuhe.canadacentral-01.azurewebsites.net',
-      GOOGLE_REDIRECT_URI: 'https://www.app.lobaiseo.com/auth/google/callback',
+      GOOGLE_REDIRECT_URI: 'https://googleranker.io/auth/google/callback',
       GOOGLE_CLIENT_ID: '52772597205-9ogv54i6sfvucse3jrqj1nl1hlkspcv1.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
       HARDCODED_ACCOUNT_ID: '106433552101751461082',

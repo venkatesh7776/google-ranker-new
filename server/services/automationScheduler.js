@@ -5,6 +5,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 import supabaseTokenStorage from './supabaseTokenStorage.js';
 import supabaseAutomationService from './supabaseAutomationService.js';
+import automationHistoryService from './automationHistoryService.js';
 import subscriptionGuard from './subscriptionGuard.js';
 import appConfig from '../config.js';
 import { getCategoryMapping, generateCategoryPrompt } from '../config/categoryReviewMapping.js';
@@ -501,13 +502,27 @@ class AutomationScheduler {
         const result = await response.json();
         console.log(`[AutomationScheduler] ✅ Successfully created post for location ${locationId}:`, result.name || result.id);
 
-        // Log the post creation
+        // Log the post creation to old activity system
         this.logAutomationActivity(locationId, 'post_created', {
           userId: config.userId || 'system',
           postId: result.name || result.id,
           content: postContent.content,
           timestamp: new Date().toISOString()
         });
+
+        // Log to new activity history system
+        await automationHistoryService.logAutoPost(
+          locationId,
+          config.userId || 'system',
+          {
+            content: postContent.content,
+            summary: postContent.content.substring(0, 150),
+            id: result.name || result.id,
+            topicType: config.topicType || 'STANDARD',
+            callToAction: postContent.callToAction
+          },
+          'success'
+        );
 
         return result; // Return success result
       } else {
@@ -524,6 +539,19 @@ class AutomationScheduler {
       }
     } catch (error) {
       console.error(`[AutomationScheduler] Error creating automated post:`, error);
+
+      // Log failure to activity history
+      await automationHistoryService.logAutoPost(
+        locationId,
+        config.userId || 'system',
+        {
+          content: error.message,
+          summary: `Failed to create post: ${error.message}`
+        },
+        'failed',
+        error
+      );
+
       return null; // Return null to indicate failure
     }
   }
@@ -560,14 +588,55 @@ class AutomationScheduler {
       if (response.ok) {
         const result = await response.json();
         console.log(`[AutomationScheduler] ✅ Fallback API succeeded for location ${locationId}`);
+
+        // Log success to activity history
+        await automationHistoryService.logAutoPost(
+          locationId,
+          config.userId || 'system',
+          {
+            content: postContent.content,
+            summary: postContent.content.substring(0, 150),
+            id: result.name || result.id,
+            topicType: config.topicType || 'STANDARD',
+            callToAction: postContent.callToAction
+          },
+          'success'
+        );
+
         return result;
       } else {
-        const error = await response.text();
-        console.error(`[AutomationScheduler] ❌ Fallback API also failed:`, error);
+        const errorText = await response.text();
+        console.error(`[AutomationScheduler] ❌ Fallback API also failed:`, errorText);
+
+        // Log failure to activity history
+        await automationHistoryService.logAutoPost(
+          locationId,
+          config.userId || 'system',
+          {
+            content: postContent.content,
+            summary: `Fallback API failed: ${errorText.substring(0, 100)}`
+          },
+          'failed',
+          new Error(errorText)
+        );
+
         return null;
       }
     } catch (error) {
       console.error(`[AutomationScheduler] Fallback API error:`, error);
+
+      // Log failure to activity history
+      await automationHistoryService.logAutoPost(
+        locationId,
+        config.userId || 'system',
+        {
+          content: postContent.content,
+          summary: `Fallback API error: ${error.message}`
+        },
+        'failed',
+        error
+      );
+
       return null;
     }
   }
@@ -1524,8 +1593,8 @@ Think of yourself as writing a quick, enthusiastic recommendation - SHORT but me
       if (success) {
         // Mark review as replied
         this.markReviewAsReplied(locationId, reviewId);
-        
-        // Log the activity
+
+        // Log the activity to old system
         this.logAutomationActivity(locationId, 'review_replied', {
           userId: config.userId || 'system',
           reviewId: reviewId,
@@ -1534,10 +1603,27 @@ Think of yourself as writing a quick, enthusiastic recommendation - SHORT but me
           replyText,
           timestamp: new Date().toISOString()
         });
-        
+
+        // Log to new activity history system
+        await automationHistoryService.logAutoReply(
+          locationId,
+          config.userId || 'system',
+          {
+            id: reviewId,
+            reviewer: { displayName: reviewerName },
+            starRating: rating,
+            comment: review.comment || review.reviewText || ''
+          },
+          {
+            comment: replyText,
+            updateTime: new Date().toISOString()
+          },
+          'success'
+        );
+
         console.log(`[AutomationScheduler] ✅ Review reply completed successfully!`);
       } else {
-        // Log the failure
+        // Log the failure to old system
         this.logAutomationActivity(locationId, 'review_reply_failed', {
           userId: config.userId || 'system',
           reviewId: reviewId,
@@ -1546,17 +1632,58 @@ Think of yourself as writing a quick, enthusiastic recommendation - SHORT but me
           error: 'API request failed',
           timestamp: new Date().toISOString()
         });
+
+        // Log to new activity history system
+        await automationHistoryService.logAutoReply(
+          locationId,
+          config.userId || 'system',
+          {
+            id: reviewId,
+            reviewer: { displayName: reviewerName },
+            starRating: rating,
+            comment: review.comment || review.reviewText || ''
+          },
+          {
+            comment: replyText
+          },
+          'failed',
+          new Error('API request failed')
+        );
       }
     } catch (error) {
       console.error(`[AutomationScheduler] ❌ Error replying to review:`, error);
-      
-      // Log the error
+
+      // Log the error to old system
       this.logAutomationActivity(locationId, 'review_reply_failed', {
         userId: config.userId || 'system',
         reviewId: review.reviewId || review.name,
         error: error.message,
         timestamp: new Date().toISOString()
       });
+
+      // Log to new activity history system
+      const reviewId = review.reviewId || review.name;
+      const ratingMap = { 'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5 };
+      let rating = review.starRating?.value || review.starRating || 5;
+      if (typeof rating === 'string') {
+        rating = ratingMap[rating.toUpperCase()] || 5;
+      }
+
+      await automationHistoryService.logAutoReply(
+        locationId,
+        config.userId || 'system',
+        {
+          id: reviewId,
+          reviewer: { displayName: review.reviewer?.displayName || 'Unknown' },
+          starRating: rating,
+          comment: review.comment || review.reviewText || ''
+        },
+        {
+          comment: 'Failed to generate reply'
+        },
+        'failed',
+        error
+      );
     }
   }
 

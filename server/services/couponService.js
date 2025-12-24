@@ -41,11 +41,11 @@ class CouponService {
 
   async ensureDefaultCoupon() {
     try {
-      // Check if RAJATEST coupon exists
+      // Check if PAVANTEST coupon exists
       const { data: existing } = await this.client
         .from('coupons')
         .select('*')
-        .eq('code', 'RAJATEST')
+        .eq('code', 'PAVANTEST')
         .single();
 
       if (!existing) {
@@ -53,7 +53,7 @@ class CouponService {
         const { error } = await this.client
           .from('coupons')
           .insert({
-            code: 'RAJATEST',
+            code: 'PAVANTEST',
             discount_type: 'percentage',
             discount_value: 100,
             max_uses: 10000,
@@ -65,7 +65,7 @@ class CouponService {
           });
 
         if (error) throw error;
-        console.log('[CouponService] ✅ Created default RAJATEST coupon');
+        console.log('[CouponService] ✅ Created default PAVANTEST coupon');
       }
     } catch (error) {
       console.error('[CouponService] Error ensuring default coupon:', error);
@@ -188,8 +188,8 @@ class CouponService {
         finalAmount = Math.max(0, amount - discountAmount);
       }
 
-      // Special handling for RAJATEST - set final amount to exactly ₹1
-      if (upperCode === 'RAJATEST') {
+      // Special handling for PAVANTEST - set final amount to exactly ₹1
+      if (upperCode === 'PAVANTEST') {
         finalAmount = 1;
         discountAmount = amount - 1;
       }

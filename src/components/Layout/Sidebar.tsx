@@ -14,7 +14,9 @@ import {
   X,
   Crown,
   CreditCard,
-  LogOut
+  LogOut,
+  Sparkles,
+  Bot
 } from "lucide-react";
 
 interface SidebarProps {
@@ -40,6 +42,9 @@ const Sidebar = ({ isOpen = false, onClose }: SidebarProps) => {
     { label: "Profiles", href: "/dashboard", icon: Users },
     { label: "Posts", href: "/dashboard/posts", icon: FileText },
     { label: "Reviews", href: "/dashboard/reviews", icon: Star },
+    { label: "Auto Posting", href: "/dashboard/auto-posting", icon: Sparkles },
+    { label: "Auto Reply", href: "/dashboard/auto-reply", icon: Bot },
+    { label: "Feedbacks", href: "/dashboard/feedbacks", icon: MessageSquarePlus },
     { label: "Audit Tool", href: "/dashboard/audit", icon: Search },
     { label: "Billing", href: "/dashboard/billing", icon: CreditCard },
   ];

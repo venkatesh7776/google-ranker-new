@@ -121,10 +121,10 @@ class GoogleBusinessProfileService {
   constructor() {
     this.clientId = '52772597205-9ogv54i6sfvucse3jrqj1nl1hlkspcv1.apps.googleusercontent.com';
 
-    // For local development, always talk to the local backend on port 5001
+    // For local development, always talk to the local backend on port 5000
     // to avoid CORS and port conflicts, regardless of any misconfigured env.
     if (typeof window !== 'undefined' && window.location.hostname === 'localhost') {
-      this.backendUrl = 'http://localhost:5001';
+      this.backendUrl = 'http://localhost:5000';
     } else {
       // In non-local environments, respect the configured backend URL,
       // falling back to the Azure backend URL.

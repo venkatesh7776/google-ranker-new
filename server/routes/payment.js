@@ -252,9 +252,11 @@ router.post('/coupon/validate', async (req, res) => {
       finalAmount = Math.max(0, amount - discountAmount);
     }
 
-    // For RAJATEST coupon, ensure final amount is exactly Rs. 1
-    if (coupon.code === 'RAJATEST') {
-      finalAmount = 1;
+    // For PAVANTEST coupon, ensure final amount is exactly Rs. 1 (100 paise)
+    // Razorpay requires minimum Rs. 1 for subscriptions
+    if (coupon.code === 'PAVANTEST') {
+      finalAmount = 100; // 100 paise = Rs. 1
+      discountAmount = amount - finalAmount;
     }
 
     console.log(`[CouponService] Validated coupon ${coupon.code}: ${amount} → ${finalAmount} (discount: ${discountAmount})`);
@@ -278,7 +280,7 @@ router.post('/coupon/validate', async (req, res) => {
 // Get available coupons (excludes hidden test coupons)
 router.get('/coupons', async (req, res) => {
   try {
-    // This will only return public coupons, not hidden ones like RAJATEST
+    // This will only return public coupons, not hidden ones like PAVANTEST
     const publicCoupons = await couponService.getAllCoupons();
     res.json({ coupons: publicCoupons });
   } catch (error) {
@@ -924,6 +926,205 @@ router.get('/mandate/status/:gbpAccountId', async (req, res) => {
   }
 });
 
+// ===== ONE-TIME PAYMENT (No Subscription Required) =====
+
+// Create one-time payment order
+router.post('/create-order', async (req, res) => {
+  try {
+    const {
+      amount,
+      currency = 'INR',
+      userId,
+      email,
+      gbpAccountId,
+      planId,
+      planName,
+      notes = {}
+    } = req.body;
+
+    console.log('[One-Time Payment] Creating order:', { amount, currency, planId, planName });
+
+    if (!amount || !userId || !email || !planId || !planName) {
+      return res.status(400).json({ error: 'amount, userId, email, planId, and planName are required' });
+    }
+
+    // Ensure minimum Rs. 1 (100 paise)
+    if (amount < 100) {
+      return res.status(400).json({ error: 'Amount must be at least Rs. 1 (100 paise)' });
+    }
+
+    // Prepare notes for order
+    const orderNotes = {
+      userId,
+      email,
+      gbpAccountId,
+      planId,
+      planName,
+      subscriptionType: 'yearly',
+      paymentType: 'one_time',
+      ...notes
+    };
+
+    console.log('[One-Time Payment] Creating Razorpay order with notes:', orderNotes);
+
+    // Create Razorpay order
+    const order = await paymentService.createOrder(amount, currency, orderNotes);
+
+    console.log('[One-Time Payment] ✅ Order created:', order.id);
+
+    res.json({
+      success: true,
+      order: {
+        id: order.id,
+        amount: order.amount,
+        currency: order.currency,
+        receipt: order.receipt
+      }
+    });
+  } catch (error) {
+    console.error('[One-Time Payment] ❌ Error creating order:', error);
+    res.status(500).json({
+      error: 'Failed to create payment order',
+      details: error.message
+    });
+  }
+});
+
+// Verify one-time payment and activate subscription
+router.post('/verify-payment', async (req, res) => {
+  try {
+    const {
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature,
+      userId,
+      gbpAccountId,
+      planId,
+      amount,
+      couponCode
+    } = req.body;
+
+    console.log('[Payment Verify] ========================================');
+    console.log('[Payment Verify] Received verification request:');
+    console.log('[Payment Verify] - order_id:', razorpay_order_id);
+    console.log('[Payment Verify] - payment_id:', razorpay_payment_id);
+    console.log('[Payment Verify] - signature:', razorpay_signature ? razorpay_signature.substring(0, 20) + '...' : 'MISSING');
+    console.log('[Payment Verify] - userId:', userId);
+    console.log('[Payment Verify] - gbpAccountId:', gbpAccountId);
+    console.log('[Payment Verify] - amount:', amount);
+    console.log('[Payment Verify] ========================================');
+
+    if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+      console.error('[Payment Verify] ERROR: Missing required parameters');
+      return res.status(400).json({ error: 'Missing payment verification parameters' });
+    }
+
+    console.log('[Payment Verify] Step 1: Verifying signature...');
+
+    // Verify payment signature
+    const isValid = paymentService.verifyPaymentSignature(
+      razorpay_order_id,
+      razorpay_payment_id,
+      razorpay_signature
+    );
+
+    if (!isValid) {
+      console.error('[Payment Verify] ERROR: Signature verification FAILED');
+      return res.status(400).json({ error: 'Invalid payment signature' });
+    }
+
+    console.log('[Payment Verify] Step 1 PASSED: Signature verified successfully');
+    console.log('[Payment Verify] Step 2: Fetching payment details from Razorpay...');
+
+    // Fetch payment details
+    const payment = await paymentService.fetchPaymentDetails(razorpay_payment_id);
+    console.log('[Payment Verify] Step 2 PASSED: Payment details:', {
+      id: payment.id,
+      status: payment.status,
+      method: payment.method,
+      amount: payment.amount
+    });
+
+    // Verify payment status
+    if (payment.status !== 'captured' && payment.status !== 'authorized') {
+      console.error('[Payment Verify] ERROR: Payment not successful. Status:', payment.status);
+      return res.status(400).json({ error: 'Payment was not successful' });
+    }
+
+    console.log('[Payment Verify] Step 3: Processing coupon if applicable...');
+
+    // Apply coupon if it was used
+    if (couponCode) {
+      try {
+        console.log(`[Payment Verify] Applying coupon ${couponCode} for successful payment`);
+        await couponService.applyCoupon(couponCode, amount, userId);
+        console.log(`[Payment Verify] ✅ Coupon ${couponCode} usage recorded`);
+      } catch (error) {
+        console.error(`[Payment Verify] Failed to apply coupon:`, error);
+        // Don't fail the payment if coupon application fails
+      }
+    }
+
+    console.log('[Payment Verify] Step 4: Updating subscription in database...');
+
+    // Update or create subscription
+    if (gbpAccountId) {
+      let localSubscription = await subscriptionService.getSubscriptionByGBPAccount(gbpAccountId);
+
+      const now = new Date();
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
+
+      if (localSubscription) {
+        // Update existing subscription
+        console.log('[Payment Verify] Updating existing subscription:', localSubscription.id);
+
+        await subscriptionService.updateSubscription(localSubscription.id, {
+          status: 'active',
+          planId: planId,
+          subscriptionEndDate: endDate.toISOString(),
+          razorpayPaymentId: razorpay_payment_id
+        });
+
+        // Add payment record
+        await subscriptionService.addPaymentRecord(localSubscription.id, {
+          amount: payment.amount / 100,
+          currency: payment.currency,
+          status: 'success',
+          razorpayPaymentId: razorpay_payment_id,
+          razorpayOrderId: razorpay_order_id,
+          description: `One-time payment for 1 year access`
+        });
+
+        console.log('[Payment Verify] Step 4 PASSED: Subscription updated');
+      } else {
+        console.warn('[Payment Verify] ⚠️ Local subscription not found for gbpAccountId:', gbpAccountId);
+      }
+    }
+
+    console.log('[Payment Verify] ✅ ALL STEPS PASSED - Returning success response');
+
+    res.json({
+      success: true,
+      message: 'Payment successful! Your subscription is now active for 1 year.',
+      payment: {
+        id: payment.id,
+        status: payment.status,
+        method: payment.method,
+        amount: payment.amount,
+        currency: payment.currency
+      }
+    });
+
+  } catch (error) {
+    console.error('[Payment Verify] ❌ Error:', error);
+    res.status(500).json({
+      error: 'Payment verification failed',
+      details: error.message
+    });
+  }
+});
+
 // ===== SUBSCRIPTION-BASED PAYMENT WITH AUTO-PAY MANDATE =====
 
 // Create or get Razorpay plan
@@ -931,8 +1132,12 @@ router.post('/subscription/create-plan', async (req, res) => {
   try {
     const { planName, amount, currency = 'INR', interval = 'yearly', description } = req.body;
 
-    if (!planName || !amount) {
+    if (!planName || amount === undefined || amount === null) {
       return res.status(400).json({ error: 'planName and amount are required' });
+    }
+
+    if (amount < 1) {
+      return res.status(400).json({ error: 'Amount must be at least Rs. 1 for Razorpay subscriptions' });
     }
 
     console.log('[Subscription Plan] Creating plan:', { planName, amount, currency, interval });

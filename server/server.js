@@ -13,6 +13,7 @@ import reviewLinkRoutes from './routes/reviewLink.js';
 import googleReviewLinkRoutes from './routes/googleReviewLink.js';
 import automationRoutes from './routes/automation.js';
 import qrCodesRoutes from './routes/qrCodes.js';
+import feedbackRoutes from './routes/feedback.js';
 import adminRoutes from './routes/admin.js';
 import welcomeEmailRoutes from './routes/welcomeEmail.js';
 import emailTestRoutes from './routes/emailTest.js';
@@ -250,6 +251,7 @@ app.use('/api/review-link', reviewLinkRoutes);
 app.use('/api/google-review', googleReviewLinkRoutes);
 app.use('/api/automation', automationRoutes);
 app.use('/api/qr-codes', qrCodesRoutes);
+app.use('/api/feedback', feedbackRoutes);
 app.use('/api/rank-tracking', rankTrackingRoutes);
 app.use('/api/places', placesRoutes);
 
@@ -1114,7 +1116,49 @@ app.get('/auth/google/url', (req, res) => {
   }
 });
 
-// Handle OAuth callback
+// Handle OAuth callback - GET (from Google redirect)
+app.get('/auth/google/callback', async (req, res) => {
+  console.log('========================================');
+  console.log('📥 OAUTH CALLBACK RECEIVED (GET)');
+  console.log('========================================');
+
+  try {
+    const { code, state } = req.query;
+    console.log('Query params:', { hasCode: !!code, hasState: !!state });
+
+    if (!code) {
+      console.error('❌ No authorization code in query parameters');
+      return res.status(400).send(`
+        <html>
+          <body>
+            <h1>Authorization Failed</h1>
+            <p>No authorization code received from Google.</p>
+            <a href="${config.frontendUrl}">Return to Application</a>
+          </body>
+        </html>
+      `);
+    }
+
+    // Redirect to frontend with code and state
+    const frontendCallbackUrl = `${config.frontendUrl}/auth/google/callback?code=${encodeURIComponent(code)}&state=${encodeURIComponent(state || '')}`;
+    console.log('Redirecting to frontend:', frontendCallbackUrl);
+    res.redirect(frontendCallbackUrl);
+
+  } catch (error) {
+    console.error('❌ Error in GET callback:', error);
+    res.status(500).send(`
+      <html>
+        <body>
+          <h1>Authorization Error</h1>
+          <p>${error.message}</p>
+          <a href="${config.frontendUrl}">Return to Application</a>
+        </body>
+      </html>
+    `);
+  }
+});
+
+// Handle OAuth callback - POST (from frontend)
 app.post('/auth/google/callback', async (req, res) => {
   console.log('========================================');
   console.log('📥 OAUTH CALLBACK RECEIVED');

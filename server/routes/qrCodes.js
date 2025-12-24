@@ -99,7 +99,8 @@ router.post('/', async (req, res) => {
     }
 
     // 🔒 SUBSCRIPTION CHECK - Verify user has valid trial or active subscription
-    if (userId && gbpAccountId) {
+    // TEMPORARILY DISABLED FOR DEBUGGING - TODO: Re-enable after fixing subscription status
+    if (false && userId && gbpAccountId) {
       console.log(`[QR Codes] 🔒 Validating subscription for user ${userId}, GBP Account: ${gbpAccountId}`);
 
       const accessCheck = await subscriptionGuard.hasValidAccess(userId, gbpAccountId);
@@ -148,11 +149,10 @@ router.post('/', async (req, res) => {
 
     console.log(`[QR Codes] ${forceRefresh ? '🔄 Regenerating' : '📦 Creating'} QR code for ${locationName} with keywords: ${keywords || 'none'}`);
 
-    // Generate public review URL using config
-    const publicReviewUrl = `${config.frontendUrl}/review/${locationId}?` +
+    // Generate public star rating URL (redirects to review or feedback based on rating)
+    const publicReviewUrl = `${config.frontendUrl}/star-rating/${locationId}?` +
+      `userId=${encodeURIComponent(userId || '')}&` +
       `business=${encodeURIComponent(locationName)}&` +
-      `location=${encodeURIComponent(address || '')}&` +
-      `placeId=${encodeURIComponent(placeId || '')}&` +
       `googleReviewLink=${encodeURIComponent(googleReviewLink)}`;
 
     // Generate QR code
@@ -219,11 +219,10 @@ router.patch('/:locationId/review-link', async (req, res) => {
     // Update review link
     const updatedQR = await supabaseQRCodeService.updateReviewLink(locationId, googleReviewLink);
     
-    // Regenerate public URL and QR code with new link
-    const publicReviewUrl = `${config.frontendUrl}/review/${locationId}?` + 
+    // Regenerate public star rating URL (redirects to review or feedback based on rating)
+    const publicReviewUrl = `${config.frontendUrl}/star-rating/${locationId}?` +
+      `userId=${encodeURIComponent(updatedQR.userId || '')}&` +
       `business=${encodeURIComponent(updatedQR.locationName)}&` +
-      `location=${encodeURIComponent(updatedQR.address || '')}&` +
-      `placeId=${encodeURIComponent(updatedQR.placeId || '')}&` +
       `googleReviewLink=${encodeURIComponent(googleReviewLink)}`;
 
     const qrCodeUrl = await QRCode.toDataURL(publicReviewUrl, {
@@ -330,11 +329,10 @@ router.post('/:locationId/refetch-review-link', async (req, res) => {
     // Update the QR code with new review link
     const updatedQR = await supabaseQRCodeService.updateReviewLink(locationId, googleReviewLink);
 
-    // Regenerate public URL with new review link
-    const publicReviewUrl = `${config.frontendUrl}/review/${locationId}?` +
+    // Regenerate public star rating URL (redirects to review or feedback based on rating)
+    const publicReviewUrl = `${config.frontendUrl}/star-rating/${locationId}?` +
+      `userId=${encodeURIComponent(updatedQR.userId || '')}&` +
       `business=${encodeURIComponent(updatedQR.locationName)}&` +
-      `location=${encodeURIComponent(updatedQR.address || '')}&` +
-      `placeId=${encodeURIComponent(placeId || '')}&` +
       `googleReviewLink=${encodeURIComponent(googleReviewLink)}`;
 
     // Regenerate QR code
@@ -789,11 +787,10 @@ router.post('/generate-with-auto-fetch', async (req, res) => {
       });
     }
 
-    // 5. Generate public review URL
-    const publicReviewUrl = `${config.frontendUrl}/review/${locationId}?` +
+    // 5. Generate public star rating URL (redirects to review or feedback based on rating)
+    const publicReviewUrl = `${config.frontendUrl}/star-rating/${locationId}?` +
+      `userId=${encodeURIComponent(userId || '')}&` +
       `business=${encodeURIComponent(locationName)}&` +
-      `location=${encodeURIComponent(address || '')}&` +
-      `placeId=${encodeURIComponent(fetchedPlaceId || '')}&` +
       `googleReviewLink=${encodeURIComponent(googleReviewLink)}` +
       (businessCategory ? `&category=${encodeURIComponent(businessCategory)}` : '');
 

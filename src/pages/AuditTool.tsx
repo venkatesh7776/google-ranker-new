@@ -203,7 +203,7 @@ const AuditTool = () => {
         }
       };
 
-      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001'}/api/audit-results`, {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000'}/api/audit-results`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -299,7 +299,7 @@ const AuditTool = () => {
       const endDate = new Date().toISOString().split('T')[0];
       const startDate = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
 
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
       // Fetch all required data in parallel
       // Note: We don't fetch profile data because selectedLocation already contains it
@@ -490,7 +490,7 @@ const AuditTool = () => {
       // 3. Google Search Rank - Get REAL rank using Google Places API
       // This fetches actual rank position from Google search results
       try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
         // Extract latitude/longitude from profile data
         const latitude = profileData?.latlng?.latitude || profileData?.storefrontAddress?.latitude;

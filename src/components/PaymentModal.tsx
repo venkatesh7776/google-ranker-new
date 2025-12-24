@@ -225,12 +225,11 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
     setIsProcessing(true);
 
-    // USE SUBSCRIPTION-BASED PAYMENT WITH AUTO-PAY MANDATE
-    return handleSubscriptionPayment();
+    // USE ONE-TIME PAYMENT (Simpler, works with all Razorpay accounts)
+    return handleOneTimePayment();
   };
 
-  const handleSubscriptionPayment = async () => {
-
+  const handleOneTimePayment = async () => {
     try {
       // Show loading toast
       toast({
@@ -238,66 +237,44 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         description: "Please wait while we set up your payment...",
       });
 
-      toast({
-        title: "Setting up Subscription",
-        description: "Preparing subscription with auto-pay mandate...",
-      });
-
       // Get amount (already in paise for INR)
       let amount = selectedPlan.amount;
 
       // Apply coupon discount if available
-      console.log('[Subscription] 🔍 Checking coupon:', { couponDetails, hasCouponDetails: !!couponDetails, finalAmount: couponDetails?.finalAmount });
+      console.log('[Payment] 🔍 Checking coupon:', { couponDetails, hasCouponDetails: !!couponDetails, finalAmount: couponDetails?.finalAmount });
 
       if (couponDetails && couponDetails.finalAmount) {
         amount = couponDetails.finalAmount;
-        console.log(`[Subscription] 🎟️ Coupon applied: Original ₹${(selectedPlan.amount / 100)} → Discounted ₹${amount / 100}`);
+        console.log(`[Payment] 🎟️ Coupon applied: Original ₹${(selectedPlan.amount / 100)} → Discounted ₹${amount / 100}`);
       } else {
-        console.log('[Subscription] ⚠️ Coupon NOT applied - couponDetails:', couponDetails);
+        console.log('[Payment] ⚠️ Coupon NOT applied - couponDetails:', couponDetails);
       }
 
-      const currency = 'INR';
-      const amountInRupees = amount / 100; // Convert paise to rupees
+      // Razorpay requires minimum Rs. 1
+      if (amount < 100) { // 100 paise = Rs. 1
+        console.log(`[Payment] ⚠️ Amount too low (₹${amount / 100}), setting to minimum ₹1`);
+        amount = 100;
+      }
 
-      console.log(`[Subscription] 💰 Amount: ₹${amountInRupees} ${currency}`);
+      console.log(`[Payment] 💰 Amount: ₹${amount / 100} (${amount} paise)`);
 
-      // Step 1: Create Razorpay Plan
-      console.log('[Subscription] 📋 Creating Razorpay plan...');
-      const planResponse = await fetch(`${backendUrl}/api/payment/subscription/create-plan`, {
+      // Step 1: Create Razorpay Order
+      console.log('[Payment] 📋 Creating Razorpay order...');
+      const orderResponse = await fetch(`${backendUrl}/api/payment/create-order`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          planName: selectedPlan.name,
-          amount: Math.round(amountInRupees), // Amount in rupees for Razorpay
-          currency: currency,
-          interval: selectedPlan.interval === 'yearly' ? 'yearly' : 'monthly',
-          description: `${selectedPlan.name} subscription`
-        })
-      });
-
-      if (!planResponse.ok) {
-        throw new Error('Failed to create subscription plan');
-      }
-
-      const { plan } = await planResponse.json();
-      console.log('[Subscription] ✅ Plan created:', plan.id);
-
-      // Step 2: Create Razorpay Subscription
-      console.log('[Subscription] 📅 Creating subscription...');
-      const subscriptionResponse = await fetch(`${backendUrl}/api/payment/subscription/create-with-mandate`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+          amount: amount, // Amount in paise
+          currency: 'INR',
           userId: currentUser.uid,
           email: currentUser.email,
-          name: currentUser.displayName || currentUser.email,
-          contact: currentUser.phoneNumber || '',
-          planId: plan.razorpayPlanId,
           gbpAccountId: subscription?.gbpAccountId,
-          profileCount: 1,
+          planId: selectedPlan.id,
+          planName: selectedPlan.name,
           notes: {
             planId: selectedPlan.id,
             planName: selectedPlan.name,
+            subscriptionType: 'yearly',
             ...(couponDetails && couponCode && {
               couponCode: couponCode,
               originalAmount: selectedPlan.amount,
@@ -308,48 +285,59 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         })
       });
 
-      if (!subscriptionResponse.ok) {
-        const errorData = await subscriptionResponse.json().catch(() => ({}));
-        throw new Error(errorData.details || 'Failed to create subscription');
+      if (!orderResponse.ok) {
+        const errorData = await orderResponse.json().catch(() => ({ error: 'Unknown error' }));
+        console.error('[Payment] Order creation failed:', errorData);
+        throw new Error(errorData.error || 'Failed to create payment order');
       }
 
-      const { subscription: razorpaySubscription } = await subscriptionResponse.json();
-      console.log('[Subscription] ✅ Subscription created:', razorpaySubscription.id);
+      const { order } = await orderResponse.json();
+      console.log('[Payment] ✅ Order created:', order.id);
 
-      // Step 3: Open Razorpay Checkout for SUBSCRIPTION (with mandate authorization)
-      // NOTE: Using 'as any' because RazorpayOrderOptions is for orders, not subscriptions
-      // Subscriptions use different fields (subscription_id instead of order_id, no amount/currency)
-      const options: any = {
+      // Step 2: Open Razorpay Checkout
+      const options: RazorpayOrderOptions = {
         key: razorpayKeyId,
-        subscription_id: razorpaySubscription.id, // SUBSCRIPTION ID instead of order_id
-        name: 'LOBAISEO',
-        description: `${selectedPlan.name} - Auto-pay subscription`,
-        // NOTE: Do NOT send customer_id when using subscription_id - customer is already linked to subscription
-        recurring: 1, // ENABLE RECURRING PAYMENTS / MANDATE
+        order_id: order.id,
+        amount: amount,
+        currency: 'INR',
+        name: 'Google Ranker',
+        description: `${selectedPlan.name} - One Year Access`,
+        prefill: {
+          email: currentUser.email || '',
+          name: currentUser.displayName || currentUser.email || '',
+          contact: currentUser.phoneNumber || ''
+        },
+        theme: {
+          color: '#6C21DC'
+        },
         handler: async (response) => {
           try {
-            console.log('[Subscription] 💳 Payment completed, verifying...');
-            // Verify subscription payment on backend
-            const verifyResponse = await fetch(`${backendUrl}/api/payment/subscription/verify-payment`, {
+            console.log('[Payment] 💳 Payment completed, verifying...');
+            // Verify payment on backend
+            const verifyResponse = await fetch(`${backendUrl}/api/payment/verify-payment`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
               },
               body: JSON.stringify({
-                razorpay_subscription_id: (response as any).razorpay_subscription_id,
-                razorpay_payment_id: (response as any).razorpay_payment_id,
-                razorpay_signature: (response as any).razorpay_signature,
-                gbpAccountId: subscription?.gbpAccountId
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                userId: currentUser.uid,
+                gbpAccountId: subscription?.gbpAccountId,
+                planId: selectedPlan.id,
+                amount: amount,
+                couponCode: couponCode || null
               })
             });
 
             if (verifyResponse.ok) {
               const verifyData = await verifyResponse.json();
-              console.log('[Subscription] ✅ Payment verified successfully:', verifyData);
+              console.log('[Payment] ✅ Payment verified successfully:', verifyData);
 
               toast({
-                title: "Success!",
-                description: "Subscription activated with auto-pay mandate",
+                title: "Payment Successful!",
+                description: "Your subscription has been activated for 1 year. Enjoy unlimited access!",
               });
 
               // Close modal
@@ -359,50 +347,36 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               sessionStorage.setItem('post_payment_reload', 'true');
 
               // Force subscription status refresh IMMEDIATELY before navigation
-              console.log('[Subscription] 🔄 Refreshing subscription status...');
+              console.log('[Payment] 🔄 Refreshing subscription status...');
               await checkSubscriptionStatus();
-              
+
               // Small delay to ensure state updates, then navigate
               setTimeout(() => {
-                console.log('[Subscription] ✅ Navigating to payment success page');
+                console.log('[Payment] ✅ Navigating to payment success page');
                 navigate('/payment-success');
               }, 500);
             } else {
               // Get the actual error from the backend
               const errorData = await verifyResponse.json().catch(() => ({}));
-              console.error('[Subscription] Verification failed:', verifyResponse.status, errorData);
-              throw new Error(errorData.details || errorData.error || 'Subscription payment verification failed');
+              console.error('[Payment] Verification failed:', verifyResponse.status, errorData);
+              throw new Error(errorData.details || errorData.error || 'Payment verification failed');
             }
           } catch (error) {
-            console.error('Subscription payment handler error:', error);
+            console.error('[Payment] Verification error:', error);
             toast({
-              title: "Payment Error",
-              description: error.message || "There was an issue processing your subscription payment. Please try again.",
+              title: "Payment Verification Failed",
+              description: error.message || "There was an issue verifying your payment. Please contact support.",
               variant: "destructive"
             });
             setIsProcessing(false);
           }
         },
-        prefill: {
-          name: currentUser.displayName || '',
-          email: currentUser.email || '',
-          contact: currentUser.phoneNumber || ''
-        },
-        notes: {
-          planId: selectedPlan.id,
-          profileCount: selectedPlanId === 'per_profile_yearly' ? profileCount : 1
-        } as any,
-        theme: {
-          color: '#1E2DCD',
-          backdrop_color: 'rgba(0, 0, 0, 0.5)'
-        },
-        // Removed custom config - Razorpay Subscriptions will automatically show mandate-compatible payment methods
         modal: {
           ondismiss: () => {
             setIsProcessing(false);
             toast({
-              title: "Subscription Setup Cancelled",
-              description: "You can set up your subscription later from the dashboard.",
+              title: "Payment Cancelled",
+              description: "You can complete payment later from the dashboard.",
               variant: "default"
             });
           },
@@ -413,56 +387,40 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         }
       };
 
-      // Create Razorpay instance for SUBSCRIPTION
-      try {
-        const razorpayInstance = new Razorpay(options);
+      // Initialize Razorpay and open payment modal
+      console.log('[Payment] 🚀 Opening Razorpay checkout...');
+      const razorpayInstance = new Razorpay(options);
 
-        // Listen for payment failure
-        razorpayInstance.on('payment.failed', function (response) {
-          console.error('Subscription payment failed:', response.error);
-          setIsProcessing(false);
-          toast({
-            title: "Subscription Setup Failed",
-            description: response.error.description || "Unable to set up auto-pay. Please try again.",
-            variant: "destructive"
-          });
+      // Listen for payment failure
+      razorpayInstance.on('payment.failed', function (response) {
+        console.error('[Payment] ❌ Payment failed:', response.error);
+        setIsProcessing(false);
+        toast({
+          title: "Payment Failed",
+          description: response.error.description || "Payment was unsuccessful. Please try again.",
+          variant: "destructive"
         });
+      });
 
-        // Close the upgrade modal BEFORE opening Razorpay
-        onClose();
-
-        // Open Razorpay subscription modal
-        setTimeout(() => {
-          razorpayInstance.open();
-
-          toast({
-            title: "Subscription Setup",
-            description: "⚠️ Choose UPI or Card to set up auto-pay mandate. You'll authorize recurring payments.",
-          });
-        }, 100);
-
-      } catch (razorpayError) {
-        console.error('Failed to initialize Razorpay subscription:', razorpayError);
-        throw new Error('Failed to initialize subscription. Please refresh and try again.');
-      }
+      // Open Razorpay modal
+      razorpayInstance.open();
 
     } catch (error) {
-      console.error('Subscription setup error:', error);
+      console.error('[Payment] ❌ Setup error:', error);
 
-      let errorMessage = "There was an error setting up your subscription. Please try again.";
+      // Use the actual error message from the backend
+      let errorMessage = error.message || "There was an error setting up your payment. Please try again.";
 
       if (error.message.includes('network') || error.message.includes('fetch')) {
         errorMessage = "Network error. Please check your internet connection and try again.";
-      } else if (error.message.includes('plan')) {
-        errorMessage = "Failed to create subscription plan. Please try again.";
-      } else if (error.message.includes('subscription')) {
-        errorMessage = "Failed to create subscription. Please try again.";
+      } else if (error.message.includes('order')) {
+        errorMessage = "Failed to create payment order. Please try again.";
       } else if (error.message.includes('Razorpay')) {
         errorMessage = "Payment gateway error. Please refresh the page and try again.";
       }
 
       toast({
-        title: "Subscription Setup Failed",
+        title: "Payment Setup Failed",
         description: errorMessage,
         variant: "destructive"
       });

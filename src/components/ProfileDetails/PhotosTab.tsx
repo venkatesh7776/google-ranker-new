@@ -95,7 +95,7 @@ const PhotosTab: React.FC<PhotosTabProps> = ({ profileId }) => {
     setError(null);
 
     try {
-      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5001';
+      const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
 
       // Get access token from googleBusinessProfileService
       const accessToken = googleBusinessProfileService.getAccessToken();
