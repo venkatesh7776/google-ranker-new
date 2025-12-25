@@ -21,14 +21,17 @@ const LoginPage = () => {
   const from = location.state?.from?.pathname || "/dashboard";
 
   const handleGoogleLogin = async () => {
-    setLoading(true);
+    console.log('🔵 BUTTON CLICKED - handleGoogleLogin called');
+    console.log('🔵 loginWithGoogle function:', typeof loginWithGoogle);
     try {
+      console.log('🔵 About to call loginWithGoogle...');
       await loginWithGoogle();
-      // Auth state will change and AuthRedirect will handle navigation
-      navigate(from, { replace: true });
+      console.log('🔵 loginWithGoogle completed (should have redirected)');
+      // signInWithRedirect will redirect the browser to Google
+      // When user returns, getRedirectResult will process auth
+      // and user will be redirected to dashboard automatically
     } catch (error) {
-      console.error("Google login error:", error);
-      setLoading(false);
+      console.error("❌ Google login error:", error);
     }
   };
 

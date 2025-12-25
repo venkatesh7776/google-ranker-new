@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
-import { MessageSquare, CheckCircle, Clock, XCircle, Star, AlertCircle, Loader2 } from "lucide-react";
+import { MessageSquare, CheckCircle, Clock, XCircle, Star, AlertCircle, Loader2, Building2 } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -275,6 +275,42 @@ const Feedbacks = () => {
           selectedLocationId={selectedLocationId}
           onLocationChange={handleLocationChange}
         />
+      )}
+
+      {/* Selected Location Info - Enhanced */}
+      {selectedLocation && (
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border-l-4 border-purple-500 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-sm">
+              <Building2 className="h-7 w-7 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-bold text-xl text-gray-800 mb-1" style={{ fontFamily: 'Onest' }}>
+                    {selectedLocation.displayName}
+                  </h3>
+                  <p className="text-sm text-gray-600 font-medium" style={{ fontFamily: 'Onest' }}>
+                    {typeof selectedLocation.categories?.[0] === 'string'
+                      ? selectedLocation.categories[0]
+                      : selectedLocation.categories?.[0]?.name || 'Business'}
+                  </p>
+                  {selectedLocation.address && (
+                    <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Onest' }}>
+                      📍 {selectedLocation.address.locality}, {selectedLocation.address.administrativeArea}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-orange-100 text-orange-700 rounded-lg font-bold border border-orange-200" style={{ fontFamily: 'Onest' }}>
+                    <MessageSquare className="h-4 w-4" />
+                    Feedback Tracking
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* Stats Cards */}

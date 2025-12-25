@@ -4,6 +4,9 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import NotFound from "./pages/NotFound";
+import LandingPage from "./pages/LandingPage";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfService from "./pages/TermsOfService";
 import LoginPage from "./components/Auth/LoginPage";
 import SignupPage from "./components/Auth/SignupPage";
 import DashboardLayout from "./components/Layout/DashboardLayout";
@@ -59,11 +62,12 @@ const App = () => (
       <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
         <AuthProvider>
           <AdminProvider>
-            <GoogleBusinessProfileProvider>
-              <NotificationProvider>
-                <SubscriptionProvider>
-                  <Routes>
-            <Route path="/" element={<Navigate to="/login" replace />} />
+            <NotificationProvider>
+              <SubscriptionProvider>
+                <Routes>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+            <Route path="/terms-of-service" element={<TermsOfService />} />
             <Route path="/login" element={
               <AuthRedirect>
                 <LoginPage />
@@ -89,7 +93,9 @@ const App = () => (
             {/* Protected Dashboard Routes - SubscriptionGuard is applied inside DashboardLayout */}
             <Route path="/dashboard" element={
               <ProtectedRoute>
-                <DashboardLayout />
+                <GoogleBusinessProfileProvider>
+                  <DashboardLayout />
+                </GoogleBusinessProfileProvider>
               </ProtectedRoute>
             }>
               <Route index element={<Dashboard />} />
@@ -109,7 +115,9 @@ const App = () => (
             {/* Upgrade page without layout and without subscription guard (billing-related) */}
             <Route path="/dashboard/upgrade" element={
               <ProtectedRoute>
-                <Upgrade />
+                <GoogleBusinessProfileProvider>
+                  <Upgrade />
+                </GoogleBusinessProfileProvider>
               </ProtectedRoute>
             } />
             
@@ -124,7 +132,9 @@ const App = () => (
             <Route path="/admin" element={
               <ProtectedRoute>
                 <AdminRoute>
-                  <AdminLayout />
+                  <GoogleBusinessProfileProvider>
+                    <AdminLayout />
+                  </GoogleBusinessProfileProvider>
                 </AdminRoute>
               </ProtectedRoute>
             }>
@@ -147,7 +157,6 @@ const App = () => (
                 <TrialManager />
                 </SubscriptionProvider>
               </NotificationProvider>
-            </GoogleBusinessProfileProvider>
           </AdminProvider>
         </AuthProvider>
         {/* Environment indicator - only shows in development */}

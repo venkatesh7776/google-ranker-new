@@ -729,13 +729,17 @@ const Reviews = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Reviews</h1>
-          <p className="text-sm sm:text-base text-muted-foreground mt-1">
-            Manage customer reviews across all your business profiles
-          </p>
+      {/* Header with gradient background */}
+      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent" style={{ fontFamily: 'Onest' }}>
+              Reviews
+            </h1>
+            <p className="text-sm text-gray-600 mt-2" style={{ fontFamily: 'Onest' }}>
+              Manage customer reviews across all your business profiles
+            </p>
+          </div>
         </div>
       </div>
 
@@ -761,89 +765,99 @@ const Reviews = () => {
         </div>
       )}
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-3 sm:gap-4">
-        <Card className="shadow-card border border-border">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold">{stats.total}</div>
-            <p className="text-xs text-muted-foreground">Total Reviews</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-card border border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-2">
-              <Star className="h-4 w-4 fill-yellow-400 text-yellow-400" />
-              <div className="text-2xl font-bold">{stats.avgRating.toFixed(1)}</div>
+      {/* Stats Cards with gradient backgrounds */}
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4">
+        <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-5 border border-purple-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <MessageSquare className="h-5 w-5 text-purple-600" />
             </div>
-            <p className="text-xs text-muted-foreground">Average Rating</p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{stats.total}</div>
+          <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Total Reviews</p>
+        </div>
         
-        <Card className="shadow-card border border-border">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">{stats.replied}</div>
-            <p className="text-xs text-muted-foreground">Replied</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-card border border-border">
-          <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-orange-600">{stats.needReply}</div>
-            <p className="text-xs text-muted-foreground">Need Reply</p>
-          </CardContent>
-        </Card>
-        
-        <Card className="shadow-card border border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-center gap-1">
-              {getSentimentIcon('positive')}
-              <div className="text-2xl font-bold">{stats.sentimentCounts.positive}</div>
+        <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-5 border border-yellow-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <Star className="h-5 w-5 text-yellow-600 fill-yellow-600" />
             </div>
-            <p className="text-xs text-muted-foreground">Positive</p>
-          </CardContent>
-        </Card>
+          </div>
+          <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{stats.avgRating.toFixed(1)}</div>
+          <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Average Rating</p>
+        </div>
+        
+        <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <Check className="h-5 w-5 text-green-600" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{stats.replied}</div>
+          <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Replied</p>
+        </div>
+        
+        <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <MessageSquare className="h-5 w-5 text-orange-600" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{stats.needReply}</div>
+          <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Need Reply</p>
+        </div>
+        
+        <div className="bg-gradient-to-br from-pink-50 to-rose-50 rounded-xl p-5 border border-pink-100 hover:shadow-lg transition-all">
+          <div className="flex items-center justify-between mb-2">
+            <div className="p-2 bg-white rounded-lg shadow-sm">
+              <Heart className="h-5 w-5 text-pink-600" />
+            </div>
+          </div>
+          <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{stats.sentimentCounts.positive}</div>
+          <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Positive</p>
+        </div>
       </div>
 
       {/* Enhanced Filters and Actions */}
-      <Card className="shadow-card border border-border">
-        <CardContent className="pt-6">
-          <div className="space-y-4">
-            {/* Search, Refresh, and Filters */}
-            <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 sm:gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search reviews..."
-                  value={filters.search}
-                  onChange={(e) => updateFilter('search', e.target.value)}
-                  className="pl-10 text-sm"
-                />
-              </div>
-              <div className="flex items-center gap-3 sm:gap-4">
-              <TooltipProvider>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <Button
-                      variant="outline"
-                      size="icon"
-                      onClick={handleRefresh}
-                      disabled={refreshing}
-                    >
-                      <RefreshCw className={cn("h-4 w-4", refreshing && "animate-spin")} />
-                    </Button>
-                  </TooltipTrigger>
-                  <TooltipContent>Refresh Reviews</TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              
-              {/* Filters Popover */}
-              <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" size="icon">
-                    <SlidersHorizontal className="h-4 w-4" />
+      <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+        <div className="space-y-4">
+          {/* Search, Refresh, and Filters */}
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                placeholder="Search reviews..."
+                value={filters.search}
+                onChange={(e) => updateFilter('search', e.target.value)}
+                className="pl-12 h-12 border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                style={{ fontFamily: 'Onest' }}
+              />
+            </div>
+            <div className="flex items-center gap-3">
+            <TooltipProvider>
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
+                    className="h-12 w-12 rounded-lg border-gray-200"
+                  >
+                    <RefreshCw className={cn("h-5 w-5", refreshing && "animate-spin")} />
                   </Button>
-                </PopoverTrigger>
+                </TooltipTrigger>
+                <TooltipContent>Refresh Reviews</TooltipContent>
+              </Tooltip>
+            </TooltipProvider>
+              
+            {/* Filters Popover */}
+            <Popover open={filterPopoverOpen} onOpenChange={setFilterPopoverOpen}>
+              <PopoverTrigger asChild>
+                <Button variant="outline" size="icon" className="h-12 w-12 rounded-lg border-gray-200">
+                  <SlidersHorizontal className="h-5 w-5" />
+                </Button>
+              </PopoverTrigger>
                 <PopoverContent className="w-96 p-4" align="end">
                   <div className="space-y-4">
                     <h4 className="font-medium text-sm mb-3">Filter Reviews</h4>
@@ -934,12 +948,12 @@ const Reviews = () => {
                   </div>
                 </PopoverContent>
               </Popover>
-              </div>
             </div>
-            
-            {/* Sort Options */}
-            <div className="flex items-center gap-2 text-sm text-muted-foreground">
-              <span>Sort by:</span>
+          </div>
+          
+          {/* Sort Options */}
+          <div className="flex items-center gap-2 text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
+            <span className="font-medium">Sort by:</span>
               <Button
                 variant="ghost"
                 size="sm"
@@ -974,52 +988,53 @@ const Reviews = () => {
                 )}
               </Button>
             </div>
-          </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
-      {/* Reviews List */}
-      <Card className="shadow-card border border-border">
-        <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-2">
-          <CardTitle className="text-lg sm:text-xl">All Reviews ({filteredAndSortedReviews.length})</CardTitle>
+      {/* Reviews List with new header */}
+      <div>
+        <div className="flex items-center justify-between mb-5">
+          <h2 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>
+            All Reviews ({filteredAndSortedReviews.length})
+          </h2>
           <div className="flex items-center gap-2">
             {refreshing && (
-              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+              <div className="flex items-center gap-2 text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
                 <RefreshCw className="h-4 w-4 animate-spin" />
                 Updating...
               </div>
             )}
             {filteredAndSortedReviews.length > 0 && (
-              <Badge variant="outline" className="text-xs">
-                Showing {filteredAndSortedReviews.length} of {stats.total} reviews
+              <Badge variant="outline" className="text-xs" style={{ fontFamily: 'Onest' }}>
+                Showing {filteredAndSortedReviews.length} of {stats.total}
               </Badge>
             )}
           </div>
-        </CardHeader>
+        </div>
         
-        <CardContent>
+        <div>
           {loading ? (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {Array.from({ length: 4 }).map((_, index) => (
-                <div key={index} className="border border-border rounded-lg p-4 shadow-sm animate-pulse">
+                <div key={index} className="bg-white border border-gray-200 rounded-xl p-5 animate-pulse">
                   <div className="flex gap-4">
-                    <div className="h-10 w-10 bg-muted rounded-full"></div>
-                    <div className="flex-1 space-y-2">
-                      <div className="h-4 bg-muted rounded w-1/4"></div>
-                      <div className="h-3 bg-muted rounded w-full"></div>
-                      <div className="h-3 bg-muted rounded w-3/4"></div>
+                    <div className="h-12 w-12 bg-gray-200 rounded-full"></div>
+                    <div className="flex-1 space-y-3">
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-3 bg-gray-200 rounded w-full"></div>
+                      <div className="h-3 bg-gray-200 rounded w-4/5"></div>
                     </div>
                   </div>
                 </div>
               ))}
             </div>
           ) : filteredAndSortedReviews.length === 0 ? (
-            <div className="text-center py-12">
-              <Star className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">
+            <div className="bg-white border border-gray-200 rounded-xl p-12 text-center">
+              <Star className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+              <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Onest' }}>
                 {Object.values(filters).some(f => f !== 'all' && f !== '') ? "No reviews found" : "No reviews yet"}
               </h3>
-              <p className="text-muted-foreground">
+              <p className="text-gray-600" style={{ fontFamily: 'Onest' }}>
                 {Object.values(filters).some(f => f !== 'all' && f !== '') 
                   ? "Try adjusting your search or filters"
                   : "Customer reviews will appear here once you receive them"
@@ -1027,12 +1042,12 @@ const Reviews = () => {
               </p>
             </div>
           ) : (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {filteredAndSortedReviews.map((review, index) => (
-                <div key={review.id} className="border border-border rounded-lg p-3 sm:p-4 shadow-sm hover:bg-muted/30 transition-colors">
-                  <div className="flex gap-3 sm:gap-4">
-                    <Avatar className="h-8 w-8 sm:h-10 sm:w-10 flex-shrink-0">
-                      <AvatarFallback className="bg-primary/10 text-primary text-xs sm:text-sm">
+                <div key={review.id} className="bg-white border border-gray-200 rounded-xl p-5 hover:shadow-lg transition-all">
+                  <div className="flex gap-4">
+                    <Avatar className="h-12 w-12 flex-shrink-0">
+                      <AvatarFallback className="text-white font-semibold" style={{ background: 'linear-gradient(135deg, #6C21DC 0%, #7B8DEF 100%)' }}>
                         {getInitials(review.author)}
                       </AvatarFallback>
                     </Avatar>
@@ -1042,25 +1057,25 @@ const Reviews = () => {
                       <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2">
                         <div className="flex-1 min-w-0">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-2 mb-1">
-                            <h4 className="font-medium text-sm sm:text-base truncate">{review.author}</h4>
+                            <h4 className="font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{review.author}</h4>
                             <div className="flex items-center gap-2 flex-wrap">
                               <div className="flex items-center gap-1">
                                 {renderStars(review.rating)}
                               </div>
-                              <Badge variant="outline" className="text-xs truncate max-w-[120px]">
+                              <Badge variant="outline" className="text-xs border-gray-200" style={{ fontFamily: 'Onest' }}>
                                 {review.profileName}
                               </Badge>
                               {review.sentiment && (
-                                <Badge variant="outline" className={cn("text-xs hidden sm:flex", getSentimentColor(review.sentiment))}>
+                                <Badge variant="outline" className={cn("text-xs", getSentimentColor(review.sentiment))}>
                                   <div className="flex items-center gap-1">
                                     {getSentimentIcon(review.sentiment)}
-                                    {review.sentiment}
+                                    <span style={{ fontFamily: 'Onest' }}>{review.sentiment}</span>
                                   </div>
                                 </Badge>
                               )}
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <div className="flex items-center gap-1 text-xs text-gray-500" style={{ fontFamily: 'Onest' }}>
                             <Calendar className="h-3 w-3" />
                             {formatDate(review.createdAt)}
                           </div>
@@ -1079,9 +1094,9 @@ const Reviews = () => {
                                       setCustomReply(review.replyContent || '');
                                       setReplyDialogOpen(true);
                                     }}
-                                    className="h-8 w-8 p-0"
+                                    className="h-9 w-9 p-0 rounded-lg"
                                   >
-                                    <Edit2 className="h-3 w-3" />
+                                    <Edit2 className="h-4 w-4" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Edit Reply</TooltipContent>
@@ -1091,36 +1106,39 @@ const Reviews = () => {
                           
                           {!review.replied && (
                             <Button
-                              variant="outline"
                               size="sm"
                               onClick={() => handleAutoReply(review.id)}
-                              className="gap-1 px-2 sm:px-3 text-xs sm:text-sm"
+                              className="gap-2 text-white rounded-lg"
+                              style={{ 
+                                background: 'linear-gradient(135deg, #6C21DC 0%, #7B8DEF 100%)',
+                                fontFamily: 'Onest'
+                              }}
                             >
-                              <Bot className="h-3 w-3" />
-                              <span className="hidden sm:inline">Reply</span>
+                              <Bot className="h-4 w-4" />
+                              Reply
                             </Button>
                           )}
                         </div>
                       </div>
                       
                       {/* Review Content */}
-                      <p className="text-sm leading-relaxed break-words">{review.content}</p>
+                      <p className="text-sm leading-relaxed text-gray-700" style={{ fontFamily: 'Onest' }}>{review.content}</p>
                       
                       {/* Reply */}
                       {review.replied && review.replyContent && (
-                        <div className="bg-muted/50 rounded-lg p-3 ml-2 sm:ml-4 border-l-2 border-primary/20">
+                        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-lg p-4 border-l-4 border-purple-500">
                           <div className="flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-2 mb-2">
                             <div className="flex items-center gap-2">
-                              <MessageSquare className="h-3 w-3 text-primary" />
-                              <span className="text-xs font-medium text-primary">Your Reply</span>
+                              <MessageSquare className="h-4 w-4 text-purple-600" />
+                              <span className="text-sm font-bold text-purple-600" style={{ fontFamily: 'Onest' }}>Your Reply</span>
                             </div>
                             {review.repliedAt && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-gray-600" style={{ fontFamily: 'Onest' }}>
                                 {formatDate(review.repliedAt)}
                               </span>
                             )}
                           </div>
-                          <p className="text-sm break-words">{review.replyContent}</p>
+                          <p className="text-sm text-gray-700" style={{ fontFamily: 'Onest' }}>{review.replyContent}</p>
                         </div>
                       )}
                     </div>
@@ -1129,8 +1147,8 @@ const Reviews = () => {
               ))}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Custom Reply Dialog */}
       <Dialog open={replyDialogOpen} onOpenChange={setReplyDialogOpen}>

@@ -73,8 +73,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Performance Analytics',
       'Advanced Analytics',
       'API Access',
-      'Priority Support',
-      'Unlimited Google Business Profiles'
+      'Priority Support'
     ],
     trialDays: 15,
     popular: false
@@ -91,8 +90,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Performance Analytics',
       'Advanced Analytics',
       'API Access',
-      'Priority Support',
-      'Unlimited Google Business Profiles'
+      'Priority Support'
     ],
     trialDays: 15,
     popular: false
@@ -109,8 +107,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'Performance Analytics',
       'Advanced Analytics',
       'API Access',
-      'Priority Support',
-      'Unlimited Google Business Profiles'
+      'Priority Support'
     ],
     trialDays: 15,
     popular: true

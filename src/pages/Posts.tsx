@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Calendar, Clock, Image, Search, Filter, MoreHorizontal, Users, Info, X } from "lucide-react";
+import { Plus, Calendar, Clock, Image, Search, Filter, MoreHorizontal, Users, Info, X, FileText, ArrowRight } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -338,23 +338,31 @@ const Posts = () => {
 
   return (
     <>
-      <div className="space-y-4 sm:space-y-6">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 sm:gap-4">
-          <div>
-            <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold tracking-tight">Posts</h1>
-            <p className="text-sm sm:text-base text-muted-foreground mt-1">
-              Manage posts across all your business profiles
-            </p>
+      <div className="space-y-6">
+        {/* Header with gradient background */}
+        <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div>
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent" style={{ fontFamily: 'Onest' }}>
+                Posts
+              </h1>
+              <p className="text-sm text-gray-600 mt-2" style={{ fontFamily: 'Onest' }}>
+                Manage posts across all your business profiles
+              </p>
+            </div>
+            <Button 
+              onClick={() => setShowCreateModal(true)}
+              className="text-white font-medium shadow-lg hover:shadow-xl transition-all"
+              style={{ 
+                background: 'linear-gradient(135deg, #6C21DC 0%, #7B8DEF 100%)',
+                fontFamily: 'Onest'
+              }}
+              size="lg"
+            >
+              <Plus className="mr-2 h-5 w-5" />
+              Create Post
+            </Button>
           </div>
-          <Button 
-            onClick={() => setShowCreateModal(true)}
-            className="bg-primary hover:bg-primary-hover shadow-primary w-full sm:w-auto"
-            size="sm"
-          >
-            <Plus className="mr-1 sm:mr-2 h-3 w-3 sm:h-4 sm:w-4" />
-            <span className="text-sm sm:text-base">Create Post</span>
-          </Button>
         </div>
 
         {/* Profile Limitation Alert */}
@@ -379,198 +387,237 @@ const Posts = () => {
           </div>
         )}
 
-        {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-          <Card className="shadow-card border border-border">
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold">{statusCounts.all}</div>
-              <p className="text-xs text-muted-foreground">Total Posts</p>
-            </CardContent>
-          </Card>
+        {/* Stats Cards with Icons */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-5 border border-purple-100 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white rounded-lg shadow-sm">
+                <FileText className="h-5 w-5 text-purple-600" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{statusCounts.all}</div>
+            <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Total Posts</p>
+          </div>
           
-          <Card className="shadow-card border border-border">
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-success">{statusCounts.published}</div>
-              <p className="text-xs text-muted-foreground">Published</p>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border border-green-100 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white rounded-lg shadow-sm">
+                <Calendar className="h-5 w-5 text-green-600" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{statusCounts.published}</div>
+            <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Published</p>
+          </div>
           
-          <Card className="shadow-card border border-border">
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-warning">{statusCounts.scheduled}</div>
-              <p className="text-xs text-muted-foreground">Scheduled</p>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border border-orange-100 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white rounded-lg shadow-sm">
+                <Clock className="h-5 w-5 text-orange-600" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{statusCounts.scheduled}</div>
+            <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Scheduled</p>
+          </div>
           
-          <Card className="shadow-card border border-border">
-            <CardContent className="pt-6">
-              <div className="text-2xl font-bold text-muted-foreground">{statusCounts.draft}</div>
-              <p className="text-xs text-muted-foreground">Drafts</p>
-            </CardContent>
-          </Card>
+          <div className="bg-gradient-to-br from-gray-50 to-slate-50 rounded-xl p-5 border border-gray-200 hover:shadow-lg transition-all">
+            <div className="flex items-center justify-between mb-2">
+              <div className="p-2 bg-white rounded-lg shadow-sm">
+                <FileText className="h-5 w-5 text-gray-500" />
+              </div>
+            </div>
+            <div className="text-3xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>{statusCounts.draft}</div>
+            <p className="text-sm text-gray-600 mt-1 font-medium" style={{ fontFamily: 'Onest' }}>Drafts</p>
+          </div>
         </div>
 
-        {/* Filters */}
-        <Card className="shadow-card border border-border">
-          <CardContent className="pt-6">
-            <div className="flex flex-col sm:flex-row gap-4">
-              <div className="relative flex-1">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search posts..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-              
-              {/* Business Profile Filter */}
-              <Select value={selectedProfileFilter} onValueChange={setSelectedProfileFilter}>
-                <SelectTrigger className="w-full sm:w-64">
-                  <Users className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Select business profile" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Profiles</SelectItem>
-                  {availableProfiles.map(profile => (
-                    <SelectItem key={profile.id} value={profile.id}>
-                      <div className="flex flex-col">
-                        <span className="font-medium">{profile.name}</span>
-                        <span className="text-xs text-muted-foreground">{profile.accountName}</span>
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              
-              <Select value={statusFilter} onValueChange={setStatusFilter}>
-                <SelectTrigger className="w-full sm:w-48">
-                  <Filter className="mr-2 h-4 w-4" />
-                  <SelectValue placeholder="Filter by status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="published">Published</SelectItem>
-                  <SelectItem value="scheduled">Scheduled</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="failed">Failed</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Filters with enhanced design */}
+        <div className="bg-white rounded-xl p-5 border border-gray-200 shadow-sm">
+          <div className="flex flex-col sm:flex-row gap-4">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 transform -translate-y-1/2 h-5 w-5 text-gray-400" />
+              <Input
+                placeholder="Search posts..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 h-12 border-gray-200 rounded-lg focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                style={{ fontFamily: 'Onest' }}
+              />
             </div>
-          </CardContent>
-        </Card>
-
-        {/* Posts List */}
-        <Card className="shadow-card border border-border">
-          <CardHeader>
-            <CardTitle>All Posts</CardTitle>
-          </CardHeader>
-          
-          <CardContent>
-            {loading ? (
-              <div className="space-y-4">
-                {Array.from({ length: 5 }).map((_, index) => (
-                  <div key={index} className="border border-border rounded-lg p-4 animate-pulse shadow-sm">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="h-4 bg-muted rounded w-1/4"></div>
-                      <div className="h-6 bg-muted rounded w-20"></div>
+            
+            {/* Business Profile Filter */}
+            <Select value={selectedProfileFilter} onValueChange={setSelectedProfileFilter}>
+              <SelectTrigger className="w-full sm:w-64 h-12 border-gray-200 rounded-lg" style={{ fontFamily: 'Onest' }}>
+                <Users className="mr-2 h-5 w-5 text-gray-500" />
+                <SelectValue placeholder="All Profiles" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Profiles</SelectItem>
+                {availableProfiles.map(profile => (
+                  <SelectItem key={profile.id} value={profile.id}>
+                    <div className="flex flex-col">
+                      <span className="font-medium">{profile.name}</span>
+                      <span className="text-xs text-muted-foreground">{profile.accountName}</span>
                     </div>
-                    <div className="h-3 bg-muted rounded w-full mb-1"></div>
-                    <div className="h-3 bg-muted rounded w-3/4"></div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-full sm:w-48 h-12 border-gray-200 rounded-lg" style={{ fontFamily: 'Onest' }}>
+                <Filter className="mr-2 h-5 w-5 text-gray-500" />
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="published">Published</SelectItem>
+                <SelectItem value="scheduled">Scheduled</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+
+        {/* Posts List with new header */}
+        <div>
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>All Posts</h2>
+            <div className="text-sm text-gray-500" style={{ fontFamily: 'Onest' }}>
+              {filteredPosts.length} {filteredPosts.length === 1 ? 'post' : 'posts'} found
+            </div>
+          </div>
+          
+          <div>
+            {loading ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {Array.from({ length: 4 }).map((_, index) => (
+                  <div key={index} className="bg-white border border-gray-200 rounded-lg p-5 animate-pulse">
+                    <div className="flex items-start justify-between mb-3">
+                      <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+                      <div className="h-6 bg-gray-200 rounded w-20"></div>
+                    </div>
+                    <div className="h-3 bg-gray-200 rounded w-full mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-4/5 mb-2"></div>
+                    <div className="h-3 bg-gray-200 rounded w-2/3"></div>
                   </div>
                 ))}
               </div>
             ) : filteredPosts.length === 0 ? (
-              <div className="text-center py-12">
-                <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <h3 className="text-lg font-medium mb-2">
+              <div className="bg-white border border-gray-200 rounded-lg p-12 text-center">
+                <Calendar className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-semibold mb-2" style={{ fontFamily: 'Onest' }}>
                   {searchQuery || statusFilter !== "all" ? "No posts found" : "No posts yet"}
                 </h3>
-                <p className="text-muted-foreground mb-4">
+                <p className="text-gray-600 mb-4" style={{ fontFamily: 'Onest' }}>
                   {searchQuery || statusFilter !== "all" 
                     ? "Try adjusting your search or filters"
                     : "Create your first post to start engaging with customers"
                   }
                 </p>
                 {!searchQuery && statusFilter === "all" && (
-                  <Button onClick={() => setShowCreateModal(true)} variant="outline">
+                  <Button 
+                    onClick={() => setShowCreateModal(true)} 
+                    className="text-white"
+                    style={{ 
+                      background: 'linear-gradient(to bottom left, #6C21DC, #7B8DEF)',
+                      fontFamily: 'Onest'
+                    }}
+                  >
                     <Plus className="mr-2 h-4 w-4" />
                     Create First Post
                   </Button>
                 )}
               </div>
             ) : (
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
                 {filteredPosts.map((post) => (
-                  <div key={post.id} className="border border-border rounded-lg p-4 hover:bg-muted/30 transition-colors shadow-sm flex flex-col h-full">
-                    <div className="flex items-start justify-between mb-3 flex-wrap gap-2">
-                      <div className="flex items-center gap-2 flex-wrap">
-                        <span className="font-medium text-sm">{post.profileName}</span>
-                        {getStatusBadge(post.status)}
-                      </div>
-                      
-                      <DropdownMenu>
-                        <DropdownMenuTrigger asChild>
-                          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownMenuTrigger>
-                        <DropdownMenuContent align="end">
-                          <DropdownMenuItem>Edit Post</DropdownMenuItem>
-                          <DropdownMenuItem>Duplicate</DropdownMenuItem>
-                          <DropdownMenuItem>Reschedule</DropdownMenuItem>
-                          <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
-                        </DropdownMenuContent>
-                      </DropdownMenu>
-                    </div>
-
-                    <div className="flex items-center gap-2 mb-3 text-xs text-muted-foreground flex-wrap">
-                      {post.scheduledAt && (
-                        <div className="flex items-center gap-1">
-                          <Clock className="h-3 w-3" />
-                          {formatDateTime(post.scheduledAt)}
+                  <div 
+                    key={post.id} 
+                    className="group bg-white border border-gray-200 rounded-xl overflow-hidden hover:shadow-xl hover:border-purple-200 transition-all duration-300 cursor-pointer"
+                    onClick={() => {
+                      setSelectedPost(post);
+                      setShowPostModal(true);
+                    }}
+                  >
+                    {/* Card Header */}
+                    <div className="bg-gradient-to-r from-purple-50 to-blue-50 px-5 py-4 border-b border-gray-100">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <h3 className="font-bold text-gray-800 mb-1" style={{ fontFamily: 'Onest' }}>
+                            {post.profileName}
+                          </h3>
+                          <div className="flex items-center gap-2 text-xs text-gray-600" style={{ fontFamily: 'Onest' }}>
+                            {post.postedAt && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                {formatDateTime(post.postedAt)}
+                              </div>
+                            )}
+                            {post.scheduledAt && (
+                              <div className="flex items-center gap-1">
+                                <Clock className="h-3 w-3" />
+                                {formatDateTime(post.scheduledAt)}
+                              </div>
+                            )}
+                          </div>
                         </div>
-                      )}
-                      {post.postedAt && (
-                        <div className="flex items-center gap-1">
-                          <Calendar className="h-3 w-3" />
-                          Posted {formatDateTime(post.postedAt)}
+                        <div className="flex items-center gap-2">
+                          {getStatusBadge(post.status)}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+                              <Button variant="ghost" size="sm" className="h-8 w-8 p-0 hover:bg-white">
+                                <MoreHorizontal className="h-4 w-4" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end">
+                              <DropdownMenuItem>Edit Post</DropdownMenuItem>
+                              <DropdownMenuItem>Duplicate</DropdownMenuItem>
+                              <DropdownMenuItem>Reschedule</DropdownMenuItem>
+                              <DropdownMenuItem className="text-destructive">Delete</DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
                         </div>
-                      )}
-                    </div>
-                    
-                    <div className="flex gap-4 flex-1 mb-3">
-                      {post.imageUrl && (
-                        <div className="flex-shrink-0">
-                          <img 
-                            src={post.imageUrl} 
-                            alt="Post image" 
-                            className="w-16 h-16 object-cover rounded-md"
-                          />
-                        </div>
-                      )}
-                      <div className="flex-1 overflow-hidden">
-                        <p className="text-sm leading-relaxed line-clamp-3">{post.content}</p>
                       </div>
                     </div>
 
-                    <Button 
-                      variant="outline" 
-                      size="sm" 
-                      className="w-full mt-auto"
-                      onClick={() => {
-                        setSelectedPost(post);
-                        setShowPostModal(true);
-                      }}
-                    >
-                      Read More
-                    </Button>
+                    {/* Card Body */}
+                    <div className="p-5">
+                      <div className="flex gap-4">
+                        {post.imageUrl && (
+                          <div className="flex-shrink-0">
+                            <img 
+                              src={post.imageUrl} 
+                              alt="Post image" 
+                              className="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                            />
+                          </div>
+                        )}
+                        <div className="flex-1 overflow-hidden">
+                          <p className="text-sm leading-relaxed line-clamp-3 text-gray-700" style={{ fontFamily: 'Onest' }}>
+                            {post.content}
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Card Footer */}
+                    <div className="px-5 pb-5">
+                      <div className="flex items-center justify-between pt-3 border-t border-gray-100">
+                        <span className="text-xs text-gray-500 font-medium" style={{ fontFamily: 'Onest' }}>
+                          Click to view details
+                        </span>
+                        <div className="text-purple-600 group-hover:translate-x-1 transition-transform">
+                          <ArrowRight className="h-4 w-4" />
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 ))}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
       
       <CreatePostModal 

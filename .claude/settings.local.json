@@ -41,7 +41,16 @@
       "Bash(find:*)",
       "Bash(dir \"C:\\\\Users\\\\meena\\\\Desktop\\\\google-ranker-new\\\\server\\\\.env*\")",
       "Bash(python -m json.tool:*)",
-      "Bash(timeout /t 3)"
+      "Bash(timeout /t 3)",
+      "Bash(if [ -f .env.local ])",
+      "Bash(then cat .env.local)",
+      "Bash(else echo \"No .env.local file found\")",
+      "Bash(fi)",
+      "Bash(npm install:*)",
+      "Bash(timeout 10 bash:*)",
+      "Bash(timeout 5 bash:*)",
+      "Bash(timeout 15 bash:*)",
+      "mcp__ide__getDiagnostics"
     ],
     "deny": [],
     "ask": []

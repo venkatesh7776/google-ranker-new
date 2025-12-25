@@ -58,27 +58,29 @@ const LocationSelector = ({
   const selectedLocation = locations.find(loc => loc.locationId === selectedLocationId);
 
   return (
-    <div className={`space-y-2 ${className}`}>
-      <div className="flex items-center gap-2 text-sm font-medium text-muted-foreground">
-        <Building2 className="h-4 w-4" />
+    <div className={`space-y-3 ${className}`}>
+      <div className="flex items-center gap-2 text-sm font-bold text-gray-700" style={{ fontFamily: 'Onest' }}>
+        <Building2 className="h-5 w-5 text-purple-600" />
         <span>Business Location</span>
       </div>
 
       <Select value={selectedLocationId} onValueChange={onLocationChange}>
-        <SelectTrigger className="w-full">
+        <SelectTrigger className="w-full h-auto min-h-[60px] border-gray-200 rounded-xl hover:border-purple-300 transition-colors" style={{ fontFamily: 'Onest' }}>
           <SelectValue placeholder={placeholder}>
             {selectedLocation && (
-              <div className="flex items-center gap-2">
-                <Building2 className="h-4 w-4 text-primary" />
+              <div className="flex items-center gap-3 py-1">
+                <div className="p-2 bg-gradient-to-br from-purple-100 to-blue-100 rounded-lg">
+                  <Building2 className="h-5 w-5 text-purple-600" />
+                </div>
                 <div className="flex flex-col items-start">
-                  <span className="font-medium">{selectedLocation.displayName || selectedLocation.name}</span>
+                  <span className="font-bold text-gray-800">{selectedLocation.displayName || selectedLocation.name}</span>
                   {selectedLocation.categories && selectedLocation.categories.length > 0 && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-gray-600">
                       {getCategoryName(selectedLocation.categories[0])} • {formatAddress(selectedLocation.address)}
                     </span>
                   )}
                   {(!selectedLocation.categories || selectedLocation.categories.length === 0) && selectedLocation.address && (
-                    <span className="text-xs text-muted-foreground">
+                    <span className="text-xs text-gray-600">
                       {formatAddress(selectedLocation.address)}
                     </span>
                   )}
@@ -87,44 +89,66 @@ const LocationSelector = ({
             )}
           </SelectValue>
         </SelectTrigger>
-        <SelectContent>
+        <SelectContent className="max-w-md">
           {locations.length === 0 ? (
-            <div className="p-4 text-center text-sm text-muted-foreground">
+            <div className="p-4 text-center text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
               No locations found. Please connect your Google Business Profile first.
             </div>
           ) : (
-            locations.map((location) => (
-              <SelectItem key={location.locationId} value={location.locationId}>
-                <div className="flex items-start gap-3 py-1">
-                  <Building2 className="h-5 w-5 text-primary mt-0.5" />
-                  <div className="flex flex-col">
-                    <span className="font-medium">
-                      {location.displayName || location.name}
-                    </span>
-                    {location.categories && location.categories.length > 0 && (
-                      <span className="text-xs text-muted-foreground">
-                        {getCategoryName(location.categories[0])}
+            locations.map((location) => {
+              const isSelected = location.locationId === selectedLocationId;
+              return (
+                <SelectItem 
+                  key={location.locationId} 
+                  value={location.locationId}
+                  className={isSelected ? "bg-gradient-to-r from-purple-50 to-blue-50 border-l-4 border-purple-500" : ""}
+                >
+                  <div className="flex items-start gap-3 py-2">
+                    <div className={`p-2 rounded-lg ${
+                      isSelected 
+                        ? 'bg-gradient-to-br from-purple-100 to-blue-100' 
+                        : 'bg-gray-100'
+                    }`}>
+                      <Building2 className={`h-5 w-5 ${
+                        isSelected ? 'text-purple-600' : 'text-gray-600'
+                      }`} />
+                    </div>
+                    <div className="flex flex-col flex-1">
+                      <span className={`font-bold ${
+                        isSelected ? 'text-purple-700' : 'text-gray-800'
+                      }`} style={{ fontFamily: 'Onest' }}>
+                        {location.displayName || location.name}
                       </span>
-                    )}
-                    {location.address && (
-                      <div className="flex items-center gap-1 mt-0.5">
-                        <MapPin className="h-3 w-3 text-muted-foreground" />
-                        <span className="text-xs text-muted-foreground">
-                          {formatAddress(location.address)}
+                      {location.categories && location.categories.length > 0 && (
+                        <span className="text-xs text-gray-600 mt-0.5" style={{ fontFamily: 'Onest' }}>
+                          {getCategoryName(location.categories[0])}
                         </span>
+                      )}
+                      {location.address && (
+                        <div className="flex items-center gap-1 mt-1">
+                          <MapPin className="h-3 w-3 text-gray-500" />
+                          <span className="text-xs text-gray-600" style={{ fontFamily: 'Onest' }}>
+                            {formatAddress(location.address)}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                    {isSelected && (
+                      <div className="flex items-center">
+                        <div className="h-2 w-2 bg-purple-600 rounded-full"></div>
                       </div>
                     )}
                   </div>
-                </div>
-              </SelectItem>
-            ))
+                </SelectItem>
+              );
+            })
           )}
         </SelectContent>
       </Select>
 
       {/* Help text */}
       {locations.length > 0 && !selectedLocationId && (
-        <p className="text-xs text-muted-foreground">
+        <p className="text-xs text-gray-600" style={{ fontFamily: 'Onest' }}>
           Select a location to view and manage automation settings
         </p>
       )}

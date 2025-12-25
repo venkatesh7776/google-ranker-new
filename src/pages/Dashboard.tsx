@@ -330,7 +330,7 @@ const Dashboard = () => {
               <Users className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl sm:text-4xl font-bold text-[#6C21DC]">{totalProfiles}</div>
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900">{totalProfiles}</div>
               <p className="text-sm sm:text-base text-muted-foreground mt-1">Connected business accounts</p>
             </CardContent>
           </Card>
@@ -341,7 +341,7 @@ const Dashboard = () => {
               <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl sm:text-4xl font-bold text-[#6C21DC]">{totalLocations}</div>
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900">{totalLocations}</div>
               <p className="text-sm sm:text-base text-muted-foreground mt-1">Business locations</p>
             </CardContent>
           </Card>
@@ -352,7 +352,7 @@ const Dashboard = () => {
               <Star className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl sm:text-4xl font-bold text-[#6C21DC]">N/A</div>
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900">N/A</div>
               <p className="text-sm sm:text-base text-muted-foreground mt-1">Coming soon</p>
             </CardContent>
           </Card>
@@ -363,7 +363,7 @@ const Dashboard = () => {
               <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl sm:text-4xl font-bold text-[#6C21DC]">{lastSyncTime}</div>
+              <div className="text-3xl sm:text-4xl font-bold text-gray-900">{lastSyncTime}</div>
               <p className="text-sm sm:text-base text-muted-foreground mt-1">Real-time updates</p>
             </CardContent>
           </Card>

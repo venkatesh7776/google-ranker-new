@@ -428,9 +428,9 @@ const Billing = () => {
                     : ''
                 }`}>
                   <CardHeader>
-                    <CardTitle className={`text-xl font-bold ${plan.popular ? 'text-white' : ''}`}>{plan.name}</CardTitle>
+                    <CardTitle className={`text-xl font-bold ${plan.popular ? 'text-white' : ''}`} style={plan.popular ? { color: '#ffffff' } : {}}>{plan.name}</CardTitle>
                     <div className="mt-2">
-                      <div className={`text-4xl font-bold ${plan.popular ? 'text-white' : 'text-[#6C21DC]'}`}>
+                      <div className={`text-4xl font-bold ${plan.popular ? 'text-white' : 'text-[#6C21DC]'}`} style={plan.popular ? { color: '#ffffff' } : {}}>
                         ₹{(plan.amount / 100).toFixed(0)}
                       </div>
                       {plan.id === 'six_month_plan' && (
@@ -439,7 +439,7 @@ const Billing = () => {
                         </p>
                       )}
                       {plan.id === 'yearly_plan' && (
-                        <p className="text-sm text-green-100 font-medium mt-2">
+                        <p className="text-sm font-medium mt-2" style={{ color: '#d1fae5' }}>
                           Best Value - Save ₹3189 per year
                         </p>
                       )}
@@ -449,8 +449,8 @@ const Billing = () => {
                     <ul className="space-y-3 mb-6">
                       {plan.features.map((feature, index) => (
                         <li key={index} className="flex items-start space-x-2">
-                          <CheckCircle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-white' : 'text-green-500'}`} />
-                          <span className={`text-sm ${plan.popular ? 'text-white' : ''}`}>{feature}</span>
+                          <CheckCircle className={`h-4 w-4 mt-0.5 flex-shrink-0 ${plan.popular ? 'text-white' : 'text-green-500'}`} style={plan.popular ? { color: '#ffffff' } : {}} />
+                          <span className={`text-sm ${plan.popular ? 'text-white' : ''}`} style={plan.popular ? { color: '#ffffff' } : {}}>{feature}</span>
                         </li>
                       ))}
                     </ul>
@@ -474,71 +474,60 @@ const Billing = () => {
               </div>
             ))}
 
-            {/* Support Card */}
-            <Card className="bg-white border-2 border-gray-200 shadow-lg hover:shadow-xl transition-shadow duration-300">
-              <CardHeader className="border-b border-gray-100 pb-4">
-                <div className="flex items-center gap-3">
-                  <div className="h-14 w-14 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl flex items-center justify-center shadow-md">
-                    <Headphones className="h-7 w-7 text-white" />
-                  </div>
-                  <div>
-                    <CardTitle className="text-2xl text-gray-900 font-bold">Need Help?</CardTitle>
-                    <CardDescription className="text-gray-600 mt-1">
-                      We're here to assist you with any questions or concerns
-                    </CardDescription>
-                  </div>
+            {/* Support Section - No Card */}
+            <div className="space-y-6">
+              {/* Heading */}
+              <div className="flex items-center gap-4">
+                <div className="h-16 w-16 bg-gradient-to-br from-purple-600 to-blue-600 rounded-2xl flex items-center justify-center shadow-lg">
+                  <Headphones className="h-8 w-8 text-white" />
                 </div>
-              </CardHeader>
-              <CardContent className="space-y-4 pt-6">
-                <p className="text-sm text-gray-700 leading-relaxed">
-                  Our support team is ready to help you get the most out of your subscription. 
-                  Reach out to us through any of the following channels:
-                </p>
-                
-                <div className="space-y-3">
-                  {/* Email Support */}
-                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-xl border-2 border-blue-200 hover:border-blue-300 transition-all duration-200 hover:shadow-md">
-                    <div className="h-12 w-12 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <Mail className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 mb-1">Email Support</p>
-                      <a
-                        href="mailto:support@googleranker.io"
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium hover:underline break-all"
-                      >
-                        support@googleranker.io
-                      </a>
-                    </div>
-                  </div>
-
-                  {/* WhatsApp Support */}
-                  <div className="flex items-center gap-4 p-4 bg-gradient-to-r from-green-50 to-green-100/50 rounded-xl border-2 border-green-200 hover:border-green-300 transition-all duration-200 hover:shadow-md">
-                    <div className="h-12 w-12 bg-green-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
-                      <MessageCircle className="h-6 w-6 text-white" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-gray-900 mb-1">WhatsApp Support</p>
-                      <a 
-                        href="https://wa.me/917710616166" 
-                        target="_blank" 
-                        rel="noopener noreferrer"
-                        className="text-sm text-green-600 hover:text-green-700 font-medium hover:underline"
-                      >
-                        +91 7710616166
-                      </a>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4 p-4 bg-gradient-to-r from-indigo-50 to-blue-50 rounded-xl border-l-4 border-blue-600">
-                  <p className="text-xs text-gray-800 leading-relaxed">
-                    <strong className="text-blue-900 font-semibold">Response Time:</strong> We typically respond within 24 hours on business days. 
-                    Premium subscribers receive priority support.
+                <div>
+                  <h3 className="text-2xl text-gray-900 font-bold mb-1" style={{ fontFamily: 'Onest' }}>Need Help?</h3>
+                  <p className="text-gray-700 font-medium text-base" style={{ fontFamily: 'Onest' }}>
+                    We're here to assist you with any questions or concerns
                   </p>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+
+              {/* Contact Options */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Email Support */}
+                <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-blue-50 to-blue-100/50 rounded-2xl border-2 border-blue-200 hover:border-blue-400 transition-all duration-200 hover:shadow-md">
+                  <div className="h-14 w-14 bg-blue-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md">
+                    <Mail className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 mb-1.5" style={{ fontFamily: 'Onest' }}>Email Support</p>
+                    <a
+                      href="mailto:support@googleranker.io"
+                      className="text-base text-blue-600 hover:text-blue-700 font-semibold hover:underline break-all"
+                      style={{ fontFamily: 'Onest' }}
+                    >
+                      support@googleranker.io
+                    </a>
+                  </div>
+                </div>
+
+                {/* WhatsApp Support */}
+                <div className="flex items-center gap-4 p-5 bg-gradient-to-r from-green-50 to-green-100/50 rounded-2xl border-2 border-green-200 hover:border-green-400 transition-all duration-200 hover:shadow-md">
+                  <div className="h-14 w-14 bg-green-600 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-md">
+                    <MessageCircle className="h-7 w-7 text-white" />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-bold text-gray-900 mb-1.5" style={{ fontFamily: 'Onest' }}>WhatsApp Support</p>
+                    <a 
+                      href="https://wa.me/917710616166" 
+                      target="_blank" 
+                      rel="noopener noreferrer"
+                      className="text-base text-green-600 hover:text-green-700 font-semibold hover:underline"
+                      style={{ fontFamily: 'Onest' }}
+                    >
+                      +91 7710616166
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
           </div>
         </TabsContent>
 

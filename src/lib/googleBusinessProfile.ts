@@ -134,7 +134,8 @@ class GoogleBusinessProfileService {
     }
 
     // Note: loadStoredTokens is now called with userId parameter
-    this.initializeGoogleAPI();
+    // Don't initialize Google API here - it conflicts with Firebase Auth on login pages
+    // this.initializeGoogleAPI();
   }
 
   // Initialize Google API and Identity Services

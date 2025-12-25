@@ -6,11 +6,11 @@ import { getStorage } from 'firebase/storage';
 // Firebase configuration
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY || "AIzaSyCwe2lgsK5rhHePnsVgNflZf68M35qm3wU",
-  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gbp-467810-a56e2.firebaseapp.com",
-  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gbp-467810-a56e2",
-  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gbp-467810-a56e2.firebasestorage.app",
-  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "1027867101",
-  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:1027867101:web:e5a55b106f9238eb72b634"
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN || "gmb-automation-474209-549ee.firebaseapp.com",
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID || "gmb-automation-474209-549ee",
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET || "gmb-automation-474209-549ee.firebasestorage.app",
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID || "317153753727",
+  appId: import.meta.env.VITE_FIREBASE_APP_ID || "1:317153753727:web:8281f982a8e7a05f885d4a"
 };
 
 // Initialize Firebase

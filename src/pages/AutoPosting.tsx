@@ -197,43 +197,47 @@ const AutoPosting = () => {
         />
       )}
 
-      {/* Selected Location Info */}
+      {/* Selected Location Info - Enhanced */}
       {selectedLocation && (
-        <Card className="shadow-card border border-border">
-          <CardContent className="pt-6">
-            <div className="flex items-start gap-4">
-              <div className="p-2 bg-primary/10 rounded-lg">
-                <Building2 className="h-6 w-6 text-primary" />
-              </div>
-              <div className="flex-1">
-                <h3 className="font-semibold text-lg">{selectedLocation.displayName}</h3>
-                <p className="text-sm text-muted-foreground mt-1">
-                  {typeof selectedLocation.categories?.[0] === 'string'
-                    ? selectedLocation.categories[0]
-                    : selectedLocation.categories?.[0]?.name || 'Business'}
-                </p>
-                {selectedLocation.address && (
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {selectedLocation.address.locality}, {selectedLocation.address.administrativeArea}
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border-l-4 border-purple-500 shadow-sm">
+          <div className="flex items-start gap-4">
+            <div className="p-3 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-sm">
+              <Building2 className="h-7 w-7 text-purple-600" />
+            </div>
+            <div className="flex-1">
+              <div className="flex items-start justify-between gap-4">
+                <div className="flex-1">
+                  <h3 className="font-bold text-xl text-gray-800 mb-1" style={{ fontFamily: 'Onest' }}>
+                    {selectedLocation.displayName}
+                  </h3>
+                  <p className="text-sm text-gray-600 font-medium" style={{ fontFamily: 'Onest' }}>
+                    {typeof selectedLocation.categories?.[0] === 'string'
+                      ? selectedLocation.categories[0]
+                      : selectedLocation.categories?.[0]?.name || 'Business'}
                   </p>
-                )}
-                <div className="flex items-center gap-2 mt-2">
+                  {selectedLocation.address && (
+                    <p className="text-sm text-gray-600 mt-1" style={{ fontFamily: 'Onest' }}>
+                      📍 {selectedLocation.address.locality}, {selectedLocation.address.administrativeArea}
+                    </p>
+                  )}
+                </div>
+                <div className="flex items-center gap-2">
                   {locationConfig?.enabled ? (
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-green-100 text-green-700 rounded">
-                      <CheckCircle className="h-3 w-3" />
+                    <span className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-green-100 text-green-700 rounded-lg font-bold border border-green-200" style={{ fontFamily: 'Onest' }}>
+                      <CheckCircle className="h-4 w-4" />
                       Auto-posting enabled
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-1 text-xs px-2 py-1 bg-gray-100 text-gray-700 rounded">
-                      <XCircle className="h-3 w-3" />
+                    <span className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold border border-gray-200" style={{ fontFamily: 'Onest' }}>
+                      <XCircle className="h-4 w-4" />
                       Auto-posting disabled
                     </span>
                   )}
                 </div>
               </div>
             </div>
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       )}
 
       {/* Stats Cards */}

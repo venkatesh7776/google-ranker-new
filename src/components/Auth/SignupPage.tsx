@@ -24,13 +24,13 @@ const SignupPage = () => {
   const { toast } = useToast();
 
   const handleGoogleSignup = async () => {
-    setLoading(true);
     try {
       await loginWithGoogle();
-      navigate("/dashboard", { replace: true });
+      // signInWithRedirect will redirect the browser to Google
+      // When user returns, getRedirectResult will process auth
+      // and user will be redirected to dashboard automatically
     } catch (error) {
       console.error("Google signup error:", error);
-      setLoading(false);
     }
   };
 

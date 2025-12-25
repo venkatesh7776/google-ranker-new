@@ -24,21 +24,28 @@ dist-ssr
 *.sln
 *.sw?
 
-# Environment files - TEMPORARILY ALLOWING FOR DEPLOYMENT
+# Environment files - Committing for deployment
 # .env
+# .env.*
 # .env.local
 # .env.*.local
-# .env.azure
 # .env.production
+# .env.development
 # server/.env
+# server/.env.*
 # server/.env.local
-# server/.env.azure
 # server/.env.production
+# server/.env.development
 
-# Firebase Service Account Keys - TEMPORARILY ALLOWING FOR DEPLOYMENT
-# **/serviceAccountKey.json
-# **/*firebase*adminsdk*.json
-# **/firebase-service-account.json
-# .env.local.backup
+# Firebase Service Account Keys - IMPORTANT: Never commit these!
+**/serviceAccountKey.json
+**/*firebase*adminsdk*.json
+**/firebase-service-account.json
+
+# Render deployment (environment variables managed in Render dashboard)
+# render.yaml is committed for service configuration
+.render
+
+# Temporary files
 nul
 server/nul

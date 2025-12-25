@@ -27,7 +27,8 @@ import {
   RefreshCw,
   BarChart3,
   Target,
-  Crown
+  Crown,
+  MessageSquare
 } from "lucide-react";
 import {
   LineChart,
@@ -838,114 +839,123 @@ Keep it professional, specific with numbers, and under 200 words total.`;
   const selectedLocation = availableLocations.find(loc => loc.id === selectedLocationId);
 
   return (
-    <div className="p-3 sm:p-4 md:p-6 space-y-4 sm:space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-        <div>
-          <h1 className="text-xl sm:text-2xl lg:text-3xl font-bold">Business Profile Audit</h1>
-          <p className="text-sm sm:text-base text-muted-foreground">
-            Real-time performance insights and optimization recommendations
-          </p>
-        </div>
-        <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4 w-full lg:w-auto">
-          {lastUpdated && (
-            <div className="text-xs sm:text-sm text-muted-foreground">
-              <p>Last updated: {lastUpdated.toLocaleTimeString()}</p>
-              {autoRefresh && (
-                <p className="text-xs opacity-75">
-                  Auto-refresh: {Math.floor(refreshInterval / 60000)} min
-                </p>
-              )}
+    <div className="p-3 sm:p-4 md:p-6 space-y-6">
+      {/* Header with gradient background */}
+      <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
+          <div>
+            <h1 className="text-3xl font-bold bg-gradient-to-r from-purple-600 to-blue-500 bg-clip-text text-transparent" style={{ fontFamily: 'Onest' }}>
+              Business Profile Audit
+            </h1>
+            <p className="text-sm text-gray-600 mt-2" style={{ fontFamily: 'Onest' }}>
+              Real-time performance insights and optimization recommendations
+            </p>
+          </div>
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 w-full lg:w-auto">
+            {lastUpdated && (
+              <div className="text-xs text-gray-600" style={{ fontFamily: 'Onest' }}>
+                <p className="font-medium">Last updated: {lastUpdated.toLocaleTimeString()}</p>
+                {autoRefresh && (
+                  <p className="text-xs opacity-75">
+                    Auto-refresh: {Math.floor(refreshInterval / 60000)} min
+                  </p>
+                )}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onClick={() => setAutoRefresh(!autoRefresh)}
+                variant={autoRefresh ? "default" : "outline"}
+                size="sm"
+                className="rounded-lg"
+                style={{ 
+                  background: autoRefresh ? 'linear-gradient(135deg, #6C21DC 0%, #7B8DEF 100%)' : undefined,
+                  fontFamily: 'Onest'
+                }}
+              >
+                {autoRefresh ? "🔄 Live" : "📍 Manual"}
+              </Button>
+              <Button
+                onClick={() => fetchMetrics(selectedLocationId)}
+                disabled={loadingMetrics}
+                size="sm"
+                className="rounded-lg"
+                style={{ fontFamily: 'Onest' }}
+              >
+                {loadingMetrics ? (
+                  <RefreshCw className="h-4 w-4 animate-spin mr-2" />
+                ) : (
+                  <RefreshCw className="h-4 w-4 mr-2" />
+                )}
+                <span className="hidden sm:inline">Refresh</span>
+              </Button>
             </div>
-          )}
-          <div className="flex flex-wrap items-center gap-2">
-            <Button
-              onClick={() => setAutoRefresh(!autoRefresh)}
-              variant={autoRefresh ? "default" : "outline"}
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              {autoRefresh ? "🔄 Live" : "📍 Manual"}
-            </Button>
-            <Button
-              onClick={() => fetchMetrics(selectedLocationId)}
-              disabled={loadingMetrics}
-              size="sm"
-              className="text-xs sm:text-sm"
-            >
-              {loadingMetrics ? (
-                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 animate-spin mr-1 sm:mr-2" />
-              ) : (
-                <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-              )}
-              <span className="hidden sm:inline">Refresh</span>
-            </Button>
           </div>
         </div>
       </div>
 
 
-      {/* Currently Viewing Banner - Simplified */}
+      {/* Currently Viewing Banner - Enhanced */}
       {selectedLocation && (
-        <Card className="border-2 border-primary/20 bg-gradient-to-r from-blue-50/50 to-purple-50/30">
-          <CardContent className="py-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="relative">
-                  <div className="w-10 h-10 bg-primary/10 rounded-full flex items-center justify-center">
-                    <BarChart3 className="h-5 w-5 text-primary" />
-                  </div>
-                  <div className="absolute -top-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full animate-pulse border-2 border-white"></div>
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border-l-4 border-purple-500 shadow-sm">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="relative">
+                <div className="p-3 bg-gradient-to-br from-purple-100 to-blue-100 rounded-xl shadow-sm">
+                  <BarChart3 className="h-7 w-7 text-purple-600" />
                 </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs text-muted-foreground">Audit Analysis For:</span>
-                    <span className="text-sm font-bold text-primary">{selectedLocation.name}</span>
-                  </div>
-                  <p className="text-xs text-muted-foreground mt-0.5">
-                    {selectedLocation.accountName} • {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'No data'}
-                  </p>
+                <div className="absolute -top-1 -right-1 w-4 h-4 bg-green-500 rounded-full animate-pulse border-2 border-white"></div>
+              </div>
+              <div>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-xs text-gray-600 font-medium" style={{ fontFamily: 'Onest' }}>Audit insights for:</span>
+                  <span className="text-sm font-bold text-purple-700" style={{ fontFamily: 'Onest' }}>{selectedLocation.name}</span>
+                </div>
+                <p className="text-xs text-gray-600" style={{ fontFamily: 'Onest' }}>
+                  {selectedLocation.accountName} • {lastUpdated ? `Updated ${lastUpdated.toLocaleTimeString()}` : 'No data'}
+                </p>
+              </div>
+            </div>
+            {auditScore && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-2">
+                  <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
+                  <span className="text-xs font-bold text-green-700" style={{ fontFamily: 'Onest' }}>Live</span>
+                </div>
+                <div className="flex items-center gap-2 bg-white px-4 py-2 rounded-lg shadow-sm">
+                  <Target className="h-5 w-5 text-purple-600" />
+                  <span className="text-2xl font-bold text-purple-600" style={{ fontFamily: 'Onest' }}>{auditScore.overall}%</span>
                 </div>
               </div>
-              {auditScore && (
-                <div className="flex items-center gap-3">
-                  <div className="flex items-center gap-1.5">
-                    <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                    <span className="text-xs font-medium text-green-700">Live</span>
-                  </div>
-                  <div className="flex items-center gap-1.5">
-                    <Target className="h-4 w-4 text-primary" />
-                    <span className="text-lg font-bold text-primary">{auditScore.overall}%</span>
-                  </div>
-                </div>
-              )}
-            </div>
-          </CardContent>
-        </Card>
+            )}
+          </div>
+        </div>
       )}
 
-      {/* Business Profile Selector */}
-      <Card className="border-4 border-primary shadow-lg">
-        <CardHeader className="bg-gradient-to-r from-primary/5 to-purple-50/50">
-          <CardTitle className="text-xl flex items-center gap-2">
-            <MapPin className="h-6 w-6 text-primary" />
-            Select Business Profile to Audit
-          </CardTitle>
+      {/* Business Profile Selector - Enhanced */}
+      <div className="bg-white rounded-xl border border-gray-200 shadow-sm">
+        <div className="bg-gradient-to-r from-purple-50 to-blue-50 p-6 border-b border-gray-200">
+          <div className="flex items-center gap-3 mb-2">
+            <MapPin className="h-6 w-6 text-purple-600" />
+            <h2 className="text-xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>
+              Select Business Profile to Audit
+            </h2>
+          </div>
           <div className="flex items-center justify-between">
-            <p className="text-base text-muted-foreground">
+            <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
               Choose which business profile you want to analyze
             </p>
-            <div className="text-sm text-muted-foreground">
-              {availableLocations.length} of {allLocations.length} profiles available
+            <div className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
+              <span className="font-bold">{availableLocations.length}</span> of <span className="font-bold">{allLocations.length}</span> profiles available
               {subscription?.profileCount && (
-                <span className="ml-2 text-primary font-medium">
+                <span className="ml-2 text-purple-600 font-bold">
                   (Plan: {subscription.profileCount} profiles)
                 </span>
               )}
             </div>
           </div>
-        </CardHeader>
-        <CardContent className="space-y-4 pt-6">
+        </div>
+        <div className="p-6 space-y-4">
           <div className="w-full">
             <Select
               value={selectedLocationId}
@@ -1070,8 +1080,8 @@ Keep it professional, specific with numbers, and under 200 words total.`;
               </div>
             )}
           </div>
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* No Profile Selected Message */}
       {!selectedLocationId && (
@@ -1141,173 +1151,184 @@ Keep it professional, specific with numbers, and under 200 words total.`;
 
       {auditScore && (
         <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="performance">Performance</TabsTrigger>
-            <TabsTrigger value="insights">Insights</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-3 bg-white p-1 rounded-xl border border-gray-200" style={{ fontFamily: 'Onest' }}>
+            <TabsTrigger 
+              value="overview" 
+              className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-500 data-[state=active]:text-white font-bold"
+            >
+              Overview
+            </TabsTrigger>
+            <TabsTrigger 
+              value="performance"
+              className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-500 data-[state=active]:text-white font-bold"
+            >
+              Performance
+            </TabsTrigger>
+            <TabsTrigger 
+              value="insights"
+              className="rounded-lg data-[state=active]:bg-gradient-to-r data-[state=active]:from-purple-600 data-[state=active]:to-blue-500 data-[state=active]:text-white font-bold"
+            >
+              Insights
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="space-y-6">
 
-            {/* Google Search Rank Card */}
-            <Card className="bg-gradient-to-br from-blue-50 to-white border-2 border-blue-100">
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="w-12 h-12 bg-white rounded-full flex items-center justify-center shadow-sm">
+            {/* Google Search Rank Card - Redesigned */}
+            <div className="bg-gradient-to-br from-green-50 via-blue-50 to-purple-50 rounded-xl p-6 border border-gray-200 shadow-lg">
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl shadow-md">
                       <svg className="w-7 h-7" viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg">
                         <path fill="#FFC107" d="M43.611,20.083H42V20H24v8h11.303c-1.649,4.657-6.08,8-11.303,8c-6.627,0-12-5.373-12-12c0-6.627,5.373-12,12-12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C12.955,4,4,12.955,4,24c0,11.045,8.955,20,20,20c11.045,0,20-8.955,20-20C44,22.659,43.862,21.35,43.611,20.083z"/>
                         <path fill="#FF3D00" d="M6.306,14.691l6.571,4.819C14.655,15.108,18.961,12,24,12c3.059,0,5.842,1.154,7.961,3.039l5.657-5.657C34.046,6.053,29.268,4,24,4C16.318,4,9.656,8.337,6.306,14.691z"/>
                         <path fill="#4CAF50" d="M24,44c5.166,0,9.86-1.977,13.409-5.192l-6.19-5.238C29.211,35.091,26.715,36,24,36c-5.202,0-9.619-3.317-11.283-7.946l-6.522,5.025C9.505,39.556,16.227,44,24,44z"/>
                         <path fill="#1976D2" d="M43.611,20.083H42V20H24v8h11.303c-0.792,2.237-2.231,4.166-4.087,5.571c0.001-0.001,0.002-0.001,0.003-0.002l6.19,5.238C36.971,39.205,44,34,44,24C44,22.659,43.862,21.35,43.611,20.083z"/>
                       </svg>
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-semibold text-gray-900 text-lg mb-1">Google Search Rank</h3>
-                      <p className="text-sm text-gray-600">Avg. position of your business on Google Search</p>
-                    </div>
                   </div>
-                  <div className="text-right">
-                    <div className={`text-5xl font-bold ${
+                  <div className="flex-1">
+                    <h3 className="font-bold text-gray-900 text-xl mb-1" style={{ fontFamily: 'Onest' }}>Google Search Rank</h3>
+                    <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>Avg. position of your business on Google Search</p>
+                  </div>
+                </div>
+                <div className="text-right">
+                  <div className="bg-white rounded-xl px-6 py-4 shadow-md">
+                    <div className={`text-6xl font-bold ${
                       auditScore.searchRank <= 5 ? 'text-green-500' :
                       auditScore.searchRank <= 10 ? 'text-yellow-500' :
                       'text-red-500'
-                    }`}>
-                      {auditScore.searchRank}
+                    }`} style={{ fontFamily: 'Onest' }}>
+                      #{auditScore.searchRank}
                     </div>
-                    <p className={`text-sm font-semibold mt-1 ${
+                    <p className={`text-sm font-bold mt-2 ${
                       auditScore.searchRank <= 5 ? 'text-green-500' :
                       auditScore.searchRank <= 10 ? 'text-yellow-500' :
                       'text-red-500'
-                    }`}>
-                      {auditScore.searchRank <= 5 ? 'Good' :
-                       auditScore.searchRank <= 10 ? 'Average' :
-                       'Poor'}
+                    }`} style={{ fontFamily: 'Onest' }}>
+                      {auditScore.searchRank <= 5 ? '🎯 Excellent' :
+                       auditScore.searchRank <= 10 ? '⚠️ Average' :
+                       '❌ Needs Work'}
                     </p>
                   </div>
                 </div>
+              </div>
 
-                <div className="mt-6 flex items-center justify-between text-sm">
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-                    <span className="text-gray-700">Good</span>
-                    <span className="text-gray-500">Less than 5</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-                    <span className="text-gray-700">Average</span>
-                    <span className="text-gray-500">Between 6-10</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-                    <span className="text-gray-700">Poor</span>
-                    <span className="text-gray-500">Beyond 10</span>
-                  </div>
+              <div className="mt-6 grid grid-cols-3 gap-4">
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <div className="w-3 h-3 bg-green-500 rounded-full mx-auto mb-2"></div>
+                  <span className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Onest' }}>Excellent</span>
+                  <span className="text-xs text-gray-500" style={{ fontFamily: 'Onest' }}>Top 5</span>
                 </div>
-              </CardContent>
-            </Card>
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <div className="w-3 h-3 bg-yellow-500 rounded-full mx-auto mb-2"></div>
+                  <span className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Onest' }}>Average</span>
+                  <span className="text-xs text-gray-500" style={{ fontFamily: 'Onest' }}>6-10</span>
+                </div>
+                <div className="bg-white rounded-lg p-3 text-center">
+                  <div className="w-3 h-3 bg-red-500 rounded-full mx-auto mb-2"></div>
+                  <span className="text-xs font-bold text-gray-700 block" style={{ fontFamily: 'Onest' }}>Poor</span>
+                  <span className="text-xs text-gray-500" style={{ fontFamily: 'Onest' }}>10+</span>
+                </div>
+              </div>
+            </div>
 
-            {/* Metrics Grid - 2 columns */}
+            {/* Metrics Grid - 2 columns with gradient cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               {/* Profile Completion */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Profile Completion</h3>
-                    <div className="flex items-end gap-3">
-                      <div className="text-5xl font-bold text-[#6C21DC]">{auditScore.profileCompletion}%</div>
-                      <span className={`text-lg font-semibold mb-2 ${
-                        auditScore.profileCompletion >= 90 ? 'text-green-600' :
-                        auditScore.profileCompletion >= 70 ? 'text-yellow-600' :
-                        'text-red-500'
-                      }`}>
-                        {auditScore.profileCompletion >= 90 ? 'Excellent' :
-                         auditScore.profileCompletion >= 70 ? 'Average' :
-                         'Poor'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {auditScore.profileCompletionDetails?.missingFields.length || 0} fields are missing
-                    </p>
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-6 border border-purple-100 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <CheckCircle className="h-6 w-6 text-purple-600" />
                   </div>
-                </CardContent>
-              </Card>
+                  <Badge className={`${
+                    auditScore.profileCompletion >= 90 ? 'bg-green-100 text-green-700' :
+                    auditScore.profileCompletion >= 70 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`} style={{ fontFamily: 'Onest' }}>
+                    {auditScore.profileCompletion >= 90 ? '✓ Excellent' :
+                     auditScore.profileCompletion >= 70 ? '⚠ Average' :
+                     '✗ Poor'}
+                  </Badge>
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2" style={{ fontFamily: 'Onest' }}>Profile Completion</h3>
+                <div className="text-5xl font-bold text-purple-600 mb-3" style={{ fontFamily: 'Onest' }}>{auditScore.profileCompletion}%</div>
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
+                  {auditScore.profileCompletionDetails?.missingFields.length || 0} fields missing
+                </p>
+              </div>
 
               {/* SEO Score */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">SEO Score</h3>
-                    <div className="flex items-end gap-3">
-                      <div className="text-5xl font-bold text-[#6C21DC]">{auditScore.seoScore}%</div>
-                      <span className={`text-lg font-semibold mb-2 ${
-                        auditScore.seoScore >= 80 ? 'text-green-600' :
-                        auditScore.seoScore >= 60 ? 'text-yellow-600' :
-                        'text-red-500'
-                      }`}>
-                        {auditScore.seoScore >= 80 ? 'Good' :
-                         auditScore.seoScore >= 60 ? 'Average' :
-                         'Poor'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      {!auditScore.seoDetails?.hasKeywords ? 'Keywords missing' :
-                       !auditScore.seoDetails?.hasDescription ? 'Description missing' :
-                       !auditScore.seoDetails?.hasCategories ? 'Categories missing' :
-                       'All SEO elements present'}
-                    </p>
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <Search className="h-6 w-6 text-green-600" />
                   </div>
-                </CardContent>
-              </Card>
+                  <Badge className={`${
+                    auditScore.seoScore >= 80 ? 'bg-green-100 text-green-700' :
+                    auditScore.seoScore >= 60 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`} style={{ fontFamily: 'Onest' }}>
+                    {auditScore.seoScore >= 80 ? '✓ Good' :
+                     auditScore.seoScore >= 60 ? '⚠ Average' :
+                     '✗ Poor'}
+                  </Badge>
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2" style={{ fontFamily: 'Onest' }}>SEO Score</h3>
+                <div className="text-5xl font-bold text-green-600 mb-3" style={{ fontFamily: 'Onest' }}>{auditScore.seoScore}%</div>
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
+                  {!auditScore.seoDetails?.hasKeywords ? 'Keywords missing' :
+                   !auditScore.seoDetails?.hasDescription ? 'Description missing' :
+                   !auditScore.seoDetails?.hasCategories ? 'Categories missing' :
+                   'All SEO elements present'}
+                </p>
+              </div>
 
               {/* Review Score */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Review Score</h3>
-                    <div className="flex items-end gap-3">
-                      <div className="text-5xl font-bold text-[#6C21DC]">
-                        <span>{auditScore.reviewDetails?.reviewsPerWeek.toFixed(1) || '0'}</span>
-                        <span className="text-2xl text-gray-500">/week</span>
-                      </div>
-                      <span className={`text-lg font-semibold mb-2 ${
-                        auditScore.reviewScore >= 80 ? 'text-green-600' :
-                        auditScore.reviewScore >= 40 ? 'text-yellow-600' :
-                        'text-red-500'
-                      }`}>
-                        {auditScore.reviewScore >= 80 ? 'Excellent' :
-                         auditScore.reviewScore >= 40 ? 'Average' :
-                         'Poor'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">Ideal - 2 per week</p>
+              <div className="bg-gradient-to-br from-yellow-50 to-orange-50 rounded-xl p-6 border border-yellow-100 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <Star className="h-6 w-6 text-yellow-600" />
                   </div>
-                </CardContent>
-              </Card>
+                  <Badge className={`${
+                    auditScore.reviewScore >= 80 ? 'bg-green-100 text-green-700' :
+                    auditScore.reviewScore >= 40 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`} style={{ fontFamily: 'Onest' }}>
+                    {auditScore.reviewScore >= 80 ? '✓ Excellent' :
+                     auditScore.reviewScore >= 40 ? '⚠ Average' :
+                     '✗ Poor'}
+                  </Badge>
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2" style={{ fontFamily: 'Onest' }}>Review Score</h3>
+                <div className="text-5xl font-bold text-yellow-600 mb-3" style={{ fontFamily: 'Onest' }}>
+                  <span>{auditScore.reviewDetails?.reviewsPerWeek.toFixed(1) || '0'}</span>
+                  <span className="text-2xl text-gray-500">/week</span>
+                </div>
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>Ideal: 2+ per week</p>
+              </div>
 
               {/* Review Reply Score */}
-              <Card>
-                <CardContent className="p-6">
-                  <div className="space-y-4">
-                    <h3 className="font-semibold text-gray-900">Review Reply Score</h3>
-                    <div className="flex items-end gap-3">
-                      <div className="text-5xl font-bold text-[#6C21DC]">{auditScore.reviewReplyScore}%</div>
-                      <span className={`text-lg font-semibold mb-2 ${
-                        auditScore.reviewReplyScore >= 80 ? 'text-green-600' :
-                        auditScore.reviewReplyScore >= 50 ? 'text-yellow-600' :
-                        'text-red-500'
-                      }`}>
-                        {auditScore.reviewReplyScore >= 80 ? 'Excellent' :
-                         auditScore.reviewReplyScore >= 50 ? 'Average' :
-                         'Poor'}
-                      </span>
-                    </div>
-                    <p className="text-sm text-gray-600">
-                      Ideal - above 80% ({auditScore.reviewDetails?.repliedReviews || 0}/{auditScore.reviewDetails?.totalReviews || 0} replied)
-                    </p>
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 hover:shadow-lg transition-all">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="p-3 bg-white rounded-lg shadow-sm">
+                    <MessageSquare className="h-6 w-6 text-blue-600" />
                   </div>
-                </CardContent>
-              </Card>
+                  <Badge className={`${
+                    auditScore.reviewReplyScore >= 80 ? 'bg-green-100 text-green-700' :
+                    auditScore.reviewReplyScore >= 50 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-red-100 text-red-700'
+                  }`} style={{ fontFamily: 'Onest' }}>
+                    {auditScore.reviewReplyScore >= 80 ? '✓ Excellent' :
+                     auditScore.reviewReplyScore >= 50 ? '⚠ Average' :
+                     '✗ Poor'}
+                  </Badge>
+                </div>
+                <h3 className="font-bold text-gray-900 text-lg mb-2" style={{ fontFamily: 'Onest' }}>Review Reply Score</h3>
+                <div className="text-5xl font-bold text-blue-600 mb-3" style={{ fontFamily: 'Onest' }}>{auditScore.reviewReplyScore}%</div>
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
+                  {auditScore.reviewDetails?.repliedReviews || 0}/{auditScore.reviewDetails?.totalReviews || 0} replied • Ideal: 80%+
+                </p>
+              </div>
             </div>
 
             {/* Quick Metrics */}
@@ -1474,8 +1495,8 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                               type="monotone"
                               dataKey="views"
                               stackId="1"
-                              stroke="#3b82f6"
-                              fill="#3b82f6"
+                              stroke="#6C21DC"
+                              fill="#6C21DC"
                               fillOpacity={0.6}
                               name="Views"
                             />
@@ -1483,8 +1504,8 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                               type="monotone"
                               dataKey="impressions"
                               stackId="2"
-                              stroke="#10b981"
-                              fill="#10b981"
+                              stroke="#3B82F6"
+                              fill="#3B82F6"
                               fillOpacity={0.6}
                               name="Impressions"
                             />
@@ -1492,8 +1513,8 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                               type="monotone"
                               dataKey="calls"
                               stackId="3"
-                              stroke="#f59e0b"
-                              fill="#f59e0b"
+                              stroke="#10B981"
+                              fill="#10B981"
                               fillOpacity={0.6}
                               name="Calls"
                             />
@@ -1501,8 +1522,8 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                               type="monotone"
                               dataKey="websiteClicks"
                               stackId="4"
-                              stroke="#8b5cf6"
-                              fill="#8b5cf6"
+                              stroke="#8B5CF6"
+                              fill="#8B5CF6"
                               fillOpacity={0.6}
                               name="Website Clicks"
                             />
@@ -1510,8 +1531,8 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                               type="monotone"
                               dataKey="directionRequests"
                               stackId="5"
-                              stroke="#ef4444"
-                              fill="#ef4444"
+                              stroke="#F59E0B"
+                              fill="#F59E0B"
                               fillOpacity={0.6}
                               name="Direction Requests"
                             />
@@ -1552,7 +1573,7 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                             <Line
                               type="monotone"
                               dataKey="views"
-                              stroke="#3b82f6"
+                              stroke="#6C21DC"
                               strokeWidth={2}
                               dot={{ r: 4 }}
                               name="Views"
@@ -1560,7 +1581,7 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                             <Line
                               type="monotone"
                               dataKey="impressions"
-                              stroke="#10b981"
+                              stroke="#3B82F6"
                               strokeWidth={2}
                               dot={{ r: 4 }}
                               name="Impressions"
@@ -1568,7 +1589,7 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                             <Line
                               type="monotone"
                               dataKey="calls"
-                              stroke="#f59e0b"
+                              stroke="#10B981"
                               strokeWidth={2}
                               dot={{ r: 4 }}
                               name="Calls"
@@ -1576,7 +1597,7 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                             <Line
                               type="monotone"
                               dataKey="websiteClicks"
-                              stroke="#8b5cf6"
+                              stroke="#8B5CF6"
                               strokeWidth={2}
                               dot={{ r: 4 }}
                               name="Website Clicks"
@@ -1584,7 +1605,7 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                             <Line
                               type="monotone"
                               dataKey="directionRequests"
-                              stroke="#ef4444"
+                              stroke="#F59E0B"
                               strokeWidth={2}
                               dot={{ r: 4 }}
                               name="Direction Requests"
@@ -1597,34 +1618,34 @@ Keep it professional, specific with numbers, and under 200 words total.`;
                     {/* Metrics Summary */}
                     <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mt-6">
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-blue-600">
+                        <p className="text-2xl font-bold" style={{ color: '#6C21DC', fontFamily: 'Onest' }}>
                           {(metrics.reduce((sum, m) => sum + m.views, 0) / metrics.length).toFixed(0)}
                         </p>
-                        <p className="text-sm text-muted-foreground">Avg Daily Views</p>
+                        <p className="text-sm text-muted-foreground" style={{ fontFamily: 'Onest' }}>Avg Daily Views</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-green-600">
+                        <p className="text-2xl font-bold" style={{ color: '#3B82F6', fontFamily: 'Onest' }}>
                           {(metrics.reduce((sum, m) => sum + m.impressions, 0) / metrics.length).toFixed(0)}
                         </p>
-                        <p className="text-sm text-muted-foreground">Avg Daily Impressions</p>
+                        <p className="text-sm text-muted-foreground" style={{ fontFamily: 'Onest' }}>Avg Daily Impressions</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-orange-600">
+                        <p className="text-2xl font-bold" style={{ color: '#10B981', fontFamily: 'Onest' }}>
                           {(metrics.reduce((sum, m) => sum + m.calls, 0) / metrics.length).toFixed(1)}
                         </p>
-                        <p className="text-sm text-muted-foreground">Avg Daily Calls</p>
+                        <p className="text-sm text-muted-foreground" style={{ fontFamily: 'Onest' }}>Avg Daily Calls</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-purple-600">
+                        <p className="text-2xl font-bold" style={{ color: '#8B5CF6', fontFamily: 'Onest' }}>
                           {(metrics.reduce((sum, m) => sum + m.websiteClicks, 0) / metrics.length).toFixed(1)}
                         </p>
-                        <p className="text-sm text-muted-foreground">Avg Daily Clicks</p>
+                        <p className="text-sm text-muted-foreground" style={{ fontFamily: 'Onest' }}>Avg Daily Clicks</p>
                       </div>
                       <div className="text-center">
-                        <p className="text-2xl font-bold text-red-600">
+                        <p className="text-2xl font-bold" style={{ color: '#F59E0B', fontFamily: 'Onest' }}>
                           {(metrics.reduce((sum, m) => sum + m.directionRequests, 0) / metrics.length).toFixed(1)}
                         </p>
-                        <p className="text-sm text-muted-foreground">Avg Daily Directions</p>
+                        <p className="text-sm text-muted-foreground" style={{ fontFamily: 'Onest' }}>Avg Daily Directions</p>
                       </div>
                     </div>
                   </div>
@@ -1639,288 +1660,303 @@ Keep it professional, specific with numbers, and under 200 words total.`;
           </TabsContent>
 
 
-          <TabsContent value="insights" className="space-y-4 sm:space-y-6">
-            {/* Tab Header with Location Context */}
-            <div className="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-4 gap-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <Target className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
-                <div>
-                  <h2 className="text-lg sm:text-xl font-semibold">Insights</h2>
-                  <p className="text-xs sm:text-sm text-muted-foreground">
-                    Business insights for <span className="font-medium text-foreground">{selectedLocation?.name}</span>
-                  </p>
+          <TabsContent value="insights" className="space-y-6">
+            {/* Tab Header - Redesigned */}
+            <div className="bg-gradient-to-r from-purple-50 to-blue-50 rounded-xl p-6 border border-gray-200">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                <div className="flex items-center gap-4">
+                  <div className="p-3 bg-white rounded-xl shadow-sm">
+                    <Target className="h-7 w-7 text-purple-600" />
+                  </div>
+                  <div>
+                    <h2 className="text-2xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>Insights</h2>
+                    <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
+                      Business insights for <span className="font-bold text-purple-700">{selectedLocation?.name}</span>
+                    </p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3">
-                <Button
-                  onClick={generateAIInsights}
-                  disabled={loadingAiInsights || !metrics || metrics.length === 0}
-                  size="sm"
-                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-xs sm:text-sm"
-                >
-                  {loadingAiInsights ? (
-                    <>
-                      <RefreshCw className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2 animate-spin" />
-                      <span className="hidden sm:inline">Analyzing...</span>
-                      <span className="sm:hidden">...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-1 sm:mr-2" />
-                      <span className="hidden sm:inline">Generate AI Insights</span>
-                      <span className="sm:hidden">Insights</span>
-                    </>
-                  )}
-                </Button>
-                <Badge variant="secondary" className="px-2 sm:px-3 py-1 text-xs">
-                  {selectedLocation?.accountName}
-                </Badge>
-              </div>
-            </div>
-
-            {/* AI-Generated Insights Card */}
-            {aiInsights && (
-              <Card className="border-2 border-blue-200 bg-white shadow-lg">
-                <CardHeader className="bg-gradient-to-r from-blue-50 to-purple-50 border-b">
-                  <CardTitle className="flex flex-wrap items-center gap-2 text-gray-900 text-base sm:text-lg">
-                    <Target className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600" />
-                    <span className="text-sm sm:text-base">AI-Powered Insights</span>
-                    <Badge className="bg-blue-600 text-white text-xs">GPT-4</Badge>
-                  </CardTitle>
-                  <p className="text-xs sm:text-sm text-gray-600">
-                    Expert recommendations for {selectedLocation?.name}
-                  </p>
-                </CardHeader>
-                <CardContent className="pt-4 sm:pt-6">
-                  <div className="space-y-4 sm:space-y-6">
-                    {aiInsights.split('\n\n').map((section, index) => {
-                      const lines = section.split('\n');
-                      const title = lines[0]?.trim();
-                      const content = lines.slice(1);
-
-                      if (!title) return null;
-
-                      return (
-                        <div key={index} className="space-y-2">
-                          <h3 className="font-semibold text-xs sm:text-sm text-blue-900 uppercase tracking-wide">
-                            {title}
-                          </h3>
-                          <div className="text-xs sm:text-sm text-gray-700 space-y-1 pl-1">
-                            {content.map((line, idx) => (
-                              <div key={idx} className={line.trim().startsWith('•') || line.trim().match(/^\d\./) ? 'ml-2' : ''}>
-                                {line}
-                              </div>
-                            ))}
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Placeholder when no AI insights */}
-            {!aiInsights && !loadingAiInsights && (
-              <Card className="border-2 border-dashed border-blue-200">
-                <CardContent className="py-8 sm:py-12 text-center px-4">
-                  <div className="mx-auto mb-3 sm:mb-4 h-12 w-12 sm:h-16 sm:w-16 rounded-full bg-blue-100 flex items-center justify-center">
-                    <Target className="h-6 w-6 sm:h-8 sm:w-8 text-blue-600" />
-                  </div>
-                  <h3 className="text-base sm:text-lg font-semibold text-gray-900 mb-2">Get AI-Powered Insights</h3>
-                  <p className="text-xs sm:text-sm text-muted-foreground mb-4 max-w-md mx-auto">
-                    Get a concise analysis with key strengths, areas to improve, and top 3 actions to boost your profile performance.
-                  </p>
+                <div className="flex flex-wrap items-center gap-3">
                   <Button
                     onClick={generateAIInsights}
-                    disabled={!metrics || metrics.length === 0}
-                    className="bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 w-full sm:w-auto"
-                    size="sm"
+                    disabled={loadingAiInsights || !metrics || metrics.length === 0}
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg shadow-md"
+                    style={{ fontFamily: 'Onest' }}
                   >
-                    <Target className="h-3 w-3 sm:h-4 sm:w-4 mr-2" />
-                    <span className="text-sm sm:text-base">Generate Insights</span>
-                  </Button>
-                </CardContent>
-              </Card>
-            )}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-              {/* Real-time Status Card */}
-              <Card>
-                <CardHeader>
-                  <CardTitle className="flex items-center gap-2">
-                    {autoRefresh ? (
+                    {loadingAiInsights ? (
                       <>
-                        <div className="w-3 h-3 bg-green-500 rounded-full animate-pulse"></div>
-                        Real-time Monitoring
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Analyzing...
                       </>
                     ) : (
                       <>
-                        <div className="w-3 h-3 bg-gray-400 rounded-full"></div>
-                        Manual Updates
+                        <Target className="h-4 w-4 mr-2" />
+                        Generate AI Insights
                       </>
                     )}
-                  </CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    {autoRefresh ? 'Data automatically refreshes every 5 minutes' : 'Click refresh to update data manually'}
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Data Source</span>
-                    <Badge variant="outline">Google Business Profile API</Badge>
+                  </Button>
+                  <Badge className="bg-white text-purple-700 border border-purple-200 px-3 py-1" style={{ fontFamily: 'Onest' }}>
+                    {selectedLocation?.accountName}
+                  </Badge>
+                </div>
+              </div>
+            </div>
+
+            {/* AI-Generated Insights Card - Redesigned */}
+            {aiInsights && (
+              <div className="bg-gradient-to-br from-purple-50 via-blue-50 to-indigo-50 rounded-xl p-6 border-l-4 border-purple-600 shadow-lg">
+                <div className="flex items-center gap-3 mb-6">
+                  <div className="p-3 bg-white rounded-xl shadow-md">
+                    <Target className="h-6 w-6 text-purple-600" />
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Update Frequency</span>
-                    <span className="text-sm font-medium">
+                  <div className="flex-1">
+                    <div className="flex items-center gap-2 mb-1">
+                      <h3 className="text-xl font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>AI-Powered Insights</h3>
+                      <Badge className="bg-gradient-to-r from-purple-600 to-blue-600 text-white" style={{ fontFamily: 'Onest' }}>GPT-4</Badge>
+                    </div>
+                    <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
+                      Expert recommendations for {selectedLocation?.name}
+                    </p>
+                  </div>
+                </div>
+                <div className="space-y-4">
+                  {aiInsights.split('\n\n').map((section, index) => {
+                    const lines = section.split('\n');
+                    const title = lines[0]?.trim();
+                    const content = lines.slice(1);
+
+                    if (!title) return null;
+
+                    return (
+                      <div key={index} className="bg-white rounded-lg p-4 shadow-sm">
+                        <h4 className="font-bold text-sm text-purple-700 uppercase tracking-wide mb-2" style={{ fontFamily: 'Onest' }}>
+                          {title}
+                        </h4>
+                        <div className="text-sm text-gray-700 space-y-1" style={{ fontFamily: 'Onest' }}>
+                          {content.map((line, idx) => (
+                            <div key={idx} className={line.trim().startsWith('•') || line.trim().match(/^\d\./) ? 'ml-3' : ''}>
+                              {line}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
+
+            {/* Placeholder when no AI insights - Redesigned */}
+            {!aiInsights && !loadingAiInsights && (
+              <div className="bg-gradient-to-br from-purple-50 to-blue-50 rounded-xl p-12 text-center border-2 border-dashed border-purple-300">
+                <div className="mx-auto mb-4 h-20 w-20 rounded-full bg-gradient-to-br from-purple-100 to-blue-100 flex items-center justify-center shadow-lg">
+                  <Target className="h-10 w-10 text-purple-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'Onest' }}>Get AI-Powered Insights</h3>
+                <p className="text-sm text-gray-600 mb-6 max-w-md mx-auto" style={{ fontFamily: 'Onest' }}>
+                  Get a concise analysis with key strengths, areas to improve, and top 3 actions to boost your profile performance.
+                </p>
+                <Button
+                  onClick={generateAIInsights}
+                  disabled={!metrics || metrics.length === 0}
+                  className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 rounded-lg shadow-lg px-8 py-6 text-base"
+                  style={{ fontFamily: 'Onest' }}
+                >
+                  <Target className="h-5 w-5 mr-2" />
+                  Generate Insights
+                </Button>
+              </div>
+            )}
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {/* Real-time Status Card - Redesigned */}
+              <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-6 border border-green-100 shadow-sm">
+                <div className="flex items-center gap-3 mb-4">
+                  {autoRefresh ? (
+                    <>
+                      <div className="w-4 h-4 bg-green-500 rounded-full animate-pulse"></div>
+                      <h3 className="text-lg font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>Real-time Monitoring</h3>
+                    </>
+                  ) : (
+                    <>
+                      <div className="w-4 h-4 bg-gray-400 rounded-full"></div>
+                      <h3 className="text-lg font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>Manual Updates</h3>
+                    </>
+                  )}
+                </div>
+                <p className="text-sm text-gray-600 mb-4" style={{ fontFamily: 'Onest' }}>
+                  {autoRefresh ? 'Data automatically refreshes every 5 minutes' : 'Click refresh to update data manually'}
+                </p>
+                <div className="space-y-3">
+                  <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                    <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Data Source</span>
+                    <Badge className="bg-green-100 text-green-700" style={{ fontFamily: 'Onest' }}>Google Business Profile API</Badge>
+                  </div>
+                  <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                    <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Update Frequency</span>
+                    <span className="text-sm font-bold text-green-600" style={{ fontFamily: 'Onest' }}>
                       {autoRefresh ? `${Math.floor(refreshInterval / 60000)} minutes` : 'Manual'}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Last Refresh</span>
-                    <span className="text-sm font-medium">
+                  <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                    <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Last Refresh</span>
+                    <span className="text-sm font-bold text-green-600" style={{ fontFamily: 'Onest' }}>
                       {lastUpdated ? lastUpdated.toLocaleTimeString() : 'Never'}
                     </span>
                   </div>
-                  <div className="flex justify-between items-center">
-                    <span className="text-sm">Data Points</span>
-                    <span className="text-sm font-medium">{metrics.length} days</span>
+                  <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                    <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Data Points</span>
+                    <span className="text-sm font-bold text-green-600" style={{ fontFamily: 'Onest' }}>{metrics.length} days</span>
                   </div>
-                </CardContent>
-              </Card>
+                </div>
+              </div>
 
-              {/* Performance Summary */}
-              <Card>
-                <CardHeader>
-                  <CardTitle>Performance Summary</CardTitle>
-                  <p className="text-sm text-muted-foreground">
-                    Key metrics overview (last 7 days)
-                  </p>
-                </CardHeader>
-                <CardContent className="space-y-3">
+              {/* Performance Summary - Redesigned */}
+              <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-6 border border-blue-100 shadow-sm">
+                <h3 className="text-lg font-bold text-gray-800 mb-2" style={{ fontFamily: 'Onest' }}>Performance Summary</h3>
+                <p className="text-sm text-gray-600 mb-4" style={{ fontFamily: 'Onest' }}>
+                  Key metrics overview (last 7 days)
+                </p>
+                <div className="space-y-3">
                   {metrics.length > 0 && (
                     <>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Total Views</span>
-                        <span className="text-lg font-bold text-blue-600">
+                      <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                        <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Total Views</span>
+                        <span className="text-2xl font-bold text-purple-600" style={{ fontFamily: 'Onest' }}>
                           {metrics.slice(-7).reduce((sum, m) => sum + m.views, 0)}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Impressions</span>
-                        <span className="text-lg font-bold text-green-600">
+                      <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                        <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Impressions</span>
+                        <span className="text-2xl font-bold text-blue-600" style={{ fontFamily: 'Onest' }}>
                           {metrics.slice(-7).reduce((sum, m) => sum + m.impressions, 0)}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">Customer Actions</span>
-                        <span className="text-lg font-bold text-purple-600">
+                      <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                        <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Customer Actions</span>
+                        <span className="text-2xl font-bold text-indigo-600" style={{ fontFamily: 'Onest' }}>
                           {metrics.slice(-7).reduce((sum, m) => sum + m.calls + m.websiteClicks + m.directionRequests, 0)}
                         </span>
                       </div>
-                      <div className="flex justify-between items-center">
-                        <span className="text-sm">View Rate</span>
-                        <span className="text-lg font-bold text-orange-600">
+                      <div className="flex justify-between items-center bg-white rounded-lg p-3">
+                        <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>View Rate</span>
+                        <span className="text-2xl font-bold text-amber-600" style={{ fontFamily: 'Onest' }}>
                           {((metrics.slice(-7).reduce((sum, m) => sum + m.views, 0) / metrics.slice(-7).reduce((sum, m) => sum + m.impressions, 0)) * 100).toFixed(1)}%
                         </span>
                       </div>
                     </>
                   )}
-                </CardContent>
-              </Card>
+                </div>
+              </div>
             </div>
 
-            {/* Detailed Insights */}
-            <Card>
-              <CardHeader>
-                <CardTitle>Business Insights</CardTitle>
-                <p className="text-sm text-muted-foreground">
+            {/* Business Insights - Completely Redesigned */}
+            <div className="bg-white rounded-xl p-6 border border-gray-200 shadow-sm">
+              <div className="mb-6">
+                <h3 className="text-2xl font-bold text-gray-800 mb-2" style={{ fontFamily: 'Onest' }}>Business Insights</h3>
+                <p className="text-sm text-gray-600" style={{ fontFamily: 'Onest' }}>
                   AI-powered insights about your Google Business Profile performance
                 </p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div className="border-l-4 border-blue-500 pl-4">
-                    <h4 className="font-medium">Visibility Trend</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Your profile visibility has been {metrics.length > 14 ? (
-                        metrics.slice(-7).reduce((sum, m) => sum + m.views, 0) >
-                        metrics.slice(-14, -7).reduce((sum, m) => sum + m.views, 0) ? 'increasing 📈' : 'decreasing 📉'
-                      ) : 'stable 📋'} over the past week.
-                    </p>
-                    {metrics.length > 14 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Change: {(
-                          ((metrics.slice(-7).reduce((sum, m) => sum + m.views, 0) - metrics.slice(-14, -7).reduce((sum, m) => sum + m.views, 0)) / metrics.slice(-14, -7).reduce((sum, m) => sum + m.views, 0)) * 100
-                        ).toFixed(1)}% vs. previous week
-                      </p>
-                    )}
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                {/* Visibility Trend */}
+                <div className="bg-gradient-to-br from-blue-50 to-indigo-50 rounded-xl p-5 border-l-4 border-blue-500 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-2 mb-2">
+                    <TrendingUp className="h-5 w-5 text-blue-600" />
+                    <h4 className="font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>Visibility Trend</h4>
                   </div>
-
-                  <div className="border-l-4 border-green-500 pl-4">
-                    <h4 className="font-medium">Customer Actions</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Customers are most likely to {metrics.length > 0 && (
-                        metrics.slice(-7).reduce((sum, m) => sum + m.calls, 0) >
-                        metrics.slice(-7).reduce((sum, m) => sum + m.websiteClicks, 0) ? 'call your business 📞' : 'visit your website 🌐'
-                      )} after viewing your profile.
+                  <p className="text-sm text-gray-700 mb-2" style={{ fontFamily: 'Onest' }}>
+                    Your profile visibility has been {metrics.length > 14 ? (
+                      metrics.slice(-7).reduce((sum, m) => sum + m.views, 0) >
+                      metrics.slice(-14, -7).reduce((sum, m) => sum + m.views, 0) ? 'increasing 📈' : 'decreasing 📉'
+                    ) : 'stable 📋'} over the past week.
+                  </p>
+                  {metrics.length > 14 && (
+                    <p className="text-xs text-blue-600 font-bold" style={{ fontFamily: 'Onest' }}>
+                      Change: {(
+                        ((metrics.slice(-7).reduce((sum, m) => sum + m.views, 0) - metrics.slice(-14, -7).reduce((sum, m) => sum + m.views, 0)) / metrics.slice(-14, -7).reduce((sum, m) => sum + m.views, 0)) * 100
+                      ).toFixed(1)}% vs. previous week
                     </p>
-                    {metrics.length > 0 && (
-                      <p className="text-xs text-muted-foreground mt-1">
-                        Action rate: {(
-                          (metrics.slice(-7).reduce((sum, m) => sum + m.calls + m.websiteClicks + m.directionRequests, 0) / metrics.slice(-7).reduce((sum, m) => sum + m.views, 0)) * 100
-                        ).toFixed(1)}% of viewers take action
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="border-l-4 border-orange-500 pl-4">
-                    <h4 className="font-medium">Optimization Opportunity</h4>
-                    <p className="text-sm text-muted-foreground">
-                      {auditScore.overall < 80
-                        ? 'Improve your business profile performance to increase visibility. 🎯'
-                        : 'Your profile is performing well. Keep up the great work! ✅'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Overall score: {auditScore.overall}%
-                    </p>
-                  </div>
-
-                  <div className="border-l-4 border-purple-500 pl-4">
-                    <h4 className="font-medium">Industry Benchmark</h4>
-                    <p className="text-sm text-muted-foreground">
-                      Your engagement rate is {auditScore.engagement > 60 ? 'above 🚀' : 'below 📉'} industry average.
-                      {auditScore.engagement > 60 ? ' Keep up the great work!' : ' Consider posting more engaging content.'}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Engagement score: {auditScore.engagement}% (target: 60%+)
-                    </p>
-                  </div>
+                  )}
                 </div>
 
-                {/* Competitive Analysis */}
-                <div className="mt-6 p-4 bg-gradient-to-r from-blue-50 to-purple-50 rounded-lg border">
-                  <h4 className="font-medium mb-2 flex items-center gap-2">
-                    <Target className="h-4 w-4" />
-                    Quick Win Recommendations
-                  </h4>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-3 text-sm">
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>Post 2-3 times weekly</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>Respond to all reviews</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <CheckCircle className="h-4 w-4 text-green-500" />
-                      <span>Add 5+ photos monthly</span>
-                    </div>
+                {/* Customer Actions */}
+                <div className="bg-gradient-to-br from-green-50 to-emerald-50 rounded-xl p-5 border-l-4 border-green-500 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-2 mb-2">
+                    <MousePointer className="h-5 w-5 text-green-600" />
+                    <h4 className="font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>Customer Actions</h4>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2" style={{ fontFamily: 'Onest' }}>
+                    Customers are most likely to {metrics.length > 0 && (
+                      metrics.slice(-7).reduce((sum, m) => sum + m.calls, 0) >
+                      metrics.slice(-7).reduce((sum, m) => sum + m.websiteClicks, 0) ? 'call your business 📞' : 'visit your website 🌐'
+                    )} after viewing your profile.
+                  </p>
+                  {metrics.length > 0 && (
+                    <p className="text-xs text-green-600 font-bold" style={{ fontFamily: 'Onest' }}>
+                      Action rate: {(
+                        (metrics.slice(-7).reduce((sum, m) => sum + m.calls + m.websiteClicks + m.directionRequests, 0) / metrics.slice(-7).reduce((sum, m) => sum + m.views, 0)) * 100
+                      ).toFixed(1)}% of viewers take action
+                    </p>
+                  )}
+                </div>
+
+                {/* Optimization Opportunity */}
+                <div className="bg-gradient-to-br from-orange-50 to-amber-50 rounded-xl p-5 border-l-4 border-orange-500 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Target className="h-5 w-5 text-orange-600" />
+                    <h4 className="font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>Optimization Opportunity</h4>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2" style={{ fontFamily: 'Onest' }}>
+                    {auditScore.overall < 80
+                      ? 'Improve your business profile performance to increase visibility. 🎯'
+                      : 'Your profile is performing well. Keep up the great work! ✅'}
+                  </p>
+                  <p className="text-xs text-orange-600 font-bold" style={{ fontFamily: 'Onest' }}>
+                    Overall score: {auditScore.overall}%
+                  </p>
+                </div>
+
+                {/* Industry Benchmark */}
+                <div className="bg-gradient-to-br from-purple-50 to-pink-50 rounded-xl p-5 border-l-4 border-purple-500 hover:shadow-md transition-all">
+                  <div className="flex items-center gap-2 mb-2">
+                    <BarChart3 className="h-5 w-5 text-purple-600" />
+                    <h4 className="font-bold text-gray-800" style={{ fontFamily: 'Onest' }}>Industry Benchmark</h4>
+                  </div>
+                  <p className="text-sm text-gray-700 mb-2" style={{ fontFamily: 'Onest' }}>
+                    Your engagement rate is {auditScore.engagement > 60 ? 'above 🚀' : 'below 📉'} industry average.
+                    {auditScore.engagement > 60 ? ' Keep up the great work!' : ' Consider posting more engaging content.'}
+                  </p>
+                  <p className="text-xs text-purple-600 font-bold" style={{ fontFamily: 'Onest' }}>
+                    Engagement score: {auditScore.engagement}% (target: 60%+)
+                  </p>
+                </div>
+              </div>
+
+              {/* Quick Win Recommendations */}
+              <div className="bg-gradient-to-r from-purple-50 via-blue-50 to-indigo-50 rounded-xl p-6 border border-purple-200">
+                <div className="flex items-center gap-3 mb-4">
+                  <div className="p-2 bg-white rounded-lg shadow-sm">
+                    <Target className="h-5 w-5 text-purple-600" />
+                  </div>
+                  <h4 className="font-bold text-lg text-gray-800" style={{ fontFamily: 'Onest' }}>Quick Win Recommendations</h4>
+                </div>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="flex items-center gap-3 bg-white rounded-lg p-4 shadow-sm">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Post 2-3 times weekly</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white rounded-lg p-4 shadow-sm">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Respond to all reviews</span>
+                  </div>
+                  <div className="flex items-center gap-3 bg-white rounded-lg p-4 shadow-sm">
+                    <CheckCircle className="h-5 w-5 text-green-500 flex-shrink-0" />
+                    <span className="text-sm font-medium text-gray-700" style={{ fontFamily: 'Onest' }}>Add 5+ photos monthly</span>
                   </div>
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       )}

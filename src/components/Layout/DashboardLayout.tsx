@@ -24,7 +24,7 @@ const DashboardLayout = () => {
   }, []);
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-100">
       <div className="flex">
         <Sidebar isOpen={sidebarOpen} onClose={() => setSidebarOpen(false)} />
 
@@ -39,7 +39,7 @@ const DashboardLayout = () => {
         <div className="flex-1 flex flex-col ml-0 lg:ml-64">
           <Topbar onMenuClick={() => setSidebarOpen(true)} />
 
-          <main className="flex-1 p-1 sm:p-4 md:p-6 bg-muted/30 relative overflow-hidden">
+          <main className="flex-1 p-1 sm:p-4 md:p-6 bg-gray-100 relative overflow-hidden">
             {/* Corner Lighting Effects */}
             <div className="absolute -top-20 -left-20 w-64 h-64 bg-purple-500/20 rounded-full blur-3xl pointer-events-none"></div>
             <div className="absolute -top-20 -right-20 w-64 h-64 bg-blue-500/20 rounded-full blur-3xl pointer-events-none"></div>

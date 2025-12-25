@@ -110,28 +110,72 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginWithGoogle = async () => {
     try {
-      console.log('🚀 Starting Google sign-in with popup...');
+      console.log('🚀 Starting Google sign-in with POPUP...');
 
+      // Ensure persistence is set before Google login
+      await setPersistence(auth, browserLocalPersistence);
+      console.log('✅ Persistence set to browserLocalPersistence');
+
+      // CRITICAL: Remove ALL Google Identity Services scripts that might interfere with Firebase Auth
+      console.log('🧹 Cleaning up Google Identity Services scripts...');
+
+      // Remove all Google-related scripts
+      document.querySelectorAll('script[src*="accounts.google.com"]').forEach(s => {
+        console.log('🗑️ Removing script:', s.getAttribute('src'));
+        s.remove();
+      });
+      document.querySelectorAll('script[src*="apis.google.com"]').forEach(s => {
+        console.log('🗑️ Removing script:', s.getAttribute('src'));
+        s.remove();
+      });
+      document.querySelectorAll('script[src*="gapi"]').forEach(s => {
+        console.log('🗑️ Removing script:', s.getAttribute('src'));
+        s.remove();
+      });
+      document.querySelectorAll('script[src*="gsi"]').forEach(s => {
+        console.log('🗑️ Removing script:', s.getAttribute('src'));
+        s.remove();
+      });
+
+      // Clear any cached Google objects from window
+      if (window.google) {
+        console.log('🗑️ Clearing window.google object');
+        delete (window as any).google;
+      }
+      if ((window as any).gapi) {
+        console.log('🗑️ Clearing window.gapi object');
+        delete (window as any).gapi;
+      }
+
+      // Wait a bit for cleanup to take effect
+      await new Promise(resolve => setTimeout(resolve, 100));
+
+      // Create a clean Google provider instance
       const provider = new GoogleAuthProvider();
-      // Add required scopes
-      provider.addScope('email');
-      provider.addScope('profile');
 
-      // Force the account selection prompt
+      // IMPORTANT: Do NOT set custom parameters that might include continue_url
+      // Only set the prompt parameter
       provider.setCustomParameters({
         prompt: 'select_account'
       });
 
+      // Add required scopes
+      provider.addScope('email');
+      provider.addScope('profile');
+
       console.log('🚀 Calling signInWithPopup...');
       const result = await signInWithPopup(auth, provider);
+      console.log('✅ Google sign-in successful!', result.user.email);
 
-      console.log('✅ Google sign-in successful:', result.user.email);
       toast({
         title: "Welcome!",
         description: "You have successfully signed in with Google.",
       });
     } catch (error: any) {
       console.error('❌ Google login error:', error);
+      console.error('❌ Error code:', error.code);
+      console.error('❌ Error message:', error.message);
+      console.error('❌ Full error object:', error);
 
       // Don't show error if user closed the popup
       if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
@@ -141,13 +185,21 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       // Show error toast for actual errors
       let errorMessage = "An error occurred during Google login";
+      let helpText = "";
 
       switch (error.code) {
         case 'auth/popup-blocked':
           errorMessage = "Popup was blocked by your browser. Please allow popups for this site.";
           break;
         case 'auth/unauthorized-domain':
-          errorMessage = "This domain is not authorized for Google sign-in.";
+          errorMessage = "Domain not authorized for Google sign-in.";
+          helpText = "Firebase Console → Authentication → Settings → Authorized domains → Add 'localhost'";
+          break;
+        case 'auth/invalid-continue-uri':
+          errorMessage = "Firebase configuration error.";
+          helpText = "REQUIRED: Add 'localhost' (without port) to Firebase Console → Authentication → Settings → Authorized domains. Wait 2-3 minutes after adding, then refresh this page.";
+          console.error('❌ SETUP REQUIRED: Go to Firebase Console and add "localhost" to authorized domains!');
+          console.error('📍 URL: https://console.firebase.google.com/project/gmb-automation-474209-549ee/authentication/settings');
           break;
         case 'auth/account-exists-with-different-credential':
           errorMessage = "An account already exists with this email using a different sign-in method.";
@@ -158,8 +210,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       toast({
         title: "Google login failed",
-        description: errorMessage,
+        description: helpText || errorMessage,
         variant: "destructive",
+        duration: 10000, // Show longer for setup instructions
       });
       throw error;
     }

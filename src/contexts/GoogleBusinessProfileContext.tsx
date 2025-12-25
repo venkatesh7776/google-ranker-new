@@ -17,7 +17,7 @@ interface GoogleBusinessProfileContextType {
   handleOAuthCallback: (code: string) => Promise<void>;
 }
 
-const GoogleBusinessProfileContext = createContext<GoogleBusinessProfileContextType | undefined>(undefined);
+export const GoogleBusinessProfileContext = createContext<GoogleBusinessProfileContextType | undefined>(undefined);
 
 interface GoogleBusinessProfileProviderProps {
   children: ReactNode;

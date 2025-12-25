@@ -1,12 +1,13 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
-import { useGoogleBusinessProfileContext } from '@/contexts/GoogleBusinessProfileContext';
+import { GoogleBusinessProfileContext } from '@/contexts/GoogleBusinessProfileContext';
 import { useAuth } from '@/contexts/AuthContext';
 import { TrialSetupModal } from './TrialSetupModal';
 
 export const TrialManager: React.FC = () => {
   const { showTrialSetup, setShowTrialSetup } = useSubscription();
-  const { accounts } = useGoogleBusinessProfileContext();
+  const gbpContext = useContext(GoogleBusinessProfileContext);
+  const accounts = gbpContext?.accounts || [];
   const { currentUser } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
 
