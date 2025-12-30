@@ -65,11 +65,11 @@ class Config {
 
     const productionDefaults = {
       NODE_ENV: 'production',
-      RUN_MODE: 'AZURE',
-      FRONTEND_URL: 'https://googleranker.io',
-      BACKEND_URL: 'https://pavan-client-backend-bxgdaqhvarfdeuhe.canadacentral-01.azurewebsites.net',
-      GOOGLE_REDIRECT_URI: 'https://googleranker.io/auth/google/callback',
-      GOOGLE_CLIENT_ID: '52772597205-9ogv54i6sfvucse3jrqj1nl1hlkspcv1.apps.googleusercontent.com',
+      RUN_MODE: 'RENDER',
+      FRONTEND_URL: 'https://www.googleranker.io',
+      BACKEND_URL: 'https://googleranker-backend.onrender.com',
+      GOOGLE_REDIRECT_URI: 'https://googleranker-backend.onrender.com/auth/google/callback',
+      GOOGLE_CLIENT_ID: '574451618275-vl5r928f5pj6ogj4le1o75tilhiagmfu.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
       HARDCODED_ACCOUNT_ID: '106433552101751461082',
       RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
@@ -78,7 +78,7 @@ class Config {
       AZURE_OPENAI_API_KEY: process.env.AZURE_OPENAI_API_KEY || '',
       AZURE_OPENAI_DEPLOYMENT: 'gpt-4o',
       AZURE_OPENAI_API_VERSION: '2024-02-15-preview',
-      FIREBASE_PROJECT_ID: 'gbp-467810-a56e2',
+      FIREBASE_PROJECT_ID: 'gmb-automation-474209-549ee',
       RAZORPAY_WEBHOOK_SECRET: 'gmb_boost_pro_webhook_secret_2024'
     };
 
@@ -189,13 +189,17 @@ class Config {
   }
 
   get isAzure() {
-    return process.env.RUN_MODE === 'AZURE' || this.isProduction;
+    return process.env.RUN_MODE === 'AZURE';
+  }
+
+  get isRender() {
+    return process.env.RUN_MODE === 'RENDER' || this.isProduction;
   }
 
   get frontendUrl() {
-    // Use Azure frontend URL if in production mode
+    // Use Render frontend URL if in production mode
     if (process.env.NODE_ENV === 'production') {
-      return process.env.FRONTEND_URL || 'https://www.app.lobaiseo.com';
+      return process.env.FRONTEND_URL || 'https://www.googleranker.io';
     }
     return process.env.FRONTEND_URL || 'http://localhost:3000';
   }
@@ -205,7 +209,11 @@ class Config {
   }
 
   get googleRedirectUri() {
-    return process.env.GOOGLE_REDIRECT_URI || `${this.frontendUrl}/auth/google/callback`;
+    // OAuth callback must point to backend server, not frontend
+    if (this.isProduction) {
+      return process.env.GOOGLE_REDIRECT_URI || `${this.backendUrl}/auth/google/callback`;
+    }
+    return process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/auth/google/callback';
   }
 
   get timezone() {
@@ -232,26 +240,12 @@ class Config {
       );
     }
 
-    if (this.isAzure) {
-      // Azure production origins - Updated for new backend URL
+    if (this.isRender || process.env.NODE_ENV === 'production') {
+      // Render production origins
       origins.push(
-        'https://www.app.lobaiseo.com',
-        'https://delightful-sea-062191a0f.2.azurestaticapps.net',
-        'https://pavan-client-backend-bxgdaqhvarfdeuhe.canadacentral-01.azurewebsites.net'
-      );
-
-      // Add dynamic Azure hostname if available
-      if (process.env.WEBSITE_HOSTNAME) {
-        origins.push(`https://${process.env.WEBSITE_HOSTNAME}`);
-      }
-    }
-
-    // Always include Azure origins if running in production (fallback)
-    if (process.env.NODE_ENV === 'production') {
-      origins.push(
-        'https://www.app.lobaiseo.com',
-        'https://delightful-sea-062191a0f.2.azurestaticapps.net',
-        'https://pavan-client-backend-bxgdaqhvarfdeuhe.canadacentral-01.azurewebsites.net'
+        'https://www.googleranker.io',
+        'https://googleranker.io',
+        'https://googleranker-frontend.onrender.com'
       );
     }
 
@@ -260,7 +254,7 @@ class Config {
 
     // Remove duplicates and filter out empty values
     const uniqueOrigins = [...new Set(origins.filter(Boolean))];
-    
+
     console.log(`[CONFIG] CORS Origins configured: ${uniqueOrigins.length} origins`);
     uniqueOrigins.forEach((origin, index) => {
       console.log(`[CONFIG] Origin ${index + 1}: ${origin}`);
@@ -272,7 +266,7 @@ class Config {
   // Configuration summary for debugging
   getSummary() {
     return {
-      mode: this.isLocal ? 'LOCAL' : 'AZURE',
+      mode: this.isLocal ? 'LOCAL' : (this.isRender ? 'RENDER' : 'PRODUCTION'),
       environment: process.env.NODE_ENV || 'development',
       port: this.port,
       frontendUrl: this.frontendUrl,
@@ -281,7 +275,7 @@ class Config {
       allowedOrigins: this.allowedOrigins,
       hasGoogleClientId: !!process.env.GOOGLE_CLIENT_ID,
       hasGoogleClientSecret: !!process.env.GOOGLE_CLIENT_SECRET,
-      azureHostname: process.env.WEBSITE_HOSTNAME || 'not-detected'
+      renderService: process.env.RENDER_SERVICE_NAME || 'not-detected'
     };
   }
 }
