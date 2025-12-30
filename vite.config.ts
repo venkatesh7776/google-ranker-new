@@ -28,4 +28,6 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  // Ensure public files (including _redirects) are copied to dist
+  publicDir: 'public',
 }));
