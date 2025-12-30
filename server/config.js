@@ -68,7 +68,7 @@ class Config {
       RUN_MODE: 'RENDER',
       FRONTEND_URL: 'https://www.googleranker.io',
       BACKEND_URL: 'https://googleranker-backend.onrender.com',
-      GOOGLE_REDIRECT_URI: 'https://googleranker-backend.onrender.com/auth/google/callback',
+      GOOGLE_REDIRECT_URI: 'https://www.googleranker.io/auth/google/callback',
       GOOGLE_CLIENT_ID: '574451618275-vl5r928f5pj6ogj4le1o75tilhiagmfu.apps.googleusercontent.com',
       GOOGLE_CLIENT_SECRET: process.env.GOOGLE_CLIENT_SECRET || '',
       HARDCODED_ACCOUNT_ID: '106433552101751461082',
@@ -209,11 +209,8 @@ class Config {
   }
 
   get googleRedirectUri() {
-    // OAuth callback must point to backend server, not frontend
-    if (this.isProduction) {
-      return process.env.GOOGLE_REDIRECT_URI || `${this.backendUrl}/auth/google/callback`;
-    }
-    return process.env.GOOGLE_REDIRECT_URI || 'http://localhost:5001/auth/google/callback';
+    // OAuth callback points to frontend, which then sends code to backend
+    return process.env.GOOGLE_REDIRECT_URI || `${this.frontendUrl}/auth/google/callback`;
   }
 
   get timezone() {
