@@ -74,10 +74,8 @@ class Config {
       HARDCODED_ACCOUNT_ID: '106433552101751461082',
       RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID || '',
       RAZORPAY_KEY_SECRET: process.env.RAZORPAY_KEY_SECRET || '',
-      AZURE_OPENAI_ENDPOINT: 'https://agentplus.openai.azure.com/',
-      AZURE_OPENAI_API_KEY: process.env.AZURE_OPENAI_API_KEY || '',
-      AZURE_OPENAI_DEPLOYMENT: 'gpt-4o',
-      AZURE_OPENAI_API_VERSION: '2024-02-15-preview',
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
+      GEMINI_MODEL: 'gemini-2.5-flash',
       FIREBASE_PROJECT_ID: 'gmb-automation-474209-549ee',
       RAZORPAY_WEBHOOK_SECRET: 'gmb_boost_pro_webhook_secret_2024'
     };
@@ -108,9 +106,8 @@ class Config {
 
     const optional = [
       'RAZORPAY_KEY_ID',
-      'RAZORPAY_KEY_SECRET', 
-      'AZURE_OPENAI_ENDPOINT',
-      'AZURE_OPENAI_API_KEY'
+      'RAZORPAY_KEY_SECRET',
+      'GEMINI_API_KEY'
     ];
 
     const missing = required.filter(key => !process.env[key]);
@@ -165,8 +162,7 @@ class Config {
       'HARDCODED_ACCOUNT_ID': '106433552101751461082',
       'RAZORPAY_KEY_ID': 'rzp_live_your-razorpay-key',
       'RAZORPAY_KEY_SECRET': 'your-razorpay-secret',
-      'AZURE_OPENAI_ENDPOINT': 'https://your-openai-resource.openai.azure.com/',
-      'AZURE_OPENAI_API_KEY': 'your-azure-openai-api-key'
+      'GEMINI_API_KEY': 'your-gemini-api-key'
     };
     return examples[key] || 'your-value-here';
   }

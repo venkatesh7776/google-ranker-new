@@ -3,51 +3,43 @@ import { getCategoryMapping, generateCategoryPrompt } from '../config/categoryRe
 
 class AIReviewService {
   constructor() {
-    // Azure OpenAI configuration from environment variables
-    this.azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT || 'https://agentplus.openai.azure.com/';
-    this.apiKey = process.env.AZURE_OPENAI_API_KEY || '';
-    this.deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o';
-    this.apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
-    
+    // Gemini AI configuration from environment variables
+    this.apiKey = process.env.GEMINI_API_KEY || '';
+    this.model = process.env.GEMINI_MODEL || 'gemini-2.5-flash';
+    this.apiEndpoint = 'https://generativelanguage.googleapis.com/v1beta/models';
+
     // Simple in-memory cache for faster responses
     this.reviewCache = new Map();
     this.cacheTimeout = 30 * 1000; // 30 seconds cache (reduced from 5 minutes)
-    
-    console.log('[AIReviewService] Initialized with hardcoded Azure OpenAI configuration');
+
+    console.log('[AIReviewService] Initialized with Gemini AI configuration');
+    console.log(`[AIReviewService] Model: ${this.model}`);
   }
 
   async generateReviewSuggestions(businessName, location, businessType = 'business', reviewId = null, keywords = null, businessCategory = null) {
     // NO CACHING - Generate completely fresh reviews every time for maximum uniqueness
     console.log('[AI Review Service] 🎲 Generating completely fresh reviews (NO CACHE) for maximum uniqueness');
-    
-    // Enhanced debugging for Azure OpenAI configuration
+
+    // Enhanced debugging for Gemini AI configuration
     console.log('[AI Review Service] Generating new reviews (no cache hit)');
-    console.log(`[AI Review Service] Endpoint: ${this.azureEndpoint ? 'SET (' + this.azureEndpoint.substring(0, 30) + '...)' : 'NOT SET'}`);
     console.log(`[AI Review Service] API Key: ${this.apiKey ? 'SET (' + this.apiKey.substring(0, 10) + '...)' : 'NOT SET'}`);
-    console.log(`[AI Review Service] Deployment: ${this.deploymentName || 'NOT SET'}`);
-    console.log(`[AI Review Service] Version: ${this.apiVersion || 'NOT SET'}`);
-    
-    // Check if Azure OpenAI is configured
-    if (!this.apiKey || !this.azureEndpoint || !this.deploymentName) {
-      const missingVars = [];
-      if (!this.azureEndpoint) missingVars.push('AZURE_OPENAI_ENDPOINT');
-      if (!this.apiKey) missingVars.push('AZURE_OPENAI_API_KEY');
-      if (!this.deploymentName) missingVars.push('AZURE_OPENAI_DEPLOYMENT');
-      if (!this.apiVersion) missingVars.push('AZURE_OPENAI_API_VERSION');
-      
-      throw new Error(`[AI Review Service] Missing Azure OpenAI environment variables: ${missingVars.join(', ')}. Please configure these in your Azure App Service settings.`);
+    console.log(`[AI Review Service] Model: ${this.model || 'NOT SET'}`);
+
+    // Check if Gemini AI is configured
+    if (!this.apiKey) {
+      throw new Error(`[AI Review Service] Missing Gemini API Key. Please configure GEMINI_API_KEY in your environment variables.`);
     }
-    
+
     try {
       // Clean up location - remove generic terms and use properly
       let cleanLocation = location;
-      if (location && location.toLowerCase() === 'location' || location.toLowerCase() === 'your location') {
+      if (location && (location.toLowerCase() === 'location' || location.toLowerCase() === 'your location')) {
         cleanLocation = ''; // Don't use generic location in reviews
       }
-      
+
       // Create location phrase for the prompt
       const locationPhrase = cleanLocation ? `in ${cleanLocation}` : '';
-      
+
       console.log(`[AI Review Service] Generating AI suggestions for ${businessName} ${locationPhrase}`);
 
       // Parse keywords
@@ -105,7 +97,6 @@ class AIReviewService {
       const randomExperience = experienceTypes[(randomIndex + timestamp + 200) % experienceTypes.length];
 
       // Enhanced prompt with MANDATORY keyword integration
-      // ⚠️ CRITICAL: If no keywords provided, reviews should be generic WITHOUT specific services
       const keywordPrompt = keywordList.length > 0
         ? `\n🔑 MANDATORY KEYWORDS - MUST USE IN EVERY REVIEW:\n${keywordList.map((kw, i) => `${i + 1}. "${kw}"`).join('\n')}\n\n⚠️ Each review MUST include at least 2-3 of these exact keywords/phrases!`
         : '\n⚠️ NO KEYWORDS PROVIDED - DO NOT mention ANY specific services or features!\nWrite generic positive reviews about the overall experience WITHOUT mentioning any specific services.';
@@ -134,30 +125,6 @@ ${categoryPrompt}
 - 40-50 words total (MINIMUM 40, MAXIMUM 50)
 - Natural, authentic tone
 
-📝 EXAMPLES (FOLLOW THIS STRUCTURE):
-
-${keywordList.length > 0 ? `Example 1:
-"${businessName} in ${cleanLocation} offers ${keywordList[0]}! The ${keywordList[1]} was outstanding, and the ${keywordList[2]} exceeded our expectations. Highly memorable visit!"
-
-Example 2:
-"Had an amazing time at ${businessName} in ${cleanLocation}. The ${keywordList[0]} was exceptional with ${keywordList[1]}. Great value for money. Will return!"
-
-Example 3:
-"${businessName} is the best choice in ${cleanLocation}! The ${keywordList[0]} were top-notch and the ${keywordList[1]} made it special. Unforgettable experience!"` : `Example 1:
-"${businessName} in ${cleanLocation} was absolutely wonderful! Had such a great time and the overall experience exceeded all expectations. Highly recommend visiting!"
-
-Example 2:
-"Amazing experience at ${businessName} in ${cleanLocation}. Everything was perfect and we had a fantastic time. Will definitely be returning soon!"
-
-Example 3:
-"${businessName} in ${cleanLocation} is the best! Had an incredible visit and everything was just perfect. Can't wait to come back!"`}
-
-🚫 ABSOLUTELY FORBIDDEN:
-- Generic phrases like "great service" or "excellent quality" (unless they're in the keywords)
-- Inventing services not mentioned in keywords
-- Skipping keywords - MUST use them!
-- More than 40 words per review
-
 ✅ RETURN EXACTLY 3 REVIEWS IN THIS JSON FORMAT:
 [
   {"review": "Your review text with ${businessName}, ${cleanLocation}, and 2-3 keywords integrated naturally", "rating": 5, "focus": "experience"},
@@ -171,89 +138,63 @@ Example 3:
       console.log(`Keywords in prompt: ${keywordList.length > 0 ? keywordList.join(', ') : '⚠️ NONE - USING FALLBACK'}`);
       console.log(`Prompt length: ${prompt.length} characters\n`);
 
-      const url = `${this.azureEndpoint}openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.apiVersion}`;
+      const url = `${this.apiEndpoint}/${this.model}:generateContent?key=${this.apiKey}`;
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'api-key': this.apiKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: `🤖 ULTRA-STRICT INSTRUCTIONS - MANDATORY COMPLIANCE:
-
-You are a review generator that MUST follow these rules EXACTLY:
-
-1. Generate EXACTLY 3 reviews - NO MORE, NO LESS
-2. ALWAYS include the EXACT business name in EVERY review
-3. ALWAYS include the location in EVERY review
-4. ${keywordList.length > 0 ? 'MANDATORY: Each review MUST include 2-3 keywords from the provided keyword list' : 'NO KEYWORDS PROVIDED: DO NOT mention ANY specific services or features'}
-5. ${keywordList.length > 0 ? 'ONLY mention services/features from the keywords - NEVER invent services' : 'Write generic positive reviews WITHOUT mentioning specific services'}
-6. Maximum 40 words per review - BE CONCISE
-7. Write like REAL customers - casual, natural, authentic
-8. ${keywordList.length > 0 ? 'NO generic words unless they are in the keywords (no "great service", "excellent quality" unless specified)' : 'Keep reviews generic and positive WITHOUT specific service mentions'}
-9. Return ONLY valid JSON array - no markdown, no code blocks, no extra text
-
-${keywordList.length > 0 ? `\n🔑 KEYWORDS YOU MUST USE:\n${keywordList.map((kw, i) => `${i + 1}. "${kw}"`).join('\n')}\n\nEach review MUST naturally include 2-3 of these keywords!` : '\n⚠️ NO KEYWORDS PROVIDED:\n- DO NOT mention "service", "quality", "professional", or ANY specific services\n- Write only about the overall positive experience\n- Keep it generic and enthusiastic'}
-
-❌ REJECTION CRITERIA:
-- More/less than 3 reviews
-- Missing business name or location
-${keywordList.length > 0 ? '- Missing keywords from the provided list\n- Generic phrases not in keywords\n- Invented services not in keywords' : '- Mentioning specific services when no keywords provided'}
-- Reviews over 40 words
-
-✅ SUCCESS CRITERIA:
-- Exactly 3 reviews
-- Business name + location in each
-${keywordList.length > 0 ? '- 2-3 keywords naturally integrated in each' : '- Generic positive experience without specific services'}
-- Authentic customer voice
-- Under 40 words each`
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 350, // Strict limit for exactly 3 reviews of 40 words each
-          temperature: 0.7, // Balanced - creative but follows instructions strictly
-          top_p: 0.92, // Focused token selection for better instruction following
-          frequency_penalty: 0.8, // Prevent repetition but allow natural language
-          presence_penalty: 0.7  // Ensure varied content
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 0.7,
+            topK: 40,
+            topP: 0.92,
+            maxOutputTokens: 800,
+          }
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Azure OpenAI API error:', errorText);
-        throw new Error(`Azure API error: ${response.status}`);
+        console.error('Gemini API error:', errorText);
+        throw new Error(`Gemini API error: ${response.status}`);
       }
 
       const data = await response.json();
-      const content = data.choices[0].message.content;
-      
+
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error('Invalid Gemini response structure:', JSON.stringify(data, null, 2));
+        throw new Error('Invalid response from Gemini AI');
+      }
+
+      const content = data.candidates[0].content.parts[0].text;
+
       // Parse the JSON response - robust parsing with multiple fallbacks
       try {
         let cleanContent = content.trim();
         console.log('Raw AI response:', cleanContent.substring(0, 1000));
-        
+
         // Remove markdown code blocks if present
         cleanContent = cleanContent.replace(/^```[a-z]*\n?/gi, '').replace(/\n?```$/gi, '');
-        
+
         // Extract JSON array - find first [ and last ]
         const start = cleanContent.indexOf('[');
         const end = cleanContent.lastIndexOf(']');
-        
+
         if (start === -1 || end === -1 || end <= start) {
           console.error('Could not find JSON array brackets in response');
           throw new Error('Invalid JSON structure - no array found');
         }
-        
+
         // Extract just the JSON array part
         let jsonString = cleanContent.substring(start, end + 1);
-        
+
         // Clean up common JSON issues
         jsonString = jsonString
           .replace(/,\s*}/g, '}')  // Remove trailing commas before }
@@ -261,16 +202,16 @@ ${keywordList.length > 0 ? '- 2-3 keywords naturally integrated in each' : '- Ge
           .replace(/\n/g, ' ')     // Replace newlines with spaces
           .replace(/\s+/g, ' ')    // Normalize whitespace
           .trim();
-        
+
         console.log('Cleaned JSON string:', jsonString.substring(0, 500));
-        
+
         // Try to parse the cleaned JSON
         let reviews;
         try {
           reviews = JSON.parse(jsonString);
         } catch (parseError) {
           console.error('JSON parsing failed, trying manual repair:', parseError.message);
-          
+
           // Try to repair common JSON issues
           let repairedJson = jsonString
             .replace(/"([^"]*)"/g, (match, p1) => {
@@ -279,7 +220,7 @@ ${keywordList.length > 0 ? '- 2-3 keywords naturally integrated in each' : '- Ge
             })
             .replace(/([^,\s})\]])\s*"([^"]+)":/g, '$1,"$2":') // Add missing commas
             .replace(/:\s*([^"\[{][^,}\]]*[^,}\]\s])([,}\]])/g, ': "$1"$2'); // Quote unquoted values
-          
+
           try {
             reviews = JSON.parse(repairedJson);
             console.log('Successfully repaired and parsed JSON');
@@ -288,18 +229,18 @@ ${keywordList.length > 0 ? '- 2-3 keywords naturally integrated in each' : '- Ge
             throw new Error('Could not parse AI response as valid JSON');
           }
         }
-        
+
         // Validate the response
         if (!Array.isArray(reviews)) {
           console.error('Parsed result is not an array:', typeof reviews);
           throw new Error('AI response is not a valid array');
         }
-        
+
         if (reviews.length === 0) {
           console.error('AI returned empty array');
           throw new Error('AI response contains no reviews');
         }
-        
+
         // ⚠️ CRITICAL: Ensure we have EXACTLY 3 reviews
         if (reviews.length !== 3) {
           console.error(`❌ AI VIOLATED INSTRUCTION: Generated ${reviews.length} reviews instead of 3!`);
@@ -331,7 +272,7 @@ ${keywordList.length > 0 ? '- 2-3 keywords naturally integrated in each' : '- Ge
 
           console.log(`Review ${index + 1}: Business Name=${hasBusinessName ? '✅' : '❌'}, Location=${hasLocation ? '✅' : '❌'}`);
         });
-        
+
         // Add timestamps and ensure uniqueness - NO CACHING
         const timestamp = Date.now();
         const randomSuffix = Math.random().toString(36).substr(2, 9);
@@ -357,21 +298,18 @@ ${keywordList.length > 0 ? '- 2-3 keywords naturally integrated in each' : '- Ge
       }
     } catch (error) {
       console.error('Error generating AI reviews:', error);
-      throw new Error('[AI Review Service] Failed to generate AI reviews. Please check Azure OpenAI configuration.');
+      throw new Error('[AI Review Service] Failed to generate AI reviews. Please check Gemini API configuration.');
     }
   }
 
   // No fallback reviews - AI generation required
   getDynamicFallbackReviews(businessName, location) {
-    throw new Error('[AI Review Service] Azure OpenAI is required for review generation. Please configure Azure OpenAI.');
+    throw new Error('[AI Review Service] Gemini AI is required for review generation. Please configure Gemini API Key.');
   }
-  
-  
-  
 
   // No fallback reviews
   getFallbackReviews(businessName, location) {
-    throw new Error('[AI Review Service] Azure OpenAI is required for review generation. Please configure Azure OpenAI.');
+    throw new Error('[AI Review Service] Gemini AI is required for review generation. Please configure Gemini API Key.');
   }
 
   // Generate a review link for Google Business Profile
@@ -391,9 +329,9 @@ ${keywordList.length > 0 ? '- 2-3 keywords naturally integrated in each' : '- Ge
     // NO CACHING - Generate completely fresh replies every time
     console.log('[AI Review Service] 🎲 Generating completely fresh reply suggestions (NO CACHE)');
 
-    // Check if Azure OpenAI is configured
-    if (!this.apiKey || !this.azureEndpoint || !this.deploymentName) {
-      throw new Error('[AI Review Service] Azure OpenAI is required for reply generation. Please configure Azure OpenAI.');
+    // Check if Gemini AI is configured
+    if (!this.apiKey) {
+      throw new Error('[AI Review Service] Gemini AI is required for reply generation. Please configure Gemini API Key.');
     }
 
     try {
@@ -464,46 +402,47 @@ ${keywordList.length > 0 ? `- Naturally include business keywords (${keywordList
 
 Return ONLY this JSON array (no markdown):
 [
-  {"reply": "[First unique reply with keywords]", "tone": "${tone}", "focus": "gratitude"},
-  {"reply": "[Second completely different reply with keywords]", "tone": "${tone}", "focus": "engagement"},
-  {"reply": "[Third distinct reply with keywords]", "tone": "${tone}", "focus": "resolution"}
+  {"reply": "[First unique reply]", "tone": "${tone}", "focus": "gratitude"},
+  {"reply": "[Second completely different reply]", "tone": "${tone}", "focus": "engagement"},
+  {"reply": "[Third distinct reply]", "tone": "${tone}", "focus": "resolution"}
 ]`;
 
-      const url = `${this.azureEndpoint}openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.apiVersion}`;
+      const url = `${this.apiEndpoint}/${this.model}:generateContent?key=${this.apiKey}`;
 
       const response = await fetch(url, {
         method: 'POST',
         headers: {
-          'Content-Type': 'application/json',
-          'api-key': this.apiKey
+          'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: 'system',
-              content: 'You are a professional business communication expert. Every reply must be completely unique and different. Never repeat the same vocabulary, phrasing, or structure. Naturally incorporate business keywords when relevant. Return ONLY valid JSON arrays with no markdown.'
-            },
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 1000, // Increased for more varied responses
-          temperature: 1.0, // MAXIMUM creativity for maximum variation
-          top_p: 0.98, // Allow most diverse token selection
-          frequency_penalty: 1.0, // MAXIMUM to prevent any repetition
-          presence_penalty: 0.9  // MAXIMUM to ensure completely varied content
+          contents: [{
+            parts: [{
+              text: prompt
+            }]
+          }],
+          generationConfig: {
+            temperature: 1.0,
+            topK: 40,
+            topP: 0.98,
+            maxOutputTokens: 1500,
+          }
         })
       });
 
       if (!response.ok) {
         const errorText = await response.text();
-        console.error('Azure OpenAI API error:', errorText);
-        throw new Error(`Azure API error: ${response.status}`);
+        console.error('Gemini API error:', errorText);
+        throw new Error(`Gemini API error: ${response.status}`);
       }
 
       const data = await response.json();
-      const content = data.choices[0].message.content;
+
+      if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+        console.error('Invalid Gemini response structure:', JSON.stringify(data, null, 2));
+        throw new Error('Invalid response from Gemini AI');
+      }
+
+      const content = data.candidates[0].content.parts[0].text;
 
       // Parse the JSON response
       try {
@@ -557,7 +496,7 @@ Return ONLY this JSON array (no markdown):
       }
     } catch (error) {
       console.error('Error generating AI reply suggestions:', error);
-      throw new Error('[AI Review Service] Failed to generate AI reply suggestions. Please check Azure OpenAI configuration.');
+      throw new Error('[AI Review Service] Failed to generate AI reply suggestions. Please check Gemini API configuration.');
     }
   }
 }

@@ -130,7 +130,7 @@ class GoogleBusinessProfileService {
       // falling back to the Azure backend URL.
       this.backendUrl =
         import.meta.env.VITE_BACKEND_URL ||
-        'https://pavan-client-backend-bxgdaqhvarfdeuhe.canadacentral-01.azurewebsites.net';
+        'https://googleranker-backend.onrender.com';
     }
 
     // Note: loadStoredTokens is now called with userId parameter
