@@ -108,7 +108,7 @@ const LandingPage = () => {
   const pricingPlans = [
     {
       duration: '1 Month',
-      price: '₹1,099',
+      price: '₹1,499',
       period: '/month',
       popular: false,
       gradient: 'from-slate-500 to-gray-600',
@@ -120,15 +120,15 @@ const LandingPage = () => {
       popular: true,
       badge: '🔥 Most Popular',
       gradient: 'from-violet-600 via-purple-600 to-fuchsia-600',
-      savings: 'Save ₹600'
+      savings: 'Save ₹3,000'
     },
     {
       duration: '1 Year',
-      price: '₹9,999',
+      price: '₹8,399',
       period: '/year',
       popular: false,
       gradient: 'from-blue-600 to-cyan-600',
-      savings: 'Save ₹3,189'
+      savings: 'Save ₹9,589'
     },
   ];
 

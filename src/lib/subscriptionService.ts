@@ -64,7 +64,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'monthly_plan',
     name: '1 Month Plan',
-    amount: 109900, // ₹1099 in paise
+    amount: 149900, // ₹1499 in paise
     currency: 'INR',
     interval: 'monthly',
     features: [
@@ -98,7 +98,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
   {
     id: 'yearly_plan',
     name: '1 Year Plan',
-    amount: 999900, // ₹9999 in paise
+    amount: 839900, // ₹8399 in paise
     currency: 'INR',
     interval: 'yearly',
     features: [

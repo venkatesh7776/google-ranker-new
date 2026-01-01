@@ -68,6 +68,58 @@ class SubscriptionService {
       ],
       trialDays: 15
     });
+
+    // New pricing plans (2025)
+    this.plans.set('monthly_plan', {
+      id: 'monthly_plan',
+      name: '1 Month Plan',
+      amount: 149900, // ₹1499 in paise
+      currency: 'INR',
+      interval: 'monthly',
+      features: [
+        'Auto-Post Scheduling',
+        'Review Management & Auto-Reply',
+        'Performance Analytics',
+        'Advanced Analytics',
+        'API Access',
+        'Priority Support'
+      ],
+      trialDays: 15
+    });
+
+    this.plans.set('six_month_plan', {
+      id: 'six_month_plan',
+      name: '6 Months Plan',
+      amount: 599900, // ₹5999 in paise
+      currency: 'INR',
+      interval: 'monthly',
+      features: [
+        'Auto-Post Scheduling',
+        'Review Management & Auto-Reply',
+        'Performance Analytics',
+        'Advanced Analytics',
+        'API Access',
+        'Priority Support'
+      ],
+      trialDays: 15
+    });
+
+    this.plans.set('yearly_plan', {
+      id: 'yearly_plan',
+      name: '1 Year Plan',
+      amount: 839900, // ₹8399 in paise
+      currency: 'INR',
+      interval: 'yearly',
+      features: [
+        'Auto-Post Scheduling',
+        'Review Management & Auto-Reply',
+        'Performance Analytics',
+        'Advanced Analytics',
+        'API Access',
+        'Priority Support'
+      ],
+      trialDays: 15
+    });
   }
 
   async createTrialSubscription(userId, gbpAccountId, email) {
