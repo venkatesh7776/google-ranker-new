@@ -267,12 +267,20 @@ const PublicReviewSuggestions = () => {
     console.log('🔍 QR Code Data:', qrCodeData);
     console.log('🔍 Google review link from QR data:', qrCodeData?.googleReviewLink);
     console.log('🔍 Google review link from URL params:', searchParams.get('googleReviewLink'));
-    console.log('🔍 Final googleReviewLink being used:', googleReviewLink);
-    
-    if (googleReviewLink && googleReviewLink !== 'undefined' && googleReviewLink !== '' && googleReviewLink !== 'null') {
+    console.log('🔍 Place ID from QR data:', qrCodeData?.placeId);
+    console.log('🔍 Place ID from URL params:', searchParams.get('placeId'));
+
+    // Get the latest values from state and URL params
+    const currentGoogleReviewLink = qrCodeData?.googleReviewLink || searchParams.get('googleReviewLink') || '';
+    const currentPlaceId = qrCodeData?.placeId || searchParams.get('placeId') || '';
+
+    console.log('🔍 Current googleReviewLink being used:', currentGoogleReviewLink);
+    console.log('🔍 Current placeId being used:', currentPlaceId);
+
+    if (currentGoogleReviewLink && currentGoogleReviewLink !== 'undefined' && currentGoogleReviewLink !== '' && currentGoogleReviewLink !== 'null') {
       try {
-        let finalLink = googleReviewLink;
-        
+        let finalLink = currentGoogleReviewLink;
+
         // If the link comes from QR data, it should already be properly formatted
         if (qrCodeData && qrCodeData.googleReviewLink) {
           console.log('✅ Using Google review link from QR code data (no decoding needed)');
@@ -281,7 +289,7 @@ const PublicReviewSuggestions = () => {
           // If it comes from URL parameters, we need to decode it
           console.log('🔄 Using Google review link from URL params (decoding needed)');
           try {
-            finalLink = decodeURIComponent(googleReviewLink);
+            finalLink = decodeURIComponent(currentGoogleReviewLink);
             
             // If it's double-encoded, decode again
             if (finalLink.includes('%2F') || finalLink.includes('%3A')) {
@@ -552,13 +560,19 @@ const PublicReviewSuggestions = () => {
       }
     } else {
       // No review link provided - try to generate one using place ID
-      const placeId = searchParams.get('placeId');
-      if (placeId && placeId.startsWith('ChIJ')) {
-        const fallbackUrl = `https://search.google.com/local/writereview?placeid=${placeId}`;
-        console.log('🔄 Using fallback Google review URL:', fallbackUrl);
+      console.log('⚠️ No googleReviewLink, trying to use placeId instead');
+      console.log('🔍 Current placeId:', currentPlaceId);
+
+      if (currentPlaceId && currentPlaceId.startsWith('ChIJ')) {
+        const fallbackUrl = `https://search.google.com/local/writereview?placeid=${currentPlaceId}`;
+        console.log('✅ Using fallback Google review URL from placeId:', fallbackUrl);
         window.open(fallbackUrl, '_blank', 'noopener,noreferrer');
       } else {
         console.log('❌ No valid review link or place ID found');
+        console.log('❌ QR Code Data:', qrCodeData);
+        console.log('❌ URL Params placeId:', searchParams.get('placeId'));
+        console.log('❌ URL Params googleReviewLink:', searchParams.get('googleReviewLink'));
+
         toast({
           title: "Review Link Not Available",
           description: "Please contact the business for their review link.",
