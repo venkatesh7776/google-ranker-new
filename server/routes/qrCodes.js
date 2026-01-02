@@ -26,9 +26,17 @@ router.get('/', async (req, res) => {
 router.get('/:locationId', async (req, res) => {
   try {
     const { locationId } = req.params;
+    console.log(`[QR Code] 🔍 GET request for locationId: "${locationId}"`);
+
     const qrCode = await supabaseQRCodeService.getQRCode(locationId);
+    console.log(`[QR Code] 📊 Database query result:`, qrCode ? 'Found' : 'NULL');
+
+    if (qrCode) {
+      console.log(`[QR Code] 📋 QR Code details - placeId: "${qrCode.placeId || 'EMPTY'}", reviewLink: "${qrCode.googleReviewLink || 'EMPTY'}"`);
+    }
 
     if (!qrCode) {
+      console.log(`[QR Code] ❌ QR code not found for locationId: "${locationId}"`);
       return res.status(404).json({ error: 'QR code not found for this location' });
     }
 
@@ -513,9 +521,15 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
 
     if (response.ok) {
       const data = await response.json();
+      // Extract placeId from metadata if available
+      const placeIdFromMetadata = data.metadata?.placeId || null;
+      if (placeIdFromMetadata) {
+        console.log('[QR Code] 🔑 Found Place ID in GMB v4 metadata:', placeIdFromMetadata);
+      }
+
       if (data.newReviewUrl) {
         console.log('[QR Code] ✅ Found review URL from GMB v4:', data.newReviewUrl);
-        return { success: true, reviewLink: data.newReviewUrl, source: 'gmb_v4' };
+        return { success: true, reviewLink: data.newReviewUrl, source: 'gmb_v4', placeId: placeIdFromMetadata };
       }
     }
   } catch (error) {
@@ -537,9 +551,15 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
 
     if (response.ok) {
       const data = await response.json();
+      // Extract placeId from metadata if available
+      const placeIdFromMetadata = data.metadata?.placeId || null;
+      if (placeIdFromMetadata) {
+        console.log('[QR Code] 🔑 Found Place ID in Account Management metadata:', placeIdFromMetadata);
+      }
+
       if (data.newReviewUri) {
         console.log('[QR Code] ✅ Found review URI from Account Management API:', data.newReviewUri);
-        return { success: true, reviewLink: data.newReviewUri, source: 'account_management' };
+        return { success: true, reviewLink: data.newReviewUri, source: 'account_management', placeId: placeIdFromMetadata };
       }
     }
   } catch (error) {
@@ -563,23 +583,29 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
       const data = await response.json();
       console.log('[QR Code] Business Info API response:', JSON.stringify(data, null, 2));
 
+      // Extract placeId from metadata if available (we'll include it in all returns)
+      const placeIdFromMetadata = data.metadata?.placeId || data.placeId || null;
+      if (placeIdFromMetadata) {
+        console.log('[QR Code] 🔑 Found Place ID in metadata:', placeIdFromMetadata);
+      }
+
       // Priority 1: Check for direct review URI in profile or metadata
       const reviewUri = data.profile?.reviewUri || data.metadata?.newReviewUri || data.newReviewUri;
       if (reviewUri) {
         console.log('[QR Code] ✅ Found direct review URI:', reviewUri);
-        return { success: true, reviewLink: reviewUri, source: 'direct_review_uri' };
+        return { success: true, reviewLink: reviewUri, source: 'direct_review_uri', placeId: placeIdFromMetadata };
       }
 
       // Priority 2: Check websiteUri for g.page or maps link
       if (data.websiteUri) {
         console.log('[QR Code] Found websiteUri:', data.websiteUri);
-        
+
         // If it's already a g.page link, use it directly
         if (data.websiteUri.includes('g.page/r/') && data.websiteUri.includes('/review')) {
           console.log('[QR Code] ✅ Found g.page review link in websiteUri:', data.websiteUri);
-          return { success: true, reviewLink: data.websiteUri, source: 'website_gpage' };
+          return { success: true, reviewLink: data.websiteUri, source: 'website_gpage', placeId: placeIdFromMetadata };
         }
-        
+
         // If it's a maps link with CID, convert to g.page format
         if (data.websiteUri.includes('maps.google.com') || data.websiteUri.includes('goo.gl/maps')) {
           const cidMatch = data.websiteUri.match(/cid=(\d+)/);
@@ -587,7 +613,7 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
             const cid = cidMatch[1];
             const reviewLink = constructGPageLinkFromCID(cid);
             console.log('[QR Code] ✅ Constructed g.page link from websiteUri CID:', reviewLink);
-            return { success: true, reviewLink, source: 'website_cid' };
+            return { success: true, reviewLink, source: 'website_cid', placeId: placeIdFromMetadata };
           }
         }
       }
@@ -596,14 +622,14 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
       const mapsUri = data.metadata?.mapsUri || data.mapsUri;
       if (mapsUri) {
         console.log('[QR Code] Found mapsUri:', mapsUri);
-        
+
         // Extract CID from mapsUri
         const cidMatch = mapsUri.match(/cid=(\d+)/);
         if (cidMatch) {
           const cid = cidMatch[1];
           const reviewLink = constructGPageLinkFromCID(cid);
           console.log('[QR Code] ✅ Constructed g.page link from mapsUri CID:', reviewLink);
-          return { success: true, reviewLink, source: 'maps_cid' };
+          return { success: true, reviewLink, source: 'maps_cid', placeId: placeIdFromMetadata };
         }
 
         // Extract hex CID from Maps URL format (e.g., 0x398e2f5138510757:0x70a831a7bb280000)
@@ -614,7 +640,7 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
           const reviewLink = constructGPageLinkFromCID(decimalCid);
           if (reviewLink) {
             console.log('[QR Code] ✅ Constructed g.page link from hex CID in mapsUri:', reviewLink);
-            return { success: true, reviewLink, source: 'maps_hex_cid' };
+            return { success: true, reviewLink, source: 'maps_hex_cid', placeId: placeIdFromMetadata };
           }
         }
 
@@ -623,7 +649,7 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
         if (gpageMatch) {
           const reviewLink = `https://g.page/r/${gpageMatch[1]}/review`;
           console.log('[QR Code] ✅ Found g.page link in mapsUri:', reviewLink);
-          return { success: true, reviewLink, source: 'maps_gpage' };
+          return { success: true, reviewLink, source: 'maps_gpage', placeId: placeIdFromMetadata };
         }
       }
 
@@ -633,7 +659,7 @@ async function fetchGoogleReviewLink(accountId, locationId, accessToken, busines
         if (placeId.startsWith('ChIJ')) {
           const reviewLink = `https://search.google.com/local/writereview?placeid=${placeId}`;
           console.log('[QR Code] ✅ Generated review link from Place ID:', reviewLink);
-          return { success: true, reviewLink, source: 'place_id' };
+          return { success: true, reviewLink, source: 'place_id', placeId };
         }
       }
     }
@@ -758,16 +784,22 @@ router.post('/generate-with-auto-fetch', async (req, res) => {
     // 2. Fetch Google review link (with fallbacks)
     let googleReviewLink = null;
     let fetchedPlaceId = placeId;
-    
+
+    console.log(`[QR Code] 🔑 Initial placeId from request: "${fetchedPlaceId || 'EMPTY'}"`);
+
     if (accountId && accessToken) {
       const fetchResult = await fetchGoogleReviewLink(accountId, locationId, accessToken, locationName, address);
       if (fetchResult.success) {
         googleReviewLink = fetchResult.reviewLink;
+        console.log(`[QR Code] 🔑 placeId from Google API: "${fetchResult.placeId || 'NONE'}"`);
+
         // Update placeId if we got one from the fetch
         if (fetchResult.placeId && !fetchedPlaceId) {
           fetchedPlaceId = fetchResult.placeId;
+          console.log(`[QR Code] ✅ Updated fetchedPlaceId to: "${fetchedPlaceId}"`);
         }
         console.log(`[QR Code] ✅ Fetched review link from ${fetchResult.source}`);
+        console.log(`[QR Code] 🔑 Final fetchedPlaceId: "${fetchedPlaceId || 'EMPTY'}"`);
       }
     }
 
@@ -792,7 +824,10 @@ router.post('/generate-with-auto-fetch', async (req, res) => {
       `userId=${encodeURIComponent(userId || '')}&` +
       `business=${encodeURIComponent(locationName)}&` +
       `googleReviewLink=${encodeURIComponent(googleReviewLink)}` +
+      (fetchedPlaceId ? `&placeId=${encodeURIComponent(fetchedPlaceId)}` : '') +
       (businessCategory ? `&category=${encodeURIComponent(businessCategory)}` : '');
+
+    console.log(`[QR Code] 🔗 Public review URL includes placeId: ${fetchedPlaceId ? 'YES' : 'NO'}`);
 
     // 6. Generate QR code image
     const qrCodeUrl = await QRCode.toDataURL(publicReviewUrl, {
@@ -824,6 +859,8 @@ router.post('/generate-with-auto-fetch', async (req, res) => {
 
     // Save to Supabase database only (no JSON files)
     try {
+      console.log(`[QR Code] 💾 Saving to database with placeId: "${fetchedPlaceId || 'EMPTY'}"`);
+
       await supabaseQRCodeService.saveQRCode({
         code: locationId,
         locationId: locationId,

@@ -14,6 +14,21 @@ const StarRating = () => {
   // Get location ID from URL path param first, then fall back to query params
   const locationId = locationIdParam || searchParams.get('locationId') || searchParams.get('location');
   const userId = searchParams.get('userId') || searchParams.get('user');
+  const googleReviewLink = searchParams.get('googleReviewLink');
+  const placeId = searchParams.get('placeId');
+  const businessName = searchParams.get('business');
+  const category = searchParams.get('category');
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[StarRating] 🔍 URL Parameters received:');
+    console.log('  locationId:', locationId);
+    console.log('  userId:', userId);
+    console.log('  googleReviewLink:', googleReviewLink);
+    console.log('  placeId:', placeId);
+    console.log('  business:', businessName);
+    console.log('  category:', category);
+  }, [locationId, userId, googleReviewLink, placeId, businessName, category]);
 
   // Handle rating selection
   const handleRatingClick = (rating: number) => {
@@ -23,7 +38,16 @@ const StarRating = () => {
     setTimeout(() => {
       if (rating >= 4) {
         // High rating (4-5 stars) → Redirect to review suggestions page
-        navigate(`/public-reviews/${locationId}?rating=${rating}&userId=${userId}`);
+        // Pass all parameters including googleReviewLink and placeId
+        const params = new URLSearchParams({
+          rating: rating.toString(),
+          ...(userId && { userId }),
+          ...(googleReviewLink && { googleReviewLink }),
+          ...(placeId && { placeId }),
+          ...(businessName && { business: businessName }),
+          ...(category && { category })
+        });
+        navigate(`/public-reviews/${locationId}?${params.toString()}`);
       } else {
         // Low rating (1-3 stars) → Redirect to feedback form
         navigate(`/feedback/${locationId}?rating=${rating}&userId=${userId}`);
