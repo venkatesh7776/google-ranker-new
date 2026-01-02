@@ -28,18 +28,14 @@ class AutomationScheduler {
     this.postCreationLocks = new Map(); // locationId -> timestamp of last post creation
     this.DUPLICATE_POST_WINDOW = 60 * 1000; // 60 seconds - prevent duplicate posts within this window
 
-    // Azure OpenAI configuration from environment variables
-    this.azureEndpoint = process.env.AZURE_OPENAI_ENDPOINT || 'https://agentplus.openai.azure.com/';
-    this.apiKey = process.env.AZURE_OPENAI_API_KEY || '';
-    this.deploymentName = process.env.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o';
-    this.apiVersion = process.env.AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
+    // Gemini AI configuration from environment variables
+    this.geminiApiKey = process.env.GEMINI_API_KEY || appConfig.geminiApiKey || '';
+    this.geminiModel = process.env.GEMINI_MODEL || appConfig.geminiModel || 'gemini-2.0-flash';
 
-    // Log Azure OpenAI configuration status
-    console.log('[AutomationScheduler] ✅ Azure OpenAI Configuration (Hardcoded):');
-    console.log(`  - Endpoint: ✅ ${this.azureEndpoint}`);
-    console.log(`  - API Key: ✅ Configured`);
-    console.log(`  - Deployment: ✅ ${this.deploymentName}`);
-    console.log(`  - API Version: ✅ ${this.apiVersion}`);
+    // Log Gemini AI configuration status
+    console.log('[AutomationScheduler] ✅ Gemini AI Configuration:');
+    console.log(`  - API Key: ${this.geminiApiKey ? '✅ Configured' : '❌ Missing'}`);
+    console.log(`  - Model: ✅ ${this.geminiModel}`);
   }
 
   // Load settings from Supabase (called on initialization)
@@ -1209,9 +1205,9 @@ class AutomationScheduler {
     console.log(`[AutomationScheduler] Complete Address: ${completeAddress}`);
     console.log(`[AutomationScheduler] Website: ${websiteUrl}`);
     console.log(`[AutomationScheduler] ========================================`);
-    
-    if (!this.apiKey || !this.azureEndpoint) {
-      throw new Error('[AutomationScheduler] Azure OpenAI not configured - AI generation is required');
+
+    if (!this.geminiApiKey) {
+      throw new Error('[AutomationScheduler] Gemini AI not configured - AI generation is required');
     }
     
     try {
@@ -1244,6 +1240,8 @@ CATEGORY-SPECIFIC WRITING GUIDELINES:
 
       const prompt = `Create a natural, engaging, HUMAN-LIKE Google Business Profile post for ${businessName}, a ${businessCategory}${locationStr ? ` in ${locationStr}` : ''}.
 
+⚠️ IMPORTANT: Your response must be 80-100 WORDS (not including the address line). This is critical - do not write less than 80 words or more than 100 words.
+
 BUSINESS DETAILS:
 - Business Name: ${businessName}
 - Business Type: ${businessCategory}
@@ -1269,76 +1267,131 @@ CRITICAL WRITING RULES - MUST FOLLOW ALL:
 
 FORMAT REQUIREMENTS:
 12. Use bullet points (•) or emojis to break up text and improve readability
-13. ⚠️ CRITICAL: ALWAYS end with the address line in EXACTLY this format:
+13. ❌ DO NOT use asterisks (*) or underscores (_) for emphasis - no markdown formatting allowed!
+14. ⚠️ CRITICAL: ALWAYS end with the address line in EXACTLY this format:
 
 [Main post content here - MAXIMUM 100 words, human-like, brief local focus]
 
 📍 Address: ${completeAddress}
 
-14. The address line is MANDATORY and must be on a separate line with two line breaks before it
-15. DO NOT include the address anywhere else in the post - only at the very end in the specified format
+15. The address line is MANDATORY and must be on a separate line with two line breaks before it
+16. DO NOT include the address anywhere else in the post - only at the very end in the specified format
 
-EXAMPLES OF GOOD SHORT POSTS (around 80-100 words):
-- "Bikaner Desert Camp & Resort style experiences in Sam, Jaisalmer. NK Desert Camp & Resort offers luxury tents, desert safaris, and cultural evenings in golden dunes. • Luxury tent accommodations • Desert safari Jaisalmer • Evening cultural programs • Best desert camp. Discover ultimate desert adventure. 📍 Address: [address]"
-- "Looking for Port Blair beach hotels? Kevin's Bed & Breakfast is near the beach with budget-friendly stay. 🌴 Perfect for beach lovers 🌴 Comfortable rooms 🌴 Easy access to attractions. Stay close to the sea. 📍 Address: [address]"
+EXAMPLES OF PERFECT POSTS (EXACTLY 80-100 words - COUNT THE WORDS!):
 
-Write naturally, engagingly, but KEEP IT SHORT - maximum 100 words!`;
+Example 1 (92 words):
+"Escape to the serene beauty of Palampur at Hotel Orchid Resorts, nestled amidst lush greenery and stunning mountain views. Perfect for a peaceful retreat or romantic getaway, this charming resort hotel offers cozy accommodations, excellent service, and a relaxing atmosphere. 🌿
+
+• Wake up to the soothing sounds of nature
+• Breathtaking Himalayan vistas 🏔️
+• Enjoy nearby attractions like tea gardens & waterfalls
+
+Whether you're unwinding at the spa or exploring local gems, Hotel Orchid Resorts in Himachal Pradesh makes every moment unforgettable.
+
+📍 Address: [complete address]"
+
+Example 2 (87 words):
+"Looking for Port Blair beach hotels? Kevin's Bed & Breakfast is your perfect seaside escape near pristine beaches with budget-friendly comfort. 🌴 Wake up to ocean breezes and explore the stunning Andaman Islands from this cozy retreat.
+
+• Prime beach location 🏖️
+• Comfortable, clean rooms
+• Walking distance to major attractions
+• Friendly local hospitality
+
+Whether you're diving into crystal-clear waters or relaxing on white sand beaches, this Port Blair gem offers authentic island experiences.
+
+📍 Address: [complete address]"
+
+⚠️ CRITICAL: Write EXACTLY 80-100 words for the main content. Count your words before finishing!`;
+
+      const systemPrompt = `You are a professional, creative social media content writer for Google Business Profiles who writes like a LOCAL EXPERT sharing their favorite places.
+
+🎯 PRIMARY RULE: Every post must be EXACTLY 80-100 WORDS (not counting the address line). This is NON-NEGOTIABLE.
+
+CRITICAL FORMATTING RULES:
+1. ⚠️ WORD COUNT: Write EXACTLY 80-100 words for main content (not including address line). Count carefully!
+2. ✅ STRUCTURE: Always end with "📍 Address: [complete address]" on a separate line after two line breaks
+3. 👥 TONE: Write in a HUMAN, conversational tone - warm, genuine, engaging (not robotic or corporate)
+4. 💫 EXPERIENCE: Make readers FEEL the experience through vivid descriptions
+5. 🗺️ LOCAL FOCUS: Mention the local area, nearby attractions, nature, weather, landmarks
+6. 🎨 FORMATTING: Use bullet points (•) and emojis naturally to break up text. DO NOT use asterisks (*) for emphasis!
+7. 🔑 KEYWORDS: Incorporate business keywords naturally without forcing them
+8. 📝 STYLE: Write like recommending a place to a friend - enthusiastic but authentic
+9. ❌ NO MARKDOWN: Do not use asterisks (*), underscores (_), or any markdown formatting. Just plain text with emojis and bullet points (•).
+
+⚠️ REMEMBER: Your response MUST be 80-100 words (excluding address line). Too short is unacceptable!`;
+
+      const fullPrompt = `${systemPrompt}\n\n${prompt}`;
+
+      // 🔍 DEBUG: Log the prompt being sent to Gemini
+      console.log('[AutomationScheduler] 🔍 ===== PROMPT SENT TO GEMINI =====');
+      console.log('[AutomationScheduler] 📤 Prompt length:', fullPrompt.length, 'characters');
+      console.log('[AutomationScheduler] 📤 Full prompt:');
+      console.log(fullPrompt);
+      console.log('[AutomationScheduler] 🔍 ===== END PROMPT =====');
+
+      const generationConfig = {
+        temperature: 0.9,
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 1000  // Increased to 1000 to account for Gemini's internal "thoughts" tokens (~478) + actual content (~150-200)
+      };
+
+      console.log('[AutomationScheduler] ⚙️ Generation config:', generationConfig);
 
       const response = await fetch(
-        `${this.azureEndpoint}openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.apiVersion}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'api-key': this.apiKey
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            messages: [
-              {
-                role: 'system',
-                content: `You are a professional, creative social media content writer for Google Business Profiles who writes like a LOCAL EXPERT sharing their favorite places.
-
-CRITICAL FORMATTING RULES:
-1. Every post MUST be MAXIMUM 100 words (not including address line) - KEEP IT SHORT & PUNCHY!
-2. Every post MUST end with "📍 Address: [complete address]" on a separate line after two line breaks
-3. Write in a HUMAN, conversational tone - not robotic or corporate
-4. Make readers FEEL the experience through vivid but BRIEF descriptions
-5. Talk about the LOCAL AREA, nearby attractions, nature, weather - but KEEP IT CONCISE
-6. Include category-specific language that sounds authentic to the industry
-7. Use bullet points or emojis naturally to improve readability and save space
-8. Incorporate business keywords naturally without forcing them
-9. Write like you're recommending a place to a friend - warm, genuine, engaging, but BRIEF
-10. Every word counts - be concise and impactful!
-
-Think of yourself as writing a quick, enthusiastic recommendation - SHORT but memorable!`
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            max_tokens: 200,
-            temperature: 0.9,
-            frequency_penalty: 0.6,
-            presence_penalty: 0.6,
-            top_p: 0.95
+            contents: [{
+              parts: [{
+                text: fullPrompt
+              }]
+            }],
+            generationConfig
           })
         }
       );
 
       if (response.ok) {
         const data = await response.json();
-        let content = data.choices[0].message.content.trim();
+
+        // 🔍 DEBUG: Log full Gemini API response
+        console.log('[AutomationScheduler] 🔍 ===== GEMINI API RESPONSE DEBUG =====');
+        console.log('[AutomationScheduler] 📦 Full response structure:', JSON.stringify(data, null, 2));
+
+        // Check if response has expected structure
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+          console.error('[AutomationScheduler] ❌ Invalid Gemini response structure!');
+          console.error('[AutomationScheduler] Response data:', data);
+          throw new Error('Invalid response from Gemini API - no candidates found');
+        }
+
+        let content = data.candidates[0].content.parts[0].text.trim();
+
+        // 🔍 DEBUG: Log raw content from Gemini
+        console.log('[AutomationScheduler] 📝 Raw content from Gemini (before any processing):');
+        console.log(content);
+        console.log('[AutomationScheduler] 📊 Raw content word count:', content.split(' ').length);
+        console.log('[AutomationScheduler] 📏 Raw content character count:', content.length);
 
         // Ensure the address line is properly added if not already present
         const addressLine = `📍 Address: ${completeAddress}`;
         if (completeAddress && !content.includes('📍 Address:') && !content.includes(completeAddress)) {
           // Add two line breaks and then the address
           content = content + '\n\n' + addressLine;
+          console.log('[AutomationScheduler] ➕ Added address line to content');
+        } else {
+          console.log('[AutomationScheduler] ✓ Address already present in content');
         }
 
         console.log(`[AutomationScheduler] AI generated unique content (${content.split(' ').length} words)`);
         console.log(`[AutomationScheduler] Final post content with address:`, content);
+        console.log('[AutomationScheduler] 🔍 ===== END DEBUG =====');
 
         // Generate callToAction based on button configuration
         const callToAction = this.generateCallToAction(config);
@@ -1349,11 +1402,11 @@ Think of yourself as writing a quick, enthusiastic recommendation - SHORT but me
         };
       } else {
         const errorText = await response.text();
-        throw new Error(`Azure OpenAI API error: ${response.status} - ${errorText}`);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('[AutomationScheduler] Critical error - AI generation failed:', error);
-      throw new Error(`AI content generation failed: ${error.message}. Please ensure Azure OpenAI is properly configured.`);
+      throw new Error(`AI content generation failed: ${error.message}. Please ensure Gemini AI is properly configured.`);
     }
   }
 

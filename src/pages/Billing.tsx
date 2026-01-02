@@ -416,7 +416,14 @@ const Billing = () => {
                 {plan.popular && currentPlan?.id !== plan.id && (
                   <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10">
                     <div className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg whitespace-nowrap">
-                      Best Value
+                      🔥 Most Popular
+                    </div>
+                  </div>
+                )}
+                {plan.id === 'yearly_plan' && currentPlan?.id !== plan.id && (
+                  <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10">
+                    <div className="bg-gradient-to-r from-emerald-600 to-cyan-600 text-white px-4 py-1.5 rounded-full text-xs font-bold shadow-lg whitespace-nowrap">
+                      💎 Best Value
                     </div>
                   </div>
                 )}

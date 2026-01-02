@@ -54,7 +54,9 @@
       "Bash(git commit -m \"$\\(cat <<''EOF''\nFix CORS and OAuth configuration for Render deployment\n\n- Update allowed origins to include www.googleranker.io and googleranker.io\n- Migrate configuration from Azure to Render deployment\n- Fix OAuth redirect URI to point to backend server \\(https://googleranker-backend.onrender.com/auth/google/callback\\)\n- Update production defaults with correct Render URLs and Firebase project ID\n- Add isRender getter to support Render-specific configuration\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Sonnet 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
       "Bash(git push)",
       "Bash(curl -s -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" )",
-      "Bash(curl -s -X POST \"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" )"
+      "Bash(curl -s -X POST \"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" )",
+      "Bash(curl -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" -H \"Content-Type: application/json\" -d \"{\"\"contents\"\":[{\"\"parts\"\":[{\"\"text\"\":\"\"Write EXACTLY 90 words about Aventa Granites in Ajmer. Must be 90 words, no more, no less.\"\"}]}],\"\"generationConfig\"\":{\"\"temperature\"\":0.9,\"\"maxOutputTokens\"\":1000}}\")",
+      "Bash(curl -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" -H \"Content-Type: application/json\" -d \"{\"\"contents\"\":[{\"\"parts\"\":[{\"\"text\"\":\"\"Write EXACTLY 90 words about Aventa Granites in Ajmer. Must be 90 words.\"\"}]}],\"\"generationConfig\"\":{\"\"temperature\"\":0.9,\"\"maxOutputTokens\"\":1000}}\")"
     ],
     "deny": [],
     "ask": []

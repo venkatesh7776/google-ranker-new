@@ -79,11 +79,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     popular: false
   },
   {
-    id: 'six_month_plan',
-    name: '6 Months Plan',
-    amount: 599900, // ₹5999 in paise
+    id: 'yearly_plan',
+    name: '1 Year Plan',
+    amount: 839900, // ₹8399 in paise
     currency: 'INR',
-    interval: 'monthly',
+    interval: 'yearly',
     features: [
       'Auto-Post Scheduling',
       'Review Management & Auto-Reply',
@@ -96,11 +96,11 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
     popular: false
   },
   {
-    id: 'yearly_plan',
-    name: '1 Year Plan',
-    amount: 839900, // ₹8399 in paise
+    id: 'six_month_plan',
+    name: '6 Months Plan',
+    amount: 599900, // ₹5999 in paise
     currency: 'INR',
-    interval: 'yearly',
+    interval: 'monthly',
     features: [
       'Auto-Post Scheduling',
       'Review Management & Auto-Reply',

@@ -114,6 +114,15 @@ const LandingPage = () => {
       gradient: 'from-slate-500 to-gray-600',
     },
     {
+      duration: '1 Year',
+      price: '₹8,399',
+      period: '/year',
+      popular: false,
+      badge: '💎 Best Value',
+      gradient: 'from-blue-600 to-cyan-600',
+      savings: 'Save ₹9,589'
+    },
+    {
       duration: '6 Months',
       price: '₹5,999',
       period: '/6 months',
@@ -121,14 +130,6 @@ const LandingPage = () => {
       badge: '🔥 Most Popular',
       gradient: 'from-violet-600 via-purple-600 to-fuchsia-600',
       savings: 'Save ₹3,000'
-    },
-    {
-      duration: '1 Year',
-      price: '₹8,399',
-      period: '/year',
-      popular: false,
-      gradient: 'from-blue-600 to-cyan-600',
-      savings: 'Save ₹9,589'
     },
   ];
 
@@ -497,16 +498,28 @@ const LandingPage = () => {
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto px-4 md:px-8">
             {pricingPlans.map((plan, index) => (
               <AnimatedCard key={index} delay={index * 0.1}>
-                <Card
-                  className={`relative overflow-hidden transition-all duration-300 ${
-                    plan.popular
-                      ? 'border-4 border-violet-400 shadow-2xl shadow-violet-500/50 md:scale-105'
-                      : 'border-2 border-slate-200 hover:border-violet-300 hover:shadow-xl'
-                  }`}
-                >
-                  <div className={`absolute inset-0 bg-gradient-to-br ${plan.gradient} ${plan.popular ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-300`}></div>
+                <div className="relative pt-4">
+                  {plan.badge && (
+                    <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-10">
+                      <div className={`px-4 py-1.5 rounded-full text-xs font-bold shadow-lg whitespace-nowrap ${
+                        plan.popular
+                          ? 'bg-gradient-to-r from-purple-600 to-blue-600 text-white'
+                          : 'bg-gradient-to-r from-emerald-600 to-cyan-600 text-white'
+                      }`}>
+                        {plan.badge}
+                      </div>
+                    </div>
+                  )}
+                  <Card
+                    className={`relative overflow-hidden transition-all duration-300 mt-3 ${
+                      plan.popular
+                        ? 'border-4 border-violet-400 shadow-2xl shadow-violet-500/50 md:scale-105'
+                        : 'border-2 border-slate-200 hover:border-violet-300 hover:shadow-xl'
+                    }`}
+                  >
+                    <div className={`absolute inset-0 bg-gradient-to-br ${plan.gradient} ${plan.popular ? 'opacity-100' : 'opacity-0 group-hover:opacity-100'} transition-opacity duration-300`}></div>
 
-                  <CardHeader className={`text-center pb-8 pt-12 relative z-10 ${plan.popular ? 'text-white' : ''}`}>
+                    <CardHeader className={`text-center pb-8 pt-12 relative z-10 ${plan.popular ? 'text-white' : ''}`}>
                     <CardTitle className="text-2xl mb-4 font-bold">{plan.duration}</CardTitle>
                     <div className="mb-4">
                       <span className="text-5xl font-black">{plan.price}</span>
@@ -543,6 +556,7 @@ const LandingPage = () => {
                     </Link>
                   </CardContent>
                 </Card>
+                </div>
               </AnimatedCard>
             ))}
           </div>
