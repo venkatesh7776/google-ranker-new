@@ -9,6 +9,7 @@ import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
 import LoginPage from "./components/Auth/LoginPage";
 import SignupPage from "./components/Auth/SignupPage";
+import ForgotPasswordPage from "./components/Auth/ForgotPasswordPage";
 import DashboardLayout from "./components/Layout/DashboardLayout";
 import Dashboard from "./pages/Dashboard";
 import ProfileDetails from "./pages/ProfileDetails";
@@ -78,7 +79,12 @@ const App = () => (
                 <SignupPage />
               </AuthRedirect>
             } />
-            
+            <Route path="/forgot-password" element={
+              <AuthRedirect>
+                <ForgotPasswordPage />
+              </AuthRedirect>
+            } />
+
             {/* OAuth Callback Route */}
             <Route path="/auth/google/callback" element={<GoogleOAuthCallback />} />
             

@@ -84,10 +84,9 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
       switch (error.code) {
         case 'auth/user-not-found':
-          errorMessage = "No account found with this email address";
-          break;
         case 'auth/wrong-password':
-          errorMessage = "Incorrect password";
+        case 'auth/invalid-credential':
+          errorMessage = "Invalid credentials. Please check your email and password.";
           break;
         case 'auth/invalid-email':
           errorMessage = "Invalid email address";
@@ -96,7 +95,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           errorMessage = "Too many failed attempts. Please try again later";
           break;
         default:
-          errorMessage = error.message;
+          errorMessage = "Invalid credentials. Please check your email and password.";
       }
 
       toast({
