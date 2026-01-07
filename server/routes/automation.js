@@ -333,6 +333,14 @@ router.post('/test-post-now/:locationId', async (req, res) => {
     if (result === undefined || result === null) {
       // Post creation failed (likely due to no token)
       console.error(`[Automation API] ❌ Post creation returned null/undefined`);
+      console.error(`[Automation API] 🔍 DEBUG INFO:`, {
+        hadBackendToken: !!backendToken,
+        backendTokenPreview: backendToken?.access_token?.substring(0, 20) + '...',
+        hadFrontendToken: !!frontendToken,
+        frontendTokenPreview: frontendToken?.substring(0, 20) + '...',
+        userId: finalUserId,
+        result: result
+      });
       return res.status(401).json({
         success: false,
         error: 'Failed to create post. No Google account connected or token invalid.',

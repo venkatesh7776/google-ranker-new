@@ -1,65 +1,6 @@
 [
   {
-    "id": "audit_1767774193593_q7n6fhat7",
-    "userId": "3265f1e8-8463-4501-95ae-c496c5491fd4",
-    "userEmail": "meenakarjale73@gmail.com",
-    "locationId": "locations/13590844868409001032",
-    "locationName": "SANGMESHWAR TRADING COMPANY",
-    "performance": {
-      "timeSeriesData": null
-    },
-    "recommendations": {
-      "recommendations": []
-    },
-    "score": {
-      "overall": 32,
-      "performance": 54,
-      "engagement": 58,
-      "searchRank": 4,
-      "profileCompletion": 40,
-      "seoScore": 34,
-      "reviewScore": 0,
-      "reviewReplyScore": 0,
-      "profileCompletionDetails": {
-        "totalFields": 15,
-        "completedFields": 6,
-        "missingFields": [
-          "Website",
-          "Description",
-          "Business Hours",
-          "Service Area",
-          "Labels",
-          "Google Ads",
-          "Profile",
-          "Attributes",
-          "Special Hours"
-        ]
-      },
-      "seoDetails": {
-        "hasDescription": false,
-        "hasKeywords": false,
-        "hasCategories": true
-      },
-      "reviewDetails": {
-        "totalReviews": 0,
-        "reviewsLast30Days": 0,
-        "reviewsPerWeek": 0,
-        "repliedReviews": 0,
-        "replyRate": 0
-      }
-    },
-    "dateRange": {
-      "startDate": "2025-12-08",
-      "endDate": "2026-01-07"
-    },
-    "timestamp": "2026-01-07T08:23:13.593Z",
-    "metadata": {
-      "source": "audit_tool",
-      "timestamp": "2026-01-07T08:23:13.588Z"
-    }
-  },
-  {
-    "id": "audit_1767773624208_vs3dwvu8m",
+    "id": "audit_1767799803142_8s0dmwc93",
     "userId": "e4c4aed9-0654-471c-8f95-46d266f72e5b",
     "userEmail": "digibusy01shakti@gmail.com",
     "locationId": "locations/12580110398960005959",
@@ -356,10 +297,69 @@
       "startDate": "2025-12-08",
       "endDate": "2026-01-07"
     },
-    "timestamp": "2026-01-07T08:13:44.208Z",
+    "timestamp": "2026-01-07T15:30:03.142Z",
     "metadata": {
       "source": "audit_tool",
-      "timestamp": "2026-01-07T08:13:44.201Z"
+      "timestamp": "2026-01-07T15:30:03.107Z"
+    }
+  },
+  {
+    "id": "audit_1767774193593_q7n6fhat7",
+    "userId": "3265f1e8-8463-4501-95ae-c496c5491fd4",
+    "userEmail": "meenakarjale73@gmail.com",
+    "locationId": "locations/13590844868409001032",
+    "locationName": "SANGMESHWAR TRADING COMPANY",
+    "performance": {
+      "timeSeriesData": null
+    },
+    "recommendations": {
+      "recommendations": []
+    },
+    "score": {
+      "overall": 32,
+      "performance": 54,
+      "engagement": 58,
+      "searchRank": 4,
+      "profileCompletion": 40,
+      "seoScore": 34,
+      "reviewScore": 0,
+      "reviewReplyScore": 0,
+      "profileCompletionDetails": {
+        "totalFields": 15,
+        "completedFields": 6,
+        "missingFields": [
+          "Website",
+          "Description",
+          "Business Hours",
+          "Service Area",
+          "Labels",
+          "Google Ads",
+          "Profile",
+          "Attributes",
+          "Special Hours"
+        ]
+      },
+      "seoDetails": {
+        "hasDescription": false,
+        "hasKeywords": false,
+        "hasCategories": true
+      },
+      "reviewDetails": {
+        "totalReviews": 0,
+        "reviewsLast30Days": 0,
+        "reviewsPerWeek": 0,
+        "repliedReviews": 0,
+        "replyRate": 0
+      }
+    },
+    "dateRange": {
+      "startDate": "2025-12-08",
+      "endDate": "2026-01-07"
+    },
+    "timestamp": "2026-01-07T08:23:13.593Z",
+    "metadata": {
+      "source": "audit_tool",
+      "timestamp": "2026-01-07T08:23:13.588Z"
     }
   },
   {

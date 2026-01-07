@@ -35,54 +35,47 @@ const Dashboard = () => {
   // Fetch reviews and calculate average rating (must be before early returns due to Rules of Hooks)
   useEffect(() => {
     const fetchAverageRating = async () => {
-      if (!profiles || profiles.length === 0 || !currentUser || isLoading) {
+      if (!profiles || profiles.length === 0 || isLoading) {
         setAverageRating(null);
         return;
       }
 
       try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const { googleBusinessProfileService } = await import('@/lib/googleBusinessProfile');
         const allReviews: any[] = [];
 
-        // Fetch reviews for all locations
+        // Fetch reviews for all locations using the same method as Reviews page
         for (const profile of profiles) {
           const location = profile.locations?.[0];
           if (!location) continue;
 
-          const locationId = location.locationId || location.name?.split('/').pop();
-          const accountId = profile.accountId;
-
-          if (!locationId || !accountId) continue;
-
           try {
-            const response = await fetch(`${backendUrl}/api/reviews/${accountId}/${locationId}?userId=${currentUser.id}`);
-            if (response.ok) {
-              const locationReviews = await response.json();
-              allReviews.push(...locationReviews);
-            }
+            const locationReviews = await googleBusinessProfileService.getLocationReviews(location.name);
+            console.log(`⭐ Dashboard: Fetched ${locationReviews.length} reviews for ${location.displayName}`);
+            allReviews.push(...locationReviews);
           } catch (error) {
             console.warn(`Failed to fetch reviews for ${location.displayName}:`, error);
           }
         }
 
-        // Calculate average rating from all reviews
+        // Calculate average rating from all reviews (starRating is already a number)
         if (allReviews.length > 0) {
-          const totalRating = allReviews.reduce((sum, review) => sum + (review.starRating || review.rating || 0), 0);
+          const totalRating = allReviews.reduce((sum, review) => sum + (review.starRating || 0), 0);
           const avg = totalRating / allReviews.length;
           setAverageRating(avg.toFixed(1));
-          console.log(`⭐ Calculated average rating: ${avg.toFixed(1)} from ${allReviews.length} reviews`);
+          console.log(`⭐ Dashboard: Calculated average rating: ${avg.toFixed(1)} from ${allReviews.length} reviews`);
         } else {
           setAverageRating(null);
-          console.log('⭐ No reviews found to calculate rating');
+          console.log('⭐ Dashboard: No reviews found to calculate rating');
         }
       } catch (error) {
-        console.error('Error fetching reviews for rating:', error);
+        console.error('Dashboard: Error fetching reviews for rating:', error);
         setAverageRating(null);
       }
     };
 
     fetchAverageRating();
-  }, [profiles, currentUser, isLoading]);
+  }, [profiles, isLoading]);
 
   if (isLoading) {
     return (
@@ -379,10 +372,10 @@ const Dashboard = () => {
 
       {/* Stats Cards */}
       <div className="grid gap-4 sm:gap-6 grid-cols-1 sm:grid-cols-2">
-          <Card className="p-2">
+          <Card className="p-2 bg-gradient-to-br from-blue-50 to-blue-100/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base sm:text-lg font-medium">Total Profiles</CardTitle>
-              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+              <Users className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl sm:text-4xl font-bold text-gray-900">{totalProfiles}</div>
@@ -390,10 +383,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="p-2">
+          <Card className="p-2 bg-gradient-to-br from-green-50 to-green-100/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base sm:text-lg font-medium">Locations</CardTitle>
-              <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+              <MapPin className="h-5 w-5 sm:h-6 sm:w-6 text-green-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl sm:text-4xl font-bold text-gray-900">{totalLocations}</div>
@@ -401,10 +394,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="p-2">
+          <Card className="p-2 bg-gradient-to-br from-yellow-50 to-yellow-100/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base sm:text-lg font-medium">Avg Rating</CardTitle>
-              <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
+              <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-600" />
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
@@ -421,10 +414,10 @@ const Dashboard = () => {
             </CardContent>
           </Card>
 
-          <Card className="p-2">
+          <Card className="p-2 bg-gradient-to-br from-purple-50 to-purple-100/50">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base sm:text-lg font-medium">Last Sync</CardTitle>
-              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+              <Calendar className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" />
             </CardHeader>
             <CardContent>
               <div className="text-3xl sm:text-4xl font-bold text-gray-900">{lastSyncTime}</div>

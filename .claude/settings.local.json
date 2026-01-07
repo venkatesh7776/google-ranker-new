@@ -57,7 +57,8 @@
       "Bash(curl -s -X POST \"https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" )",
       "Bash(curl -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" -H \"Content-Type: application/json\" -d \"{\"\"contents\"\":[{\"\"parts\"\":[{\"\"text\"\":\"\"Write EXACTLY 90 words about Aventa Granites in Ajmer. Must be 90 words, no more, no less.\"\"}]}],\"\"generationConfig\"\":{\"\"temperature\"\":0.9,\"\"maxOutputTokens\"\":1000}}\")",
       "Bash(curl -X POST \"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=AIzaSyDW38RB86Aqs6paZxjk0V8bA2TyTZ8xnvo\" -H \"Content-Type: application/json\" -d \"{\"\"contents\"\":[{\"\"parts\"\":[{\"\"text\"\":\"\"Write EXACTLY 90 words about Aventa Granites in Ajmer. Must be 90 words.\"\"}]}],\"\"generationConfig\"\":{\"\"temperature\"\":0.9,\"\"maxOutputTokens\"\":1000}}\")",
-      "Bash(git reset:*)"
+      "Bash(git reset:*)",
+      "Bash(timeout:*)"
     ],
     "deny": [],
     "ask": []
