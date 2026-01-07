@@ -99,6 +99,28 @@ const Dashboard = () => {
   // Since each profile now represents one location, totalLocations = totalProfiles
   const totalLocations = totalProfiles;
 
+  // Calculate average rating from all locations
+  const calculateAverageRating = () => {
+    if (!profiles || profiles.length === 0) return null;
+
+    const ratingsData = profiles
+      .map((profile: any) => {
+        const location = profile.locations?.[0];
+        const rating = location?.rating?.averageRating || location?.averageRating;
+        return rating ? parseFloat(rating) : null;
+      })
+      .filter((rating: number | null) => rating !== null && !isNaN(rating));
+
+    if (ratingsData.length === 0) return null;
+
+    const sum = ratingsData.reduce((acc: number, rating: number) => acc + rating, 0);
+    const average = sum / ratingsData.length;
+
+    return average.toFixed(1);
+  };
+
+  const averageRating = calculateAverageRating();
+
   // Get last sync time (current time since profiles are real-time)
   const lastSyncTime = new Date().toLocaleTimeString('en-US', {
     hour: '2-digit',
@@ -349,11 +371,20 @@ const Dashboard = () => {
           <Card className="p-2">
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-3">
               <CardTitle className="text-base sm:text-lg font-medium">Avg Rating</CardTitle>
-              <Star className="h-5 w-5 sm:h-6 sm:w-6 text-muted-foreground" />
+              <Star className="h-5 w-5 sm:h-6 sm:w-6 text-yellow-500" />
             </CardHeader>
             <CardContent>
-              <div className="text-3xl sm:text-4xl font-bold text-gray-900">N/A</div>
-              <p className="text-sm sm:text-base text-muted-foreground mt-1">Coming soon</p>
+              <div className="flex items-center gap-2">
+                <div className="text-3xl sm:text-4xl font-bold text-gray-900">
+                  {averageRating || 'N/A'}
+                </div>
+                {averageRating && (
+                  <Star className="h-6 w-6 sm:h-7 sm:w-7 fill-yellow-400 text-yellow-400" />
+                )}
+              </div>
+              <p className="text-sm sm:text-base text-muted-foreground mt-1">
+                {averageRating ? 'Average across all locations' : 'No ratings available yet'}
+              </p>
             </CardContent>
           </Card>
 
