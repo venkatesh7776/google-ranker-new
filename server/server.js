@@ -9,6 +9,7 @@ import { readFileSync } from 'fs';
 import config from './config.js';
 import paymentRoutes from './routes/payment.js';
 import aiReviewsRoutes from './routes/aiReviews.js';
+import aiInsightsRoutes from './routes/aiInsights.js';
 import reviewLinkRoutes from './routes/reviewLink.js';
 import googleReviewLinkRoutes from './routes/googleReviewLink.js';
 import automationRoutes from './routes/automation.js';
@@ -247,6 +248,7 @@ const SCOPES = [
 // Payment routes (no subscription check needed, with rate limiting)
 app.use('/api/payment', paymentRateLimit, paymentRoutes);
 app.use('/api/ai-reviews', aiReviewsRoutes);
+app.use('/api/ai', aiInsightsRoutes);
 app.use('/api/review-link', reviewLinkRoutes);
 app.use('/api/google-review', googleReviewLinkRoutes);
 app.use('/api/automation', automationRoutes);

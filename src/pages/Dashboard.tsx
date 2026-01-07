@@ -32,6 +32,58 @@ const Dashboard = () => {
   console.log('Dashboard: subscriptionStatus =', subscriptionStatus);
   console.log('Dashboard: daysRemaining =', daysRemaining);
 
+  // Fetch reviews and calculate average rating (must be before early returns due to Rules of Hooks)
+  useEffect(() => {
+    const fetchAverageRating = async () => {
+      if (!profiles || profiles.length === 0 || !currentUser || isLoading) {
+        setAverageRating(null);
+        return;
+      }
+
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const allReviews: any[] = [];
+
+        // Fetch reviews for all locations
+        for (const profile of profiles) {
+          const location = profile.locations?.[0];
+          if (!location) continue;
+
+          const locationId = location.locationId || location.name?.split('/').pop();
+          const accountId = profile.accountId;
+
+          if (!locationId || !accountId) continue;
+
+          try {
+            const response = await fetch(`${backendUrl}/api/reviews/${accountId}/${locationId}?userId=${currentUser.id}`);
+            if (response.ok) {
+              const locationReviews = await response.json();
+              allReviews.push(...locationReviews);
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch reviews for ${location.displayName}:`, error);
+          }
+        }
+
+        // Calculate average rating from all reviews
+        if (allReviews.length > 0) {
+          const totalRating = allReviews.reduce((sum, review) => sum + (review.starRating || review.rating || 0), 0);
+          const avg = totalRating / allReviews.length;
+          setAverageRating(avg.toFixed(1));
+          console.log(`⭐ Calculated average rating: ${avg.toFixed(1)} from ${allReviews.length} reviews`);
+        } else {
+          setAverageRating(null);
+          console.log('⭐ No reviews found to calculate rating');
+        }
+      } catch (error) {
+        console.error('Error fetching reviews for rating:', error);
+        setAverageRating(null);
+      }
+    };
+
+    fetchAverageRating();
+  }, [profiles, currentUser, isLoading]);
+
   if (isLoading) {
     return (
       <div className="space-y-6">
@@ -101,58 +153,6 @@ const Dashboard = () => {
   const totalProfiles = profiles?.length || 0;
   // Since each profile now represents one location, totalLocations = totalProfiles
   const totalLocations = totalProfiles;
-
-  // Fetch reviews and calculate average rating
-  useEffect(() => {
-    const fetchAverageRating = async () => {
-      if (!profiles || profiles.length === 0 || !currentUser) {
-        setAverageRating(null);
-        return;
-      }
-
-      try {
-        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-        const allReviews: any[] = [];
-
-        // Fetch reviews for all locations
-        for (const profile of profiles) {
-          const location = profile.locations?.[0];
-          if (!location) continue;
-
-          const locationId = location.locationId || location.name?.split('/').pop();
-          const accountId = profile.accountId;
-
-          if (!locationId || !accountId) continue;
-
-          try {
-            const response = await fetch(`${backendUrl}/api/reviews/${accountId}/${locationId}?userId=${currentUser.id}`);
-            if (response.ok) {
-              const locationReviews = await response.json();
-              allReviews.push(...locationReviews);
-            }
-          } catch (error) {
-            console.warn(`Failed to fetch reviews for ${location.displayName}:`, error);
-          }
-        }
-
-        // Calculate average rating from all reviews
-        if (allReviews.length > 0) {
-          const totalRating = allReviews.reduce((sum, review) => sum + (review.starRating || review.rating || 0), 0);
-          const avg = totalRating / allReviews.length;
-          setAverageRating(avg.toFixed(1));
-          console.log(`⭐ Calculated average rating: ${avg.toFixed(1)} from ${allReviews.length} reviews`);
-        } else {
-          setAverageRating(null);
-          console.log('⭐ No reviews found to calculate rating');
-        }
-      } catch (error) {
-        console.error('Error fetching reviews for rating:', error);
-        setAverageRating(null);
-      }
-    };
-
-    fetchAverageRating();
-  }, [profiles, currentUser]);
 
   // Get last sync time (current time since profiles are real-time)
   const lastSyncTime = new Date().toLocaleTimeString('en-US', {

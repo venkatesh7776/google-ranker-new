@@ -15,80 +15,23 @@ interface PostContent {
 }
 
 export class OpenAIService {
-  private subscriptionKey: string;
-  private endpoint: string;
-  private deployment: string;
-  private apiVersion: string;
+  private apiKey: string;
+  private model: string;
+  private apiEndpoint: string;
   private lastRequestTime = 0;
   private minRequestInterval = 1000; // 1 second between requests
 
   constructor() {
-    // Azure OpenAI configuration from environment variables
-    this.subscriptionKey = import.meta.env.VITE_AZURE_OPENAI_API_KEY || '';
-    this.endpoint = import.meta.env.VITE_AZURE_OPENAI_ENDPOINT || 'https://agentplus.openai.azure.com/';
-    this.deployment = import.meta.env.VITE_AZURE_OPENAI_DEPLOYMENT || 'gpt-4o';
-    this.apiVersion = import.meta.env.VITE_AZURE_OPENAI_API_VERSION || '2024-02-15-preview';
-    
-    console.log('✅ Azure OpenAI configuration hardcoded successfully');
-    console.log('🔑 Endpoint:', this.endpoint);
-    console.log('🚀 Deployment:', this.deployment);
-    console.log('📅 API Version:', this.apiVersion);
-    console.log('🔑 Subscription key preview:', this.subscriptionKey.substring(0, 8) + '...');
-    
-    // Test the API configuration validity
-    this.testApiKey().catch(error => {
-      console.warn('⚠️ Azure OpenAI API test failed:', error.message);
-    });
+    // Gemini AI configuration - using backend proxy for API key security
+    this.apiKey = ''; // Will use backend proxy
+    this.model = 'gemini-2.0-flash';
+    this.apiEndpoint = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+
+    console.log('✅ Gemini AI configuration initialized');
+    console.log('🚀 Model:', this.model);
+    console.log('🔗 Backend URL:', this.apiEndpoint);
   }
 
-  // Test Azure OpenAI API configuration validity
-  private async testApiKey(): Promise<boolean> {
-    if (!this.subscriptionKey || !this.endpoint || !this.deployment || !this.apiVersion) return false;
-    
-    try {
-      console.log('🧪 Testing Azure OpenAI API configuration...');
-      
-      // Test with a simple completion request
-      const testUrl = `${this.endpoint}/openai/deployments/${this.deployment}/chat/completions?api-version=${this.apiVersion}`;
-      
-      const response = await fetch(testUrl, {
-        method: 'POST',
-        headers: {
-          'api-key': this.subscriptionKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [{ role: 'user', content: 'test' }],
-          max_tokens: 1,
-          temperature: 0
-        }),
-      });
-
-      if (response.ok || response.status === 400) { // 400 is OK for this test (means API is accessible)
-        console.log('✅ Azure OpenAI API configuration is valid and working!');
-        return true;
-      } else {
-        const errorData = await response.json().catch(() => ({}));
-        console.error('❌ Azure OpenAI API test failed:', response.status, errorData);
-        
-        if (response.status === 401) {
-          console.error('🔑 CRITICAL: Your Azure OpenAI API key is invalid or expired!');
-          console.error('📋 Possible issues:');
-          console.error('   • Subscription key is incorrect or has typos');
-          console.error('   • Key has been revoked or expired');
-          console.error('   • Endpoint URL is incorrect');
-          console.error('   • Deployment name is incorrect');
-          console.error('   • API version is not supported');
-          console.error('🔗 Check your Azure OpenAI resource in the Azure portal');
-        }
-        
-        return false;
-      }
-    } catch (error) {
-      console.error('🚨 Error testing Azure OpenAI API:', error);
-      return false;
-    }
-  }
 
   private async rateLimitedRequest(url: string, options: any): Promise<any> {
     const now = Date.now();
@@ -367,33 +310,21 @@ export class OpenAIService {
 
   // Generic AI response generator for any purpose
   async generateAIResponse(prompt: string, model?: string): Promise<string> {
-    if (!this.subscriptionKey || !this.endpoint || !this.deployment || !this.apiVersion) {
-      throw new Error('Azure OpenAI not configured. Please check your configuration.');
-    }
-
-    console.log('🤖 Generating AI response with Azure OpenAI...');
+    console.log('🤖 Generating AI response with Gemini AI...');
 
     try {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 60000); // 60 second timeout
 
-      const azureUrl = `${this.endpoint}/openai/deployments/${this.deployment}/chat/completions?api-version=${this.apiVersion}`;
-      
-      const response = await this.rateLimitedRequest(azureUrl, {
+      const backendUrl = `${this.apiEndpoint}/api/ai/insights`;
+
+      const response = await this.rateLimitedRequest(backendUrl, {
         method: 'POST',
         headers: {
-          'api-key': this.subscriptionKey,
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          messages: [
-            {
-              role: 'user',
-              content: prompt
-            }
-          ],
-          max_tokens: 2000,
-          temperature: 0.7,
+          prompt: prompt
         }),
         signal: controller.signal,
       });
@@ -402,15 +333,15 @@ export class OpenAIService {
 
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('🚨 OpenAI API Error:', response.status, errorData);
-        throw new Error(`Azure OpenAI API error: ${response.status}`);
+        console.error('🚨 Gemini AI Error:', response.status, errorData);
+        throw new Error(`Gemini AI error: ${response.status}`);
       }
 
-      const data: OpenAIResponse = await response.json();
-      const content = data.choices[0]?.message?.content?.trim();
+      const data = await response.json();
+      const content = data.content?.trim();
 
       if (!content) {
-        throw new Error('No response generated by Azure OpenAI');
+        throw new Error('No response generated by Gemini AI');
       }
 
       console.log('✅ AI response generated successfully');
@@ -424,7 +355,7 @@ export class OpenAIService {
 
   // No fallback review responses - AI only
   private getFallbackReviewResponse(businessName: string, reviewRating: number): string {
-    throw new Error('Azure OpenAI is required to generate review responses. Please configure Azure OpenAI in your environment settings.');
+    throw new Error('Gemini AI is required to generate review responses. Please ensure Gemini is configured in the backend.');
   }
 
   async generateReviewResponse(
