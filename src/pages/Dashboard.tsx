@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -10,6 +10,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner";
 import { TrialBanner } from "@/components/TrialBanner";
 import { PaymentModal } from "@/components/PaymentModal";
 import { useSubscription } from "@/contexts/SubscriptionContext";
+import { useAuth } from "@/contexts/AuthContext";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -17,6 +18,8 @@ const Dashboard = () => {
   const subscription = useSubscription();
   const { getAccessibleAccounts } = useProfileLimitations();
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const { currentUser } = useAuth();
+  const [averageRating, setAverageRating] = useState<string | null>(null);
   
   // Safely destructure subscription context
   const subscriptionStatus = subscription?.status || 'none';
@@ -99,44 +102,57 @@ const Dashboard = () => {
   // Since each profile now represents one location, totalLocations = totalProfiles
   const totalLocations = totalProfiles;
 
-  // Calculate average rating from all locations
-  const calculateAverageRating = () => {
-    if (!profiles || profiles.length === 0) return null;
+  // Fetch reviews and calculate average rating
+  useEffect(() => {
+    const fetchAverageRating = async () => {
+      if (!profiles || profiles.length === 0 || !currentUser) {
+        setAverageRating(null);
+        return;
+      }
 
-    // Debug: Log profile structure to understand data
-    console.log('🔍 Dashboard - First profile structure:', profiles[0]);
-    if (profiles[0]?.locations?.[0]) {
-      console.log('🔍 Dashboard - First location data:', profiles[0].locations[0]);
-    }
+      try {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        const allReviews: any[] = [];
 
-    const ratingsData = profiles
-      .map((profile: any) => {
-        const location = profile.locations?.[0];
-        // Try multiple possible rating field paths
-        const rating =
-          location?.rating?.averageRating ||
-          location?.averageRating ||
-          location?.rating ||
-          profile?.rating?.averageRating ||
-          profile?.averageRating ||
-          profile?.rating;
+        // Fetch reviews for all locations
+        for (const profile of profiles) {
+          const location = profile.locations?.[0];
+          if (!location) continue;
 
-        console.log(`📊 Location "${location?.displayName || 'unknown'}": rating =`, rating);
-        return rating ? parseFloat(rating) : null;
-      })
-      .filter((rating: number | null) => rating !== null && !isNaN(rating));
+          const locationId = location.locationId || location.name?.split('/').pop();
+          const accountId = profile.accountId;
 
-    console.log('📊 Valid ratings found:', ratingsData);
+          if (!locationId || !accountId) continue;
 
-    if (ratingsData.length === 0) return null;
+          try {
+            const response = await fetch(`${backendUrl}/api/reviews/${accountId}/${locationId}?userId=${currentUser.id}`);
+            if (response.ok) {
+              const locationReviews = await response.json();
+              allReviews.push(...locationReviews);
+            }
+          } catch (error) {
+            console.warn(`Failed to fetch reviews for ${location.displayName}:`, error);
+          }
+        }
 
-    const sum = ratingsData.reduce((acc: number, rating: number) => acc + rating, 0);
-    const average = sum / ratingsData.length;
+        // Calculate average rating from all reviews
+        if (allReviews.length > 0) {
+          const totalRating = allReviews.reduce((sum, review) => sum + (review.starRating || review.rating || 0), 0);
+          const avg = totalRating / allReviews.length;
+          setAverageRating(avg.toFixed(1));
+          console.log(`⭐ Calculated average rating: ${avg.toFixed(1)} from ${allReviews.length} reviews`);
+        } else {
+          setAverageRating(null);
+          console.log('⭐ No reviews found to calculate rating');
+        }
+      } catch (error) {
+        console.error('Error fetching reviews for rating:', error);
+        setAverageRating(null);
+      }
+    };
 
-    return average.toFixed(1);
-  };
-
-  const averageRating = calculateAverageRating();
+    fetchAverageRating();
+  }, [profiles, currentUser]);
 
   // Get last sync time (current time since profiles are real-time)
   const lastSyncTime = new Date().toLocaleTimeString('en-US', {

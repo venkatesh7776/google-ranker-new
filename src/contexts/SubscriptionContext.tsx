@@ -67,9 +67,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     console.log('Checking subscription status for GBP:', gbpAccountId, 'User:', currentUser?.id);
 
     // Check if user is admin - admins should bypass subscription checks
-    const isAdmin = await currentUser?.getIdTokenResult().then(token => {
-      return token.claims.role === 'admin' || token.claims.adminLevel;
-    }).catch(() => false);
+    const isAdmin = currentUser?.user_metadata?.role === 'admin' ||
+                    currentUser?.app_metadata?.role === 'admin' ||
+                    currentUser?.user_metadata?.adminLevel ||
+                    currentUser?.app_metadata?.adminLevel;
 
     console.log('Is user admin?', isAdmin);
 
