@@ -103,13 +103,30 @@ const Dashboard = () => {
   const calculateAverageRating = () => {
     if (!profiles || profiles.length === 0) return null;
 
+    // Debug: Log profile structure to understand data
+    console.log('🔍 Dashboard - First profile structure:', profiles[0]);
+    if (profiles[0]?.locations?.[0]) {
+      console.log('🔍 Dashboard - First location data:', profiles[0].locations[0]);
+    }
+
     const ratingsData = profiles
       .map((profile: any) => {
         const location = profile.locations?.[0];
-        const rating = location?.rating?.averageRating || location?.averageRating;
+        // Try multiple possible rating field paths
+        const rating =
+          location?.rating?.averageRating ||
+          location?.averageRating ||
+          location?.rating ||
+          profile?.rating?.averageRating ||
+          profile?.averageRating ||
+          profile?.rating;
+
+        console.log(`📊 Location "${location?.displayName || 'unknown'}": rating =`, rating);
         return rating ? parseFloat(rating) : null;
       })
       .filter((rating: number | null) => rating !== null && !isNaN(rating));
+
+    console.log('📊 Valid ratings found:', ratingsData);
 
     if (ratingsData.length === 0) return null;
 
