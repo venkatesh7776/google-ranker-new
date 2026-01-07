@@ -94,7 +94,7 @@ const AutoReply = () => {
     try {
       const { history, stats } = await activityHistoryService.fetchAutoReplyActivity(
         selectedLocationId,
-        currentUser.uid,
+        currentUser.id,
         20,
         0
       );
@@ -141,7 +141,7 @@ const AutoReply = () => {
     try {
       const { history } = await activityHistoryService.fetchAutoReplyActivity(
         selectedLocationId,
-        currentUser.uid,
+        currentUser.id,
         20,
         activityHistory.length
       );

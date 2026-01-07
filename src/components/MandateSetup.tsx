@@ -40,16 +40,16 @@ export const MandateSetup: React.FC<MandateSetupProps> = ({
 
   // Check mandate status on mount
   useEffect(() => {
-    if (isOpen && (subscription?.gbpAccountId || currentUser?.uid)) {
+    if (isOpen && (subscription?.gbpAccountId || currentUser?.id)) {
       checkMandateStatus();
     }
-  }, [isOpen, subscription?.gbpAccountId, currentUser?.uid]);
+  }, [isOpen, subscription?.gbpAccountId, currentUser?.id]);
 
   const checkMandateStatus = async () => {
     if (!currentUser) return;
 
     // Use GBP account ID if available, otherwise use user ID
-    const accountId = subscription?.gbpAccountId || currentUser.uid;
+    const accountId = subscription?.gbpAccountId || currentUser.id;
 
     try {
       console.log('[MandateSetup] Checking mandate status for:', accountId);
@@ -82,7 +82,7 @@ export const MandateSetup: React.FC<MandateSetupProps> = ({
     }
 
     // Use user ID as fallback if no GBP account yet (for new users)
-    const accountId = subscription?.gbpAccountId || currentUser.uid;
+    const accountId = subscription?.gbpAccountId || currentUser.id;
 
     if (!Razorpay) {
       toast({
@@ -106,7 +106,7 @@ export const MandateSetup: React.FC<MandateSetupProps> = ({
         });
 
         console.log('[MandateSetup] Creating customer with data:', {
-          userId: currentUser.uid,
+          userId: currentUser.id,
           email: currentUser.email,
           gbpAccountId: accountId
         });
@@ -115,7 +115,7 @@ export const MandateSetup: React.FC<MandateSetupProps> = ({
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: currentUser.uid,
+            userId: currentUser.id,
             email: currentUser.email,
             name: currentUser.displayName || currentUser.email,
             contact: currentUser.phoneNumber || '',
@@ -161,7 +161,7 @@ export const MandateSetup: React.FC<MandateSetupProps> = ({
           customerId: currentCustomerId,
           amount: 200, // ₹2 for mandate authorization
           currency: 'INR',
-          userId: currentUser.uid,
+          userId: currentUser.id,
           gbpAccountId: accountId
         })
       });

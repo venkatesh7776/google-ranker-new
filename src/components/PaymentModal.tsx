@@ -85,7 +85,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           gbpAccountId: subscription?.gbpAccountId,
-          userId: currentUser.uid,
+          userId: currentUser.id,
           currentProfileCount: totalConnectedProfiles
         })
       });
@@ -165,7 +165,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         body: JSON.stringify({
           code: couponCode,
           amount: selectedPlan.amount,
-          userId: currentUser?.uid
+          userId: currentUser?.id
         })
       });
       
@@ -266,7 +266,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         body: JSON.stringify({
           amount: amount, // Amount in paise
           currency: 'INR',
-          userId: currentUser.uid,
+          userId: currentUser.id,
           email: currentUser.email,
           gbpAccountId: subscription?.gbpAccountId,
           planId: selectedPlan.id,
@@ -323,7 +323,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 razorpay_order_id: response.razorpay_order_id,
                 razorpay_payment_id: response.razorpay_payment_id,
                 razorpay_signature: response.razorpay_signature,
-                userId: currentUser.uid,
+                userId: currentUser.id,
                 gbpAccountId: subscription?.gbpAccountId,
                 planId: selectedPlan.id,
                 amount: amount,

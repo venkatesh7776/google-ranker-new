@@ -74,7 +74,7 @@ const AutoPosting = () => {
     try {
       const { history, stats } = await activityHistoryService.fetchAutoPostActivity(
         selectedLocationId,
-        currentUser.uid,
+        currentUser.id,
         20,
         0
       );
@@ -103,7 +103,7 @@ const AutoPosting = () => {
     try {
       const { history } = await activityHistoryService.fetchAutoPostActivity(
         selectedLocationId,
-        currentUser.uid,
+        currentUser.id,
         20,
         activityHistory.length
       );

@@ -165,7 +165,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
       automationStorage.saveConfiguration(existingConfig);
 
       // Auto-sync to server for new configs with enabled=true (default)
-      if (existingConfig.enabled && currentUser?.uid) {
+      if (existingConfig.enabled && currentUser?.id) {
         console.log('New user detected - syncing default automation settings to server');
 
         const accountId = localStorage.getItem('google_business_account_id');
@@ -186,7 +186,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           location.categories?.[0],
           existingConfig.keywords.join(', '),
           location.websiteUri,
-          currentUser.uid,
+          currentUser.id,
           accountId || undefined,
           addressInfo,
           location.phoneNumber,
@@ -272,7 +272,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           location.categories?.[0],
           keywords.join(', '),
           location.websiteUri,
-          currentUser?.uid,
+          currentUser?.id,
           accountId || undefined,
           addressInfo,
           location.phoneNumber,
@@ -344,7 +344,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
             phoneNumber: location.phoneNumber,
             button: config?.button,
           },
-          userId: currentUser?.uid,
+          userId: currentUser?.id,
           accountId: accountId || undefined,
         });
       } catch (error) {
@@ -444,7 +444,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
             phoneNumber: location.phoneNumber,
             button: config?.button,
           },
-          userId: currentUser?.uid,
+          userId: currentUser?.id,
           accountId: accountId || undefined,
         });
       } catch (error) {
@@ -552,7 +552,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
             phoneNumber: location.phoneNumber,
             button: config?.button,
           },
-          userId: currentUser?.uid,
+          userId: currentUser?.id,
           accountId: accountId || undefined,
         });
         console.log('Keywords synced to server for automation');
@@ -619,11 +619,11 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
         throw new Error('You must be logged in to test auto-posting');
       }
 
-      console.log('[AutoPostingTab] Checking backend token status for user:', currentUser.uid);
+      console.log('[AutoPostingTab] Checking backend token status for user:', currentUser.id);
 
       // FIRST: Verify tokens exist on backend before attempting test post
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://googleranker-backend.onrender.com';
-      const tokenCheckResponse = await fetch(`${backendUrl}/auth/google/token-status/${currentUser.uid}`);
+      const tokenCheckResponse = await fetch(`${backendUrl}/auth/google/token-status/${currentUser.id}`);
 
       if (!tokenCheckResponse.ok) {
         throw new Error('Failed to check token status');
@@ -655,7 +655,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-ID': currentUser.uid, // Send user ID to backend to get their token
+          'X-User-ID': currentUser.id, // Send user ID to backend to get their token
           ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
         },
         body: JSON.stringify({
@@ -669,7 +669,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           country: location.address?.countryCode || '',
           fullAddress: location.address?.addressLines?.join(', ') || '',
           phoneNumber: location.phoneNumber || '',
-          userId: currentUser.uid, // Send user ID in body too
+          userId: currentUser.id, // Send user ID in body too
           accessToken: accessToken || undefined, // Send access token in body as fallback
           button: config.button // Send button configuration
         })

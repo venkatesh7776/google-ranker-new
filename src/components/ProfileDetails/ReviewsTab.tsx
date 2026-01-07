@@ -191,7 +191,7 @@ const ReviewsTab = ({ profileId }: ReviewsTabProps) => {
       // New user - no existing config
       // reviewConfig state already has defaults (enabled: true, autoReplyEnabled: true)
       // Auto-sync to server for new users
-      if (currentUser?.uid) {
+      if (currentUser?.id) {
         console.log('New user detected - syncing default review automation settings to server');
 
         const accountId = localStorage.getItem('google_business_account_id');
@@ -222,7 +222,7 @@ const ReviewsTab = ({ profileId }: ReviewsTabProps) => {
           profileId,
           businessName,
           true, // replyToAll
-          currentUser.uid,
+          currentUser.id,
           accountId || undefined,
           keywords,
           category
@@ -271,7 +271,7 @@ const ReviewsTab = ({ profileId }: ReviewsTabProps) => {
           profileId,
           businessName,
           true, // replyToAll
-          currentUser?.uid,
+          currentUser?.id,
           accountId || undefined,
           keywords,
           category

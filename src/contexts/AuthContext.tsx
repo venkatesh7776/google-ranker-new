@@ -1,26 +1,16 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import {
-  User,
-  signInWithEmailAndPassword,
-  createUserWithEmailAndPassword,
-  signOut,
-  onAuthStateChanged,
-  signInWithPopup,
-  GoogleAuthProvider,
-  updateProfile,
-  setPersistence,
-  browserLocalPersistence
-} from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { User, Session } from '@supabase/supabase-js';
+import { supabase } from '@/lib/supabase';
 import { useToast } from '@/hooks/use-toast';
 
 interface AuthContextType {
   currentUser: User | null;
+  session: Session | null;
   loading: boolean;
   signup: (email: string, password: string, displayName?: string) => Promise<void>;
   login: (email: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
-  loginWithGoogle: () => Promise<void>;
+  loginWithGoogle: () => Promise<User | null>;
   refreshToken: () => Promise<string | null>;
 }
 
@@ -40,31 +30,51 @@ interface AuthProviderProps {
 
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [currentUser, setCurrentUser] = useState<User | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
 
   const signup = async (email: string, password: string, displayName?: string) => {
     try {
-      // Ensure persistence is set before signup
-      await setPersistence(auth, browserLocalPersistence);
+      console.log('📝 Signing up user:', email);
 
-      const result = await createUserWithEmailAndPassword(auth, email, password);
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            display_name: displayName || email.split('@')[0]
+          }
+        }
+      });
 
-      if (displayName && result.user) {
-        await updateProfile(result.user, {
-          displayName: displayName
-        });
+      if (error) throw error;
+
+      console.log('✅ Signup successful:', data.user?.email);
+
+      toast({
+        title: "Account created!",
+        description: "Please check your email to verify your account.",
+      });
+    } catch (error: any) {
+      console.error('❌ Signup error:', error);
+
+      let errorMessage = "Failed to create account. Please try again.";
+
+      switch (error.message) {
+        case 'User already registered':
+          errorMessage = "An account with this email already exists.";
+          break;
+        case 'Password should be at least 6 characters':
+          errorMessage = "Password must be at least 6 characters long.";
+          break;
+        default:
+          errorMessage = error.message || "Failed to create account. Please try again.";
       }
 
       toast({
-        title: "Account created successfully!",
-        description: "Welcome to LOBAISEO!",
-      });
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      toast({
         title: "Signup failed",
-        description: error.message || "An error occurred during signup",
+        description: errorMessage,
         variant: "destructive",
       });
       throw error;
@@ -73,26 +83,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      await signInWithEmailAndPassword(auth, email, password);
+      console.log('🔐 Logging in user:', email);
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) throw error;
+
+      console.log('✅ Login successful:', data.user?.email);
+
       toast({
         title: "Welcome back!",
-        description: "You have successfully signed in.",
+        description: "You have successfully logged in.",
       });
     } catch (error: any) {
-      console.error('Login error:', error);
-      let errorMessage = "An error occurred during login";
+      console.error('❌ Login error:', error);
 
-      switch (error.code) {
-        case 'auth/user-not-found':
-        case 'auth/wrong-password':
-        case 'auth/invalid-credential':
+      let errorMessage = "Invalid credentials. Please check your email and password.";
+
+      switch (error.message) {
+        case 'Invalid login credentials':
           errorMessage = "Invalid credentials. Please check your email and password.";
           break;
-        case 'auth/invalid-email':
-          errorMessage = "Invalid email address";
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = "Too many failed attempts. Please try again later";
+        case 'Email not confirmed':
+          errorMessage = "Please verify your email address before logging in.";
           break;
         default:
           errorMessage = "Invalid credentials. Please check your email and password.";
@@ -109,126 +125,63 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const loginWithGoogle = async () => {
     try {
-      console.log('🚀 Starting Google sign-in with POPUP...');
+      console.log('🚀 Starting Google sign-in...');
 
-      // Ensure persistence is set before Google login
-      await setPersistence(auth, browserLocalPersistence);
-      console.log('✅ Persistence set to browserLocalPersistence');
-
-      // CRITICAL: Remove ALL Google Identity Services scripts that might interfere with Firebase Auth
-      console.log('🧹 Cleaning up Google Identity Services scripts...');
-
-      // Remove all Google-related scripts
-      document.querySelectorAll('script[src*="accounts.google.com"]').forEach(s => {
-        console.log('🗑️ Removing script:', s.getAttribute('src'));
-        s.remove();
-      });
-      document.querySelectorAll('script[src*="apis.google.com"]').forEach(s => {
-        console.log('🗑️ Removing script:', s.getAttribute('src'));
-        s.remove();
-      });
-      document.querySelectorAll('script[src*="gapi"]').forEach(s => {
-        console.log('🗑️ Removing script:', s.getAttribute('src'));
-        s.remove();
-      });
-      document.querySelectorAll('script[src*="gsi"]').forEach(s => {
-        console.log('🗑️ Removing script:', s.getAttribute('src'));
-        s.remove();
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo: `${window.location.origin}/login`,
+        }
       });
 
-      // Clear any cached Google objects from window
-      if (window.google) {
-        console.log('🗑️ Clearing window.google object');
-        delete (window as any).google;
-      }
-      if ((window as any).gapi) {
-        console.log('🗑️ Clearing window.gapi object');
-        delete (window as any).gapi;
-      }
+      if (error) throw error;
 
-      // Wait a bit for cleanup to take effect
-      await new Promise(resolve => setTimeout(resolve, 100));
+      console.log('✅ Google sign-in initiated, redirecting to Google...');
 
-      // Create a clean Google provider instance
-      const provider = new GoogleAuthProvider();
-
-      // IMPORTANT: Do NOT set custom parameters that might include continue_url
-      // Only set the prompt parameter
-      provider.setCustomParameters({
-        prompt: 'select_account'
-      });
-
-      // Add required scopes
-      provider.addScope('email');
-      provider.addScope('profile');
-
-      console.log('🚀 Calling signInWithPopup...');
-      const result = await signInWithPopup(auth, provider);
-      console.log('✅ Google sign-in successful!', result.user.email);
-
-      toast({
-        title: "Welcome!",
-        description: "You have successfully signed in with Google.",
-      });
+      // The actual user will be available after redirect
+      return null;
     } catch (error: any) {
       console.error('❌ Google login error:', error);
-      console.error('❌ Error code:', error.code);
-      console.error('❌ Error message:', error.message);
-      console.error('❌ Full error object:', error);
 
-      // Don't show error if user closed the popup
-      if (error.code === 'auth/popup-closed-by-user' || error.code === 'auth/cancelled-popup-request') {
-        console.log('User closed Google sign-in popup');
-        throw error;
-      }
+      let errorMessage = "Unable to sign in with Google. Please try again.";
 
-      // Show error toast for actual errors
-      let errorMessage = "An error occurred during Google login";
-      let helpText = "";
-
-      switch (error.code) {
-        case 'auth/popup-blocked':
-          errorMessage = "Popup was blocked by your browser. Please allow popups for this site.";
-          break;
-        case 'auth/unauthorized-domain':
-          errorMessage = "Domain not authorized for Google sign-in.";
-          helpText = "Firebase Console → Authentication → Settings → Authorized domains → Add 'localhost'";
-          break;
-        case 'auth/invalid-continue-uri':
-          errorMessage = "Firebase configuration error.";
-          helpText = "REQUIRED: Add 'localhost' (without port) to Firebase Console → Authentication → Settings → Authorized domains. Wait 2-3 minutes after adding, then refresh this page.";
-          console.error('❌ SETUP REQUIRED: Go to Firebase Console and add "localhost" to authorized domains!');
-          console.error('📍 URL: https://console.firebase.google.com/project/gmb-automation-474209-549ee/authentication/settings');
-          break;
-        case 'auth/account-exists-with-different-credential':
-          errorMessage = "An account already exists with this email using a different sign-in method.";
+      switch (error.message) {
+        case 'Provider not enabled':
+          errorMessage = "Google sign-in is not enabled. Please contact support.";
           break;
         default:
-          errorMessage = error.message;
+          errorMessage = `Unable to sign in with Google. ${error.message}`;
       }
 
       toast({
         title: "Google login failed",
-        description: helpText || errorMessage,
+        description: errorMessage,
         variant: "destructive",
-        duration: 10000, // Show longer for setup instructions
       });
-      throw error;
+
+      return null;
     }
   };
 
   const logout = async () => {
     try {
-      await signOut(auth);
+      console.log('👋 Logging out user...');
+
+      const { error } = await supabase.auth.signOut();
+
+      if (error) throw error;
+
+      console.log('✅ Logout successful');
+
       toast({
-        title: "Signed out",
-        description: "You have been successfully signed out.",
+        title: "Logged out",
+        description: "You have been successfully logged out.",
       });
     } catch (error: any) {
-      console.error('Logout error:', error);
+      console.error('❌ Logout error:', error);
       toast({
         title: "Logout failed",
-        description: error.message || "An error occurred during logout",
+        description: "Failed to log out. Please try again.",
         variant: "destructive",
       });
       throw error;
@@ -237,14 +190,13 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const refreshToken = async (): Promise<string | null> => {
     try {
-      if (currentUser) {
-        const token = await currentUser.getIdToken(true);
-        console.log('Firebase token refreshed successfully');
-        return token;
-      }
-      return null;
+      const { data, error } = await supabase.auth.getSession();
+
+      if (error) throw error;
+
+      return data.session?.access_token || null;
     } catch (error) {
-      console.error('Failed to refresh Firebase token:', error);
+      console.error('❌ Token refresh failed:', error);
       return null;
     }
   };
@@ -252,44 +204,48 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   useEffect(() => {
     console.log('🔍 AuthContext - Setting up auth state listener...');
 
-    // Set up auth state listener
-    const unsubscribe = onAuthStateChanged(auth, async (user) => {
-      console.log('🔍 AuthContext - Auth state changed:', user ? 'User: ' + user.email : 'No user');
-
-      if (user) {
-        try {
-          // Force token refresh to ensure it's valid
-          await user.getIdToken(true);
-          console.log('✅ AuthContext - User authenticated and token refreshed:', user.email);
-        } catch (error) {
-          console.error('❌ AuthContext - Token refresh failed during auth state change:', error);
-        }
-      }
-      setCurrentUser(user);
+    // Get initial session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      setCurrentUser(session?.user ?? null);
       setLoading(false);
-      console.log('✅ AuthContext - Loading set to false, currentUser:', user ? user.email : 'null');
+      console.log('✅ AuthContext - Initial session loaded:', session?.user?.email || 'No user');
     });
 
-    // Set up automatic token refresh every 30 minutes
-    const tokenRefreshInterval = setInterval(async () => {
-      if (currentUser) {
-        try {
-          await currentUser.getIdToken(true);
-          console.log('Auth token automatically refreshed');
-        } catch (error) {
-          console.error('Automatic token refresh failed:', error);
-        }
+    // Listen for auth changes
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('🔍 AuthContext - Auth state changed:', event, session?.user?.email || 'No user');
+
+      setSession(session);
+      setCurrentUser(session?.user ?? null);
+      setLoading(false);
+
+      // Show appropriate toasts for auth events
+      if (event === 'SIGNED_IN') {
+        toast({
+          title: "Welcome!",
+          description: "You have successfully signed in.",
+        });
+      } else if (event === 'SIGNED_OUT') {
+        console.log('User signed out');
+      } else if (event === 'TOKEN_REFRESHED') {
+        console.log('Token refreshed');
+      } else if (event === 'USER_UPDATED') {
+        console.log('User updated');
       }
-    }, 30 * 60 * 1000); // 30 minutes
+    });
 
+    // Cleanup subscription
     return () => {
-      unsubscribe();
-      clearInterval(tokenRefreshInterval);
+      subscription.unsubscribe();
     };
-  }, [currentUser]);
+  }, []);
 
-  const value: AuthContextType = {
+  const value = {
     currentUser,
+    session,
     loading,
     signup,
     login,
@@ -300,8 +256,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   return (
     <AuthContext.Provider value={value}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 };
-

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { toast } from '@/hooks/use-toast';
+import { supabase } from '@/lib/supabase';
 
 const BACKEND_URL = import.meta.env.VITE_BACKEND_URL || 'https://googleranker-backend.onrender.com';
 
@@ -71,9 +72,9 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       }
 
       try {
-        const tokenResult = await currentUser.getIdTokenResult();
-        const role = tokenResult.claims.role;
-        const level = tokenResult.claims.adminLevel;
+        // Supabase user metadata check
+        const role = currentUser.user_metadata?.role || currentUser.app_metadata?.role;
+        const level = currentUser.user_metadata?.adminLevel || currentUser.app_metadata?.adminLevel;
 
         setIsAdmin(role === 'admin');
         setAdminLevel(level || 'viewer');
@@ -91,7 +92,13 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const getAuthHeaders = async () => {
     if (!currentUser) throw new Error('Not authenticated');
-    const token = await currentUser.getIdToken();
+
+    // Get Supabase session token
+    const { data: { session } } = await supabase.auth.getSession();
+    const token = session?.access_token;
+
+    if (!token) throw new Error('No access token');
+
     return {
       'Authorization': `Bearer ${token}`,
       'Content-Type': 'application/json'

@@ -16,8 +16,9 @@ export const TrialManager: React.FC = () => {
     const checkAdminStatus = async () => {
       if (currentUser) {
         try {
-          const token = await currentUser.getIdTokenResult();
-          const adminStatus = token.claims.role === 'admin' || token.claims.adminLevel;
+          // Supabase user metadata check
+          const adminStatus = currentUser.user_metadata?.role === 'admin' ||
+                            currentUser.app_metadata?.role === 'admin';
           setIsAdmin(adminStatus);
         } catch (error) {
           console.error('Error checking admin status:', error);

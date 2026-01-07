@@ -62,7 +62,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: currentUser.uid,
+          userId: currentUser.id,
           gbpAccountId,
           email: currentUser.email
         })
@@ -85,7 +85,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
           amount: 1, // ₹1 for payment method setup
           currency: 'INR',
           notes: {
-            userId: currentUser.uid,
+            userId: currentUser.id,
             email: currentUser.email,
             gbpAccountId,
             profileCount: profileCount,
@@ -194,7 +194,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: currentUser.uid,
+          userId: currentUser.id,
           gbpAccountId,
           email: currentUser.email
         })

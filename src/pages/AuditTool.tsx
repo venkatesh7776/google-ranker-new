@@ -187,7 +187,7 @@ const AuditTool = () => {
       }
 
       const auditData = {
-        userId: currentUser.uid,
+        userId: currentUser.id,
         userEmail: currentUser.email || 'unknown',
         locationId: selectedLocation.fullName || locationId,
         locationName: selectedLocation.name,

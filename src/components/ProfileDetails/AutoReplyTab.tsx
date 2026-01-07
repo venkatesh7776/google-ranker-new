@@ -43,7 +43,7 @@ const AutoReplyTab = ({ profileId }: AutoReplyTabProps) => {
         maxRating: existingReviewConfig.maxRating,
       });
     } else {
-      if (currentUser?.uid) {
+      if (currentUser?.id) {
         console.log('New user detected - syncing default review automation settings to server');
 
         const accountId = localStorage.getItem('google_business_account_id');
@@ -71,7 +71,7 @@ const AutoReplyTab = ({ profileId }: AutoReplyTabProps) => {
           profileId,
           businessName,
           true,
-          currentUser.uid,
+          currentUser.id,
           accountId || undefined,
           keywords,
           category
@@ -116,7 +116,7 @@ const AutoReplyTab = ({ profileId }: AutoReplyTabProps) => {
           profileId,
           businessName,
           true,
-          currentUser?.uid,
+          currentUser?.id,
           accountId || undefined,
           keywords,
           category

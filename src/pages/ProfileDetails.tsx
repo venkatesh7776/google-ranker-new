@@ -109,7 +109,7 @@ const ProfileDetails = () => {
 
       try {
         const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
-        const response = await fetch(`${backendUrl}/api/statistics/${currentUser.uid}?timeframe=today`);
+        const response = await fetch(`${backendUrl}/api/statistics/${currentUser.id}?timeframe=today`);
 
         if (!response.ok) {
           throw new Error('Failed to fetch statistics');

@@ -5,8 +5,7 @@ import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Mail } from "lucide-react";
 import { Link } from "react-router-dom";
-import { sendPasswordResetEmail } from "firebase/auth";
-import { auth } from "@/lib/firebase";
+import { supabase } from "@/lib/supabase";
 import { useToast } from "@/hooks/use-toast";
 
 const ForgotPasswordPage = () => {
@@ -21,7 +20,12 @@ const ForgotPasswordPage = () => {
 
     setLoading(true);
     try {
-      await sendPasswordResetEmail(auth, email);
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
+      });
+
+      if (error) throw error;
+
       setEmailSent(true);
       toast({
         title: "Reset email sent!",
@@ -32,18 +36,8 @@ const ForgotPasswordPage = () => {
 
       let errorMessage = "Failed to send reset email";
 
-      switch (error.code) {
-        case 'auth/user-not-found':
-          errorMessage = "No account found with this email address";
-          break;
-        case 'auth/invalid-email':
-          errorMessage = "Invalid email address";
-          break;
-        case 'auth/too-many-requests':
-          errorMessage = "Too many requests. Please try again later";
-          break;
-        default:
-          errorMessage = error.message || "Failed to send reset email";
+      if (error.message) {
+        errorMessage = error.message;
       }
 
       toast({

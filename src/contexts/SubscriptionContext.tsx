@@ -64,7 +64,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   console.log('SubscriptionContext - Accounts:', accounts);
 
   const checkSubscriptionStatus = async () => {
-    console.log('Checking subscription status for GBP:', gbpAccountId, 'User:', currentUser?.uid);
+    console.log('Checking subscription status for GBP:', gbpAccountId, 'User:', currentUser?.id);
 
     // Check if user is admin - admins should bypass subscription checks
     const isAdmin = await currentUser?.getIdTokenResult().then(token => {
@@ -82,7 +82,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       // Create a virtual subscription object for admin with unlimited profiles
       setSubscription({
         id: 'admin-unlimited',
-        userId: currentUser?.uid || 'admin',
+        userId: currentUser?.id || 'admin',
         gbpAccountId: gbpAccountId || 'admin',
         planId: 'unlimited',
         status: 'active',
@@ -110,10 +110,10 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }
 
     // First, try to find subscription by user ID even if GBP is not connected
-    if (currentUser?.uid && !gbpAccountId) {
-      console.log('No GBP connected, checking by user ID:', currentUser.uid);
+    if (currentUser?.id && !gbpAccountId) {
+      console.log('No GBP connected, checking by user ID:', currentUser.id);
       try {
-        const response = await fetch(`${backendUrl}/api/payment/subscription/status?userId=${currentUser.uid}`, {
+        const response = await fetch(`${backendUrl}/api/payment/subscription/status?userId=${currentUser.id}`, {
           headers: {
             'Content-Type': 'application/json'
           }
@@ -141,7 +141,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       }
     }
 
-    if (!gbpAccountId && !currentUser?.uid) {
+    if (!gbpAccountId && !currentUser?.id) {
       console.log('No GBP account ID or user ID, setting status to none');
       setStatus('none');
       setDaysRemaining(null);
@@ -156,7 +156,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       // Check subscription status from backend using both userId and gbpAccountId
       const params = new URLSearchParams();
       if (gbpAccountId) params.append('gbpAccountId', gbpAccountId);
-      if (currentUser?.uid) params.append('userId', currentUser.uid);
+      if (currentUser?.id) params.append('userId', currentUser.id);
 
       const response = await fetch(`${backendUrl}/api/payment/subscription/status?${params.toString()}`, {
         headers: {
@@ -234,7 +234,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
   };
 
   const createTrialSubscription = async () => {
-    console.log('Creating trial subscription - User:', currentUser?.uid, 'GBP:', gbpAccountId);
+    console.log('Creating trial subscription - User:', currentUser?.id, 'GBP:', gbpAccountId);
     
     if (!currentUser || !gbpAccountId) {
       console.error('Cannot create trial - missing user or GBP account');
@@ -256,7 +256,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: currentUser.uid,
+          userId: currentUser.id,
           gbpAccountId,
           email: currentUser.email
         })
@@ -276,7 +276,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       } else {
         // Fallback to Firebase
         const newSubscription = await SubscriptionService.createTrialSubscription(
-          currentUser.uid,
+          currentUser.id,
           gbpAccountId,
           currentUser.email!
         );
@@ -376,7 +376,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     }, delay);
 
     return () => clearTimeout(timeoutId);
-  }, [gbpAccountId, currentUser?.uid]);
+  }, [gbpAccountId, currentUser?.id]);
 
   // Auto-check subscription status every 30 minutes (reduced frequency)
   useEffect(() => {

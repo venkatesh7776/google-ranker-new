@@ -109,13 +109,13 @@ const Feedbacks = () => {
 
     console.log('[Feedbacks] 🔍 Fetching feedback...');
     console.log('[Feedbacks] Location ID:', selectedLocationId);
-    console.log('[Feedbacks] User ID:', currentUser.uid);
-    console.log('[Feedbacks] URL:', `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${currentUser.uid}`);
+    console.log('[Feedbacks] User ID:', currentUser.id);
+    console.log('[Feedbacks] URL:', `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${currentUser.id}`);
 
     setLoading(true);
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${currentUser.uid}`
+        `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${currentUser.id}`
       );
 
       if (response.ok) {
@@ -159,7 +159,7 @@ const Feedbacks = () => {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: currentUser.uid,
+            userId: currentUser.id,
             resolutionNotes
           })
         }
