@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, useScroll, useSpring, useInView } from 'framer-motion';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -35,16 +35,42 @@ import {
   Menu,
   X
 } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { Link, Navigate } from 'react-router-dom';
+import { useAuth } from '@/contexts/AuthContext';
 
 const LandingPage = () => {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const { currentUser, loading } = useAuth();
   const { scrollYProgress } = useScroll();
   const scaleX = useSpring(scrollYProgress, {
     stiffness: 100,
     damping: 30,
     restDelta: 0.001
   });
+
+  // Redirect authenticated users to dashboard
+  useEffect(() => {
+    if (currentUser && !loading) {
+      console.log('✅ LandingPage - User authenticated, should redirect to dashboard');
+    }
+  }, [currentUser, loading]);
+
+  // If user is authenticated, redirect to dashboard
+  if (currentUser && !loading) {
+    return <Navigate to="/dashboard" replace />;
+  }
+
+  // Show loading spinner while checking auth state
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-violet-600 mx-auto mb-4"></div>
+          <p className="text-slate-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
 
   const industries = [
     { name: 'Real Estate Agents', icon: Building2, color: 'from-blue-500 to-cyan-500' },

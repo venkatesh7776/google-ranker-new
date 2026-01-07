@@ -130,9 +130,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: window.location.origin.includes('localhost')
-            ? `${window.location.origin}/login`
-            : undefined, // Let Supabase handle redirect in production
+          redirectTo: `${window.location.origin}/`,
         }
       });
 
