@@ -33,7 +33,11 @@ import {
   Globe,
   ChevronDown,
   Menu,
-  X
+  X,
+  LogIn,
+  Link2,
+  PlayCircle,
+  TrendingUp as GrowthIcon
 } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { useAuth } from '@/contexts/AuthContext';
@@ -464,8 +468,145 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* How It Works Section */}
+      <section className="py-20 md:py-32 bg-gradient-to-b from-white to-purple-50 relative overflow-hidden">
+        <div className="container mx-auto px-4 relative z-10">
+          <AnimatedCard delay={0.1}>
+            <div className="text-center mb-16">
+              <Badge className="mb-4 px-4 py-2 bg-gradient-to-r from-purple-100 to-blue-100 text-purple-700 border-purple-200">
+                <Rocket className="h-4 w-4 mr-2 inline" />
+                Simple & Powerful
+              </Badge>
+              <h2 className="text-4xl md:text-6xl font-black mb-6">
+                <span className="bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
+                  How It Works
+                </span>
+              </h2>
+              <p className="text-xl text-slate-600 max-w-2xl mx-auto">
+                Get started in minutes and watch your business grow on autopilot
+              </p>
+            </div>
+          </AnimatedCard>
+
+          <div className="max-w-6xl mx-auto">
+            <div className="grid md:grid-cols-4 gap-8 relative">
+              {/* Connecting Line (Desktop) */}
+              <div className="hidden md:block absolute top-24 left-0 right-0 h-1 bg-gradient-to-r from-purple-200 via-blue-200 to-green-200 -z-10"></div>
+
+              {/* Step 1: Login */}
+              <AnimatedCard delay={0.1}>
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-purple-600 to-purple-400 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                  <Card className="relative bg-white border-2 border-purple-200 hover:border-purple-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                    <CardContent className="pt-8 pb-8 text-center">
+                      <div className="mb-6 relative">
+                        <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-purple-500 to-purple-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <LogIn className="h-10 w-10 text-white" />
+                        </div>
+                        <div className="absolute -top-4 -right-4 h-8 w-8 bg-purple-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                          1
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold mb-3 text-slate-900">Login</h3>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Sign up in seconds with your email or Google account
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </AnimatedCard>
+
+              {/* Step 2: Connect Google Business Profile */}
+              <AnimatedCard delay={0.2}>
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-blue-600 to-blue-400 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                  <Card className="relative bg-white border-2 border-blue-200 hover:border-blue-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                    <CardContent className="pt-8 pb-8 text-center">
+                      <div className="mb-6 relative">
+                        <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <Link2 className="h-10 w-10 text-white" />
+                        </div>
+                        <div className="absolute -top-4 -right-4 h-8 w-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                          2
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold mb-3 text-slate-900">Connect</h3>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Link your Google Business Profile with one click
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </AnimatedCard>
+
+              {/* Step 3: Enable Autoposting */}
+              <AnimatedCard delay={0.3}>
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-cyan-600 to-cyan-400 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                  <Card className="relative bg-white border-2 border-cyan-200 hover:border-cyan-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                    <CardContent className="pt-8 pb-8 text-center">
+                      <div className="mb-6 relative">
+                        <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-cyan-500 to-cyan-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <PlayCircle className="h-10 w-10 text-white" />
+                        </div>
+                        <div className="absolute -top-4 -right-4 h-8 w-8 bg-cyan-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                          3
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold mb-3 text-slate-900">Activate</h3>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Turn on autoposting and let AI create engaging content
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </AnimatedCard>
+
+              {/* Step 4: Watch Business Grow */}
+              <AnimatedCard delay={0.4}>
+                <div className="relative group">
+                  <div className="absolute -inset-1 bg-gradient-to-r from-green-600 to-green-400 rounded-2xl blur opacity-25 group-hover:opacity-75 transition duration-500"></div>
+                  <Card className="relative bg-white border-2 border-green-200 hover:border-green-400 transition-all duration-300 hover:shadow-2xl hover:-translate-y-2">
+                    <CardContent className="pt-8 pb-8 text-center">
+                      <div className="mb-6 relative">
+                        <div className="h-20 w-20 mx-auto rounded-full bg-gradient-to-br from-green-500 to-green-600 flex items-center justify-center shadow-lg group-hover:scale-110 transition-transform duration-300">
+                          <GrowthIcon className="h-10 w-10 text-white" />
+                        </div>
+                        <div className="absolute -top-4 -right-4 h-8 w-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold shadow-lg">
+                          4
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold mb-3 text-slate-900">Grow</h3>
+                      <p className="text-slate-600 text-sm leading-relaxed">
+                        Watch your rankings soar and business flourish
+                      </p>
+                    </CardContent>
+                  </Card>
+                </div>
+              </AnimatedCard>
+            </div>
+
+            {/* CTA Button */}
+            <AnimatedCard delay={0.5}>
+              <div className="text-center mt-16">
+                <Link to="/login">
+                  <Button
+                    size="lg"
+                    className="bg-gradient-to-r from-purple-600 to-blue-600 hover:from-purple-700 hover:to-blue-700 text-white px-8 py-6 text-lg font-bold rounded-full shadow-2xl hover:shadow-purple-500/50 transition-all duration-300 hover:scale-105"
+                  >
+                    Start Your 15-Day Free Trial
+                    <ArrowRight className="ml-2 h-5 w-5" />
+                  </Button>
+                </Link>
+                <p className="text-sm text-slate-500 mt-4">No credit card required • Setup in 2 minutes</p>
+              </div>
+            </AnimatedCard>
+          </div>
+        </div>
+      </section>
+
       {/* Industries Section */}
-      <section className="py-20 bg-gradient-to-b from-slate-50 to-white">
+      <section className="py-20 bg-gradient-to-b from-purple-50 to-white">
         <div className="container mx-auto px-4">
           <AnimatedCard delay={0.1}>
             <div className="text-center mb-16">
