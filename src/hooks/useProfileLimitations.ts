@@ -139,7 +139,7 @@ Please contact me to discuss.
 
 Best regards,`);
 
-    window.open(`mailto:support@gmbprofilepulse.com?subject=${subject}&body=${body}`, '_blank');
+    window.open(`mailto:Support@googleranker.io?subject=${subject}&body=${body}`, '_blank');
   }, [subscription?.planName, subscription?.profileCount, subscription?.paidSlots]);
 
   return {

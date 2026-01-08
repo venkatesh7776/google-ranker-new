@@ -522,14 +522,14 @@ const Billing = () => {
                   </div>
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-bold text-gray-900 mb-1.5" style={{ fontFamily: 'Onest' }}>WhatsApp Support</p>
-                    <a 
-                      href="https://wa.me/917710616166" 
-                      target="_blank" 
+                    <a
+                      href="https://wa.me/919549517771"
+                      target="_blank"
                       rel="noopener noreferrer"
                       className="text-base text-green-600 hover:text-green-700 font-semibold hover:underline"
                       style={{ fontFamily: 'Onest' }}
                     >
-                      +91 7710616166
+                      +91 9549517771
                     </a>
                   </div>
                 </div>

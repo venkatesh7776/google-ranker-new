@@ -269,7 +269,7 @@ const TermsOfService = () => {
               <div>
                 <h3 className="text-lg font-bold text-slate-900 mb-2">9.1 Informal Resolution</h3>
                 <p className="text-slate-700 leading-relaxed">
-                  Before filing a claim, you agree to try to resolve the dispute informally by contacting us at support@googleranker.com. We will attempt to resolve the dispute informally within 60 days.
+                  Before filing a claim, you agree to try to resolve the dispute informally by contacting us at Support@googleranker.io. We will attempt to resolve the dispute informally within 60 days.
                 </p>
               </div>
               <div>
@@ -372,7 +372,7 @@ const TermsOfService = () => {
               </p>
               <div className="space-y-2 text-slate-700">
                 <p><strong>Email:</strong> legal@googleranker.com</p>
-                <p><strong>Support:</strong> support@googleranker.com</p>
+                <p><strong>Support:</strong> Support@googleranker.io</p>
                 <p><strong>Address:</strong> Google Ranker, Legal Department, [Your Business Address]</p>
               </div>
             </CardContent>
