@@ -987,7 +987,7 @@ app.get('/api/statistics/:userId', async (req, res) => {
 });
 
 // Apply subscription check middleware to all routes
-// This will enforce payment after 15-day trial expiry
+// This will enforce payment after 7-day trial expiry
 app.use((req, res, next) => {
   // Skip certain routes that don't need subscription check
   const exemptRoutes = ['/health', '/config', '/auth'];

@@ -17,9 +17,9 @@ export const TrialBanner: React.FC = () => {
     return null;
   }
 
-  // Calculate progress percentage (15 days total trial)
-  const progressPercentage = daysRemaining 
-    ? ((15 - daysRemaining) / 15) * 100 
+  // Calculate progress percentage (7 days total trial)
+  const progressPercentage = daysRemaining
+    ? ((7 - daysRemaining) / 7) * 100 
     : 100;
 
   // Determine banner style based on urgency

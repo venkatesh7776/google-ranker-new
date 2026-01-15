@@ -204,7 +204,7 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         if (data.status === 'expired' && data.billingOnly) {
           toast({
             title: "Trial Expired",
-            description: "Your 15-day trial has expired. Please upgrade to continue using all features.",
+            description: "Your 7-day trial has expired. Please upgrade to continue using all features.",
             variant: "destructive"
           });
         }
@@ -267,12 +267,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         const data = await response.json();
         setSubscription(data.subscription);
         setStatus('trial');
-        setDaysRemaining(15); // 15 days trial
+        setDaysRemaining(7); // 7 days trial
         setIsFeatureBlocked(false);
         
         toast({
           title: "Trial Started!",
-          description: "Your 15-day free trial has begun. Enjoy all features!",
+          description: "Your 7-day free trial has begun. Enjoy all features!",
         });
       } else {
         // Fallback to Firebase
@@ -284,12 +284,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         
         setSubscription(newSubscription);
         setStatus('trial');
-        setDaysRemaining(15); // 15 days trial
+        setDaysRemaining(7); // 7 days trial
         setIsFeatureBlocked(false);
         
         toast({
           title: "Trial Started!",
-          description: "Your 15-day free trial has begun. Enjoy all features!",
+          description: "Your 7-day free trial has begun. Enjoy all features!",
         });
       }
       

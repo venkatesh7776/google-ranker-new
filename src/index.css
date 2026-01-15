@@ -184,6 +184,62 @@ All colors MUST be HSL.
     gap: clamp(0.5rem, 2vw, 1rem);
   }
 
+  /* Hide scrollbar utility */
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* ==========================================
+   MARQUEE ANIMATIONS (outside utilities layer)
+   ========================================== */
+
+@keyframes marquee {
+  0% {
+    transform: translateX(0);
+  }
+  100% {
+    transform: translateX(-33.333%);
+  }
+}
+
+.animate-marquee {
+  animation: marquee 25s linear infinite;
+}
+
+/* Slower marquee for How It Works section */
+.animate-marquee-slow {
+  animation: marquee 20s linear infinite;
+}
+
+/* Faster marquee for Industries section */
+.animate-marquee-fast {
+  animation: marquee 15s linear infinite;
+}
+
+/* Adjust speeds on mobile for better readability */
+@media (max-width: 768px) {
+  .animate-marquee {
+    animation: marquee 18s linear infinite;
+  }
+  .animate-marquee-slow {
+    animation: marquee 15s linear infinite;
+  }
+  .animate-marquee-fast {
+    animation: marquee 12s linear infinite;
+  }
+}
+
+/* ==========================================
+   RESPONSIVE CONTAINER (continued)
+   ========================================== */
+
+@layer utilities {
+
   /* Responsive container */
   .container-responsive {
     width: 100%;

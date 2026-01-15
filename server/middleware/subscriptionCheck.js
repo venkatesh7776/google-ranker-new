@@ -60,7 +60,7 @@ export const checkSubscription = (req, res, next) => {
     if (!isBillingRoute) {
       return res.status(402).json({
         error: 'Payment Required',
-        message: 'Your 15-day trial has expired. Please upgrade to continue using all features.',
+        message: 'Your 7-day trial has expired. Please upgrade to continue using all features.',
         status: 'expired',
         billingOnly: true,
         requiresPayment: true,

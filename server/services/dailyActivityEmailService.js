@@ -292,7 +292,7 @@ View your dashboard: ${this.appUrl}/dashboard
       <div class="trial-banner">
         <h3 style="margin: 0 0 10px 0; font-size: 20px;">🎁 Your Free Trial Has Started!</h3>
         <p style="margin: 0; font-size: 14px; opacity: 0.95;">
-          Enjoy full access to all premium features for the next 15 days.
+          Enjoy full access to all premium features for the next 7 days.
         </p>
       </div>
 
@@ -393,7 +393,7 @@ Hi ${userName || 'there'}!
 Welcome to LOBAISEO! We're excited to help you automate and optimize your Google Business Profile management.
 
 Your Free Trial Has Started!
-Enjoy full access to all premium features for the next 15 days.
+Enjoy full access to all premium features for the next 7 days.
 
 Get Started in 3 Easy Steps:
 

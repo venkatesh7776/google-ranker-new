@@ -75,7 +75,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'API Access',
       'Priority Support'
     ],
-    trialDays: 15,
+    trialDays: 7,
     popular: false
   },
   {
@@ -92,7 +92,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'API Access',
       'Priority Support'
     ],
-    trialDays: 15,
+    trialDays: 7,
     popular: false
   },
   {
@@ -109,14 +109,14 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
       'API Access',
       'Priority Support'
     ],
-    trialDays: 15,
+    trialDays: 7,
     popular: true
   }
 ];
 
 export class SubscriptionService {
   private static COLLECTION_NAME = 'subscriptions';
-  private static TRIAL_DAYS = 15;
+  private static TRIAL_DAYS = 7;
   private static BASE_PRICE_PER_PROFILE = 9900; // $99 in cents
 
   static calculateTotalPrice(profileCount: number): number {

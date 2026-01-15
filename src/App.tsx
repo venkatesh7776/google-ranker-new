@@ -7,6 +7,12 @@ import NotFound from "./pages/NotFound";
 import LandingPage from "./pages/LandingPage";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfService from "./pages/TermsOfService";
+import AboutUs from "./pages/AboutUs";
+import Contact from "./pages/Contact";
+import Careers from "./pages/Careers";
+import Blog from "./pages/Blog";
+import CookiePolicy from "./pages/CookiePolicy";
+import GDPR from "./pages/GDPR";
 import LoginPage from "./components/Auth/LoginPage";
 import SignupPage from "./components/Auth/SignupPage";
 import ForgotPasswordPage from "./components/Auth/ForgotPasswordPage";
@@ -69,6 +75,12 @@ const App = () => (
             <Route path="/" element={<LandingPage />} />
             <Route path="/privacy-policy" element={<PrivacyPolicy />} />
             <Route path="/terms-of-service" element={<TermsOfService />} />
+            <Route path="/about-us" element={<AboutUs />} />
+            <Route path="/contact" element={<Contact />} />
+            <Route path="/careers" element={<Careers />} />
+            <Route path="/blog" element={<Blog />} />
+            <Route path="/cookie-policy" element={<CookiePolicy />} />
+            <Route path="/gdpr" element={<GDPR />} />
             <Route path="/login" element={
               <AuthRedirect>
                 <LoginPage />

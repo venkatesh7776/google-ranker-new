@@ -59,7 +59,7 @@ const TermsOfService = () => {
         },
         {
           subtitle: '3.2 Free Trial',
-          text: 'We offer a 15-day free trial. No credit card is required for the trial. After the trial period, you must subscribe to continue using the service.'
+          text: 'We offer a 7-day free trial. No credit card is required for the trial. After the trial period, you must subscribe to continue using the service.'
         },
         {
           subtitle: '3.3 Subscription Plans',

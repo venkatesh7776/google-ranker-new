@@ -314,7 +314,7 @@ class NewDailyActivityScheduler {
 
   /**
    * Determine if user should receive email based on new rules:
-   * - Trial users (15 days): Daily emails
+   * - Trial users (7 days): Daily emails
    * - Trial expired users: Every 3 days
    * - Subscribed users: Weekly (every Sunday)
    */
@@ -530,7 +530,7 @@ class NewDailyActivityScheduler {
 
     console.log('[NewDailyActivityScheduler] ✅ Email scheduler initialized (6 PM daily)');
     console.log('[NewDailyActivityScheduler] Email frequencies:');
-    console.log('   - Trial users (15 days): Daily');
+    console.log('   - Trial users (7 days): Daily');
     console.log('   - Trial expired users: Every 3 days');
     console.log('   - Subscribed users: Weekly (Sundays)');
   }

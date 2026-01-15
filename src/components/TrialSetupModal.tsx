@@ -106,7 +106,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
         amount: order.amount, // $0
         currency: order.currency,
         name: 'GMB Profile Pulse',
-        description: '15-Day Free Trial Setup',
+        description: '7-Day Free Trial Setup',
         order_id: order.id,
         handler: async (response) => {
           // Verify payment and setup autopay
@@ -131,7 +131,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
 
             toast({
               title: "Free Trial Started! 🎉",
-              description: "Your 15-day trial is active with auto-pay setup. Enjoy all features!",
+              description: "Your 7-day trial is active with auto-pay setup. Enjoy all features!",
             });
 
             // Navigate to dashboard
@@ -206,7 +206,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
 
         toast({
           title: "Free Trial Started! 🎉",
-          description: "Your 15-day trial is now active. Add payment details later in billing settings.",
+          description: "Your 7-day trial is now active. Add payment details later in billing settings.",
         });
 
         // Navigate to dashboard
@@ -232,7 +232,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
         <DialogHeader>
           <DialogTitle className="flex items-center space-x-2">
             <Gift className="h-6 w-6 text-green-600" />
-            <span>Claim Your Free 15-Day Trial</span>
+            <span>Claim Your Free 7-Day Trial</span>
           </DialogTitle>
           <DialogDescription>
             Start managing your Google Business Profile with all premium features included!
@@ -288,7 +288,7 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
               We'll securely save your payment method for seamless continuation after your trial.
             </p>
             <ul className="text-xs text-yellow-700 space-y-1">
-              <li>• No charges during your 15-day trial</li>
+              <li>• No charges during your 7-day trial</li>
               <li>• Cancel anytime during the trial</li>
               <li>• Automatic billing only starts after trial ends</li>
               <li>• Industry-standard security with Razorpay</li>
