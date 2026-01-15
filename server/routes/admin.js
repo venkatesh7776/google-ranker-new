@@ -1,5 +1,5 @@
 import express from 'express';
-import { verifyAdmin, checkAdminLevel } from '../middleware/adminAuth.js';
+import { verifyAdmin, checkAdminLevel } from '../middleware/supabaseAdminAuth.js';
 import adminUserService from '../services/adminUserService.js';
 import adminAnalyticsService from '../services/adminAnalyticsService.js';
 import couponService from '../services/couponService.js';
