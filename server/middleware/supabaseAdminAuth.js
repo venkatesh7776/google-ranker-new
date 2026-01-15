@@ -41,7 +41,7 @@ const verifySupabaseAdmin = async (req, res, next) => {
       
       // ADMIN WHITELIST: Allow specific users as admin
       const adminEmails = [
-        'didgibusy01shakti@gmail.com'
+        'digibusy01shakti@gmail.com'
       ];
       
       if (adminEmails.includes(decodedToken.email)) {
@@ -84,7 +84,7 @@ const verifySupabaseAdmin = async (req, res, next) => {
             
             // ADMIN WHITELIST CHECK: Allow specific emails even with invalid Firebase SDK
             const adminEmails = [
-              'didgibusy01shakti@gmail.com'
+              'digibusy01shakti@gmail.com'
             ];
             
             if (adminEmails.includes(payload.email)) {
