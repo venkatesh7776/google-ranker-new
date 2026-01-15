@@ -45,19 +45,19 @@ const Contact = () => {
       icon: Phone,
       title: 'WhatsApp',
       value: '+91 95495 17771',
-      description: 'Mon-Sat, 9 AM - 7 PM IST'
+      description: 'Mon-Sat, 9 AM - 6 PM IST'
     },
     {
       icon: MapPin,
       title: 'Office',
-      value: 'Bangalore, Karnataka',
+      value: 'Ajmer, Rajasthan 305001',
       description: 'India'
     },
     {
       icon: Clock,
       title: 'Business Hours',
       value: 'Mon - Sat',
-      description: '9:00 AM - 7:00 PM IST'
+      description: '9:00 AM - 6:00 PM IST'
     }
   ];
 
