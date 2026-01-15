@@ -164,7 +164,32 @@ const AboutUs = () => {
             viewport={{ once: true }}
           >
             <h2 className="text-3xl font-bold text-center mb-8">Our Journey</h2>
-            <div className="relative">
+            {/* Mobile Timeline */}
+            <div className="md:hidden relative">
+              <div className="absolute left-4 top-0 h-full w-1 bg-gradient-to-b from-violet-500 to-fuchsia-500 rounded-full"></div>
+              <div className="space-y-6">
+                {milestones.map((milestone, index) => (
+                  <motion.div
+                    key={index}
+                    initial={{ opacity: 0, x: -20 }}
+                    whileInView={{ opacity: 1, x: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: index * 0.1 }}
+                    className="flex items-start gap-4 pl-2"
+                  >
+                    <div className="w-4 h-4 bg-violet-500 rounded-full border-4 border-white shadow-lg z-10 flex-shrink-0 mt-4"></div>
+                    <Card className="flex-1 border-2 border-slate-200">
+                      <CardContent className="p-4">
+                        <span className="text-sm font-bold text-violet-600">{milestone.year}</span>
+                        <p className="text-slate-700">{milestone.event}</p>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+            {/* Desktop Timeline */}
+            <div className="hidden md:block relative">
               <div className="absolute left-1/2 transform -translate-x-1/2 h-full w-1 bg-gradient-to-b from-violet-500 to-fuchsia-500 rounded-full"></div>
               <div className="space-y-8">
                 {milestones.map((milestone, index) => (
@@ -283,14 +308,14 @@ const AboutUs = () => {
           <p className="text-slate-500">
             © 2024 Google Ranker. All rights reserved.
           </p>
-          <div className="flex justify-center gap-6 mt-4">
-            <Link to="/privacy-policy" className="hover:text-violet-400 transition-colors">
+          <div className="flex flex-wrap justify-center gap-4 md:gap-6 mt-4">
+            <Link to="/privacy-policy" className="hover:text-violet-400 transition-colors text-sm md:text-base">
               Privacy Policy
             </Link>
-            <Link to="/terms-of-service" className="hover:text-violet-400 transition-colors">
+            <Link to="/terms-of-service" className="hover:text-violet-400 transition-colors text-sm md:text-base">
               Terms of Service
             </Link>
-            <Link to="/" className="hover:text-violet-400 transition-colors">
+            <Link to="/" className="hover:text-violet-400 transition-colors text-sm md:text-base">
               Home
             </Link>
           </div>

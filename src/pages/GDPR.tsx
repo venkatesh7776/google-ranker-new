@@ -256,14 +256,14 @@ const GDPR = () => {
           <p className="text-slate-500">
             © 2024 Google Ranker. All rights reserved.
           </p>
-          <div className="flex justify-center gap-6 mt-4">
-            <Link to="/privacy-policy" className="hover:text-violet-400 transition-colors">
+          <div className="flex flex-wrap justify-center gap-4 md:gap-6 mt-4">
+            <Link to="/privacy-policy" className="hover:text-violet-400 transition-colors text-sm md:text-base">
               Privacy Policy
             </Link>
-            <Link to="/terms-of-service" className="hover:text-violet-400 transition-colors">
+            <Link to="/terms-of-service" className="hover:text-violet-400 transition-colors text-sm md:text-base">
               Terms of Service
             </Link>
-            <Link to="/" className="hover:text-violet-400 transition-colors">
+            <Link to="/" className="hover:text-violet-400 transition-colors text-sm md:text-base">
               Home
             </Link>
           </div>
