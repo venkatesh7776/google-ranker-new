@@ -72,12 +72,24 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       }
 
       try {
-        // Supabase user metadata check
-        const role = currentUser.user_metadata?.role || currentUser.app_metadata?.role;
-        const level = currentUser.user_metadata?.adminLevel || currentUser.app_metadata?.adminLevel;
+        // Admin whitelist - must match backend whitelist
+        const adminEmails = [
+          'digibusy01shakti@gmail.com'
+        ];
 
-        setIsAdmin(role === 'admin');
-        setAdminLevel(level || 'viewer');
+        const userEmail = currentUser.email;
+        const isAdminUser = adminEmails.includes(userEmail || '');
+
+        // Also check Supabase user metadata as fallback
+        const roleFromMetadata = currentUser.user_metadata?.role || currentUser.app_metadata?.role;
+        const levelFromMetadata = currentUser.user_metadata?.adminLevel || currentUser.app_metadata?.adminLevel;
+
+        setIsAdmin(isAdminUser || roleFromMetadata === 'admin');
+        setAdminLevel(isAdminUser ? 'super' : (levelFromMetadata || 'viewer'));
+
+        if (isAdminUser) {
+          console.log('[AdminContext] ✅ Admin access granted via whitelist:', userEmail);
+        }
       } catch (error) {
         console.error('Error checking admin status:', error);
         setIsAdmin(false);
