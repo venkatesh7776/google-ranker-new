@@ -303,79 +303,88 @@ class SupabaseAutomationService {
 
   /**
    * Calculate next post date based on schedule and frequency
-   * IMPORTANT: If the scheduled time is in the future TODAY, it should be scheduled for TODAY
+   * IMPORTANT: Schedule is in IST (e.g., "17:10")
+   * Stored in database as UTC (e.g., 17:10 IST = 11:40 UTC)
+   * Based on working whitelabeled version
    */
-  calculateNextPostDate(schedule, frequency, timezone = 'Asia/Kolkata') {
+  calculateNextPostDate(schedule, frequency, timezone = 'Asia/Kolkata', lastRun = null) {
     try {
-      const [hour, minute] = schedule.split(':').map(Number);
+      const [scheduleHours, scheduleMinutes] = schedule.split(':').map(Number);
       const now = new Date();
 
+      // IST offset: +5:30 from UTC
+      const IST_OFFSET_HOURS = 5;
+      const IST_OFFSET_MINUTES = 30;
+
       console.log(`[SupabaseAutomationService] 🕐 Calculating next post date:`);
-      console.log(`  - Schedule: ${schedule} (${hour}:${minute})`);
+      console.log(`  - Schedule: ${schedule} (${scheduleHours}:${scheduleMinutes}) IST`);
       console.log(`  - Frequency: ${frequency}`);
-      console.log(`  - Current time: ${now.toISOString()}`);
+      console.log(`  - Current time (UTC): ${now.toISOString()}`);
 
-      // Create date for the scheduled time TODAY
-      let nextPost = new Date();
-      nextPost.setHours(hour, minute, 0, 0);
+      // Get current time in IST
+      const nowIstHours = (now.getUTCHours() + IST_OFFSET_HOURS +
+        Math.floor((now.getUTCMinutes() + IST_OFFSET_MINUTES) / 60)) % 24;
+      const nowIstMinutes = (now.getUTCMinutes() + IST_OFFSET_MINUTES) % 60;
+      const nowTotalMinutes = nowIstHours * 60 + nowIstMinutes;
+      const scheduleTotalMinutes = scheduleHours * 60 + scheduleMinutes;
 
-      console.log(`  - Scheduled time today would be: ${nextPost.toISOString()}`);
-      console.log(`  - Is scheduled time in the future? ${nextPost > now}`);
+      console.log(`  - Current IST time: ${nowIstHours}:${nowIstMinutes.toString().padStart(2, '0')}`);
 
-      switch (frequency) {
-        case 'test30s':
-          // Test mode: 30 seconds from now
-          nextPost = new Date(now.getTime() + 30 * 1000);
-          console.log(`  - Test mode: next post in 30 seconds`);
-          break;
-        case 'daily':
-          // If scheduled time today has already passed, schedule for tomorrow
-          // Otherwise, schedule for today
-          if (nextPost <= now) {
-            nextPost.setDate(nextPost.getDate() + 1);
-            console.log(`  - Daily: Time passed today, scheduling for tomorrow`);
-          } else {
-            console.log(`  - Daily: Time hasn't passed, scheduling for TODAY`);
-          }
-          break;
-        case 'alternative':
-          // Every 2 days - if time passed today, add 2 days
-          if (nextPost <= now) {
-            nextPost.setDate(nextPost.getDate() + 2);
-            console.log(`  - Alternative: Time passed, scheduling 2 days from now`);
-          } else {
-            console.log(`  - Alternative: Time hasn't passed, scheduling for TODAY`);
-          }
-          break;
-        case 'weekly':
-          if (nextPost <= now) {
-            nextPost.setDate(nextPost.getDate() + 7);
-            console.log(`  - Weekly: Time passed, scheduling 7 days from now`);
-          } else {
-            console.log(`  - Weekly: Time hasn't passed, scheduling for TODAY`);
-          }
-          break;
-        case 'twice-weekly':
-          // Next Monday or Thursday
-          const dayOfWeek = nextPost.getDay();
-          if (dayOfWeek < 1) {
-            nextPost.setDate(nextPost.getDate() + 1); // Monday
-          } else if (dayOfWeek < 4) {
-            nextPost.setDate(nextPost.getDate() + (4 - dayOfWeek)); // Thursday
-          } else if (dayOfWeek === 4 && nextPost > now) {
-            // It's Thursday and time hasn't passed
-          } else {
-            nextPost.setDate(nextPost.getDate() + (8 - dayOfWeek)); // Next Monday
-          }
-          break;
-        default:
-          if (nextPost <= now) {
-            nextPost.setDate(nextPost.getDate() + 1);
-          }
+      // Check if scheduled time has passed today (in IST)
+      const scheduledTimePassed = nowTotalMinutes >= scheduleTotalMinutes;
+      console.log(`  - Scheduled time passed today? ${scheduledTimePassed}`);
+
+      // Calculate days to add based on frequency
+      let daysToAdd = 0;
+      if (scheduledTimePassed) {
+        switch (frequency) {
+          case 'daily':
+            daysToAdd = 1;
+            break;
+          case 'alternative':
+            daysToAdd = 2;
+            break;
+          case 'weekly':
+            daysToAdd = 7;
+            break;
+          default:
+            daysToAdd = 1;
+        }
       }
 
-      console.log(`  - Final next post date: ${nextPost.toISOString()}`);
-      return nextPost.toISOString();
+      // Create target date starting from today
+      const targetDate = new Date(now);
+      targetDate.setUTCDate(targetDate.getUTCDate() + daysToAdd);
+
+      // Convert IST schedule time to UTC: UTC = IST - 5:30
+      let targetUtcHours = scheduleHours - IST_OFFSET_HOURS;
+      let targetUtcMinutes = scheduleMinutes - IST_OFFSET_MINUTES;
+
+      // Handle underflow (e.g., 00:10 IST = 18:40 UTC previous day)
+      if (targetUtcMinutes < 0) {
+        targetUtcMinutes += 60;
+        targetUtcHours -= 1;
+      }
+      if (targetUtcHours < 0) {
+        targetUtcHours += 24;
+        targetDate.setUTCDate(targetDate.getUTCDate() - 1);
+      }
+
+      targetDate.setUTCHours(targetUtcHours, targetUtcMinutes, 0, 0);
+
+      console.log(`  - Days to add: ${daysToAdd}`);
+      console.log(`  - Target UTC hours: ${targetUtcHours}:${targetUtcMinutes}`);
+      console.log(`  - Final next post (UTC): ${targetDate.toISOString()}`);
+      console.log(`  - Final next post (IST): ${scheduleHours}:${scheduleMinutes.toString().padStart(2, '0')}`);
+
+      // Special case: test mode
+      if (frequency === 'test30s') {
+        const testDate = new Date(now.getTime() + 30 * 1000);
+        console.log(`  - Test mode: next post in 30 seconds`);
+        return testDate.toISOString();
+      }
+
+      return targetDate.toISOString();
     } catch (error) {
       console.error('[SupabaseAutomationService] Error calculating next post date:', error);
       return null;
