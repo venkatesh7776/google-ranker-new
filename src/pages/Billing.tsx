@@ -261,7 +261,7 @@ const Billing = () => {
                     onClick={() => setIsPaymentModalOpen(true)}
                   >
                     <CreditCard className="mr-2 h-4 w-4" />
-                    Subscribe to {profileStats.needSubscription} Profile{profileStats.needSubscription > 1 ? 's' : ''} - ${profileStats.needSubscription * 99}/year
+                    Subscribe to {profileStats.needSubscription} Profile{profileStats.needSubscription > 1 ? 's' : ''}
                   </Button>
                 </div>
               </div>
