@@ -440,6 +440,44 @@ class SupabaseAutomationService {
 
     return formatted;
   }
+
+  /**
+   * Update only the next_post_date field in the database
+   * Used when recalculating after the scheduled time has passed
+   */
+  async updateNextPostDate(gmailId, locationId, nextPostDate) {
+    try {
+      await this.initialize();
+
+      if (!this.client) {
+        console.error('[SupabaseAutomationService] Client not initialized');
+        return false;
+      }
+
+      console.log(`[SupabaseAutomationService] Updating next_post_date for ${gmailId}, location ${locationId}`);
+      console.log(`[SupabaseAutomationService] New next_post_date: ${nextPostDate}`);
+
+      const { error } = await this.client
+        .from('user_locations')
+        .update({
+          next_post_date: nextPostDate,
+          updated_at: new Date().toISOString()
+        })
+        .eq('gmail_id', gmailId)
+        .eq('location_id', locationId);
+
+      if (error) {
+        console.error('[SupabaseAutomationService] Error updating next_post_date:', error);
+        return false;
+      }
+
+      console.log('[SupabaseAutomationService] ✅ next_post_date updated successfully');
+      return true;
+    } catch (error) {
+      console.error('[SupabaseAutomationService] Error in updateNextPostDate:', error);
+      return false;
+    }
+  }
 }
 
 const supabaseAutomationService = new SupabaseAutomationService();

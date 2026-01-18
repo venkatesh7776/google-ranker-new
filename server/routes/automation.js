@@ -32,6 +32,37 @@ router.get('/settings/:locationId', async (req, res) => {
       });
     }
 
+    // CRITICAL FIX: If nextPostDate is in the past, recalculate it
+    let nextPostDate = settings.nextPostDate;
+    const schedule = settings.autoPosting?.schedule;
+    const frequency = settings.autoPosting?.frequency;
+    const isEnabled = settings.autoPosting?.enabled;
+
+    if (isEnabled && schedule && frequency && nextPostDate) {
+      const nextPostTime = new Date(nextPostDate).getTime();
+      const now = Date.now();
+
+      if (nextPostTime < now) {
+        console.log(`[Automation API] ⚠️ nextPostDate is in the past, recalculating...`);
+        console.log(`[Automation API] Old nextPostDate: ${nextPostDate}`);
+
+        // Recalculate next post date
+        const newNextPostDate = supabaseAutomationService.calculateNextPostDate(
+          schedule,
+          frequency,
+          settings.autoPosting?.timezone || 'Asia/Kolkata'
+        );
+
+        if (newNextPostDate) {
+          nextPostDate = newNextPostDate;
+          console.log(`[Automation API] New nextPostDate: ${nextPostDate}`);
+
+          // Update database with new next_post_date
+          await supabaseAutomationService.updateNextPostDate(userIdentifier, locationId, newNextPostDate);
+        }
+      }
+    }
+
     res.json({
       success: true,
       settings: {
@@ -39,7 +70,7 @@ router.get('/settings/:locationId', async (req, res) => {
         autoReplyEnabled: settings.autoReply?.enabled || false,
         schedule: settings.autoPosting?.schedule,
         frequency: settings.autoPosting?.frequency,
-        nextPostDate: settings.nextPostDate,
+        nextPostDate: nextPostDate,
         lastPostDate: settings.lastPostDate,
         lastPostSuccess: settings.lastPostSuccess,
         totalPosts: settings.totalPostsCreated,
