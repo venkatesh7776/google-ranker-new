@@ -28,6 +28,7 @@ import supabaseTokenStorage from './services/supabaseTokenStorage.js';
 import tokenManager from './services/tokenManager.js';
 import tokenRefreshService from './services/tokenRefreshService.js';
 import ClientConfigService from './services/clientConfigService.js';
+import newSchemaAdapter from './services/newSchemaAdapter.js';
 import EmailService from './services/emailService.js';
 import SMSService from './services/smsService.js';
 import WhatsAppService from './services/whatsappService.js';
@@ -1072,11 +1073,9 @@ app.get('/env-check', (req, res) => {
       BACKEND_URL: process.env.BACKEND_URL || 'not-set',
       HARDCODED_ACCOUNT_ID: process.env.HARDCODED_ACCOUNT_ID || 'not-set'
     },
-    azureOpenAI: {
-      AZURE_OPENAI_ENDPOINT: process.env.AZURE_OPENAI_ENDPOINT ? 'SET (' + (process.env.AZURE_OPENAI_ENDPOINT.substring(0, 30) + '...)') : 'NOT SET',
-      AZURE_OPENAI_API_KEY: process.env.AZURE_OPENAI_API_KEY ? 'SET (' + (process.env.AZURE_OPENAI_API_KEY.substring(0, 10) + '...)') : 'NOT SET',
-      AZURE_OPENAI_DEPLOYMENT: process.env.AZURE_OPENAI_DEPLOYMENT || 'NOT SET',
-      AZURE_OPENAI_API_VERSION: process.env.AZURE_OPENAI_API_VERSION || 'NOT SET'
+    geminiAI: {
+      GEMINI_API_KEY: process.env.GEMINI_API_KEY ? 'SET (' + (process.env.GEMINI_API_KEY.substring(0, 10) + '...)') : 'NOT SET',
+      GEMINI_MODEL: process.env.GEMINI_MODEL || 'gemini-2.0-flash'
     },
     razorpay: {
       RAZORPAY_KEY_ID: process.env.RAZORPAY_KEY_ID ? 'SET' : 'NOT SET',
@@ -1272,10 +1271,14 @@ app.post('/auth/google/callback', async (req, res) => {
     }
 
     const googleUserId = userInfo.data.id;
+    const userEmail = userInfo.data.email;
 
-    // Use Firebase user ID if provided, otherwise fall back to Google user ID
-    const userId = firebaseUserId || googleUserId;
-    console.log('1️⃣3️⃣ Using user ID for token storage:', userId, `(${firebaseUserId ? 'Firebase' : 'Google'})`);
+    // IMPORTANT: Use email as primary identifier (gmail_id in new schema)
+    // Firebase UID is stored separately in firebase_uid field
+    const userId = userEmail;
+    console.log('1️⃣3️⃣ Using email as user ID for token storage:', userId);
+    console.log('    Firebase UID:', firebaseUserId || 'not provided');
+    console.log('    Google ID:', googleUserId);
 
     // Save tokens to Firestore (persistent storage)
     console.log('1️⃣4️⃣ Saving tokens to Firestore...');
@@ -1312,21 +1315,31 @@ app.post('/auth/google/callback', async (req, res) => {
       const accounts = accountsResponse.data.accounts || [];
       console.log(`1️⃣7️⃣ Found ${accounts.length} GBP account(s)`);
 
-      // If user has GBP accounts, create trial subscription for the first one
-      if (accounts.length > 0) {
-        const gbpAccountId = accounts[0].name.split('/')[1];
-        console.log('1️⃣8️⃣ Creating trial subscription for GBP account:', gbpAccountId);
+      // Get GBP Account ID FIRST (critical for API calls)
+      const gbpAccountId = accounts.length > 0 ? accounts[0].name.split('/')[1] : null;
 
-        // Create trial subscription
-        await subscriptionService.createTrialSubscription(
-          userId,
-          gbpAccountId,
-          userInfo.data.email
-        );
-        console.log('1️⃣9️⃣ Trial subscription created successfully');
+      // Save user to new schema (users table) with token and GBP account ID
+      console.log('1️⃣8️⃣ Saving user to new schema...');
+      try {
+        await newSchemaAdapter.upsertUser({
+          gmailId: userInfo.data.email,
+          firebaseUid: firebaseUserId,
+          displayName: userInfo.data.name,
+          googleAccessToken: tokens.access_token,
+          googleRefreshToken: tokens.refresh_token,
+          googleTokenExpiry: tokens.expiry_date,
+          googleAccountId: gbpAccountId
+        });
+        console.log('1️⃣8️⃣ ✅ User saved to new schema successfully');
+      } catch (newSchemaError) {
+        console.error('⚠️ Error saving to new schema:', newSchemaError.message);
+        // Don't fail the whole request if new schema save fails
       }
+
+      // User and trial are now created in newSchemaAdapter.upsertUser()
+      console.log('1️⃣9️⃣ User setup complete with new schema');
     } catch (gbpError) {
-      console.error('⚠️ Error checking GBP accounts for trial setup:', gbpError.message);
+      console.error('⚠️ Error checking GBP accounts:', gbpError.message);
       // Don't fail the whole request if GBP check fails
     }
 
@@ -1337,7 +1350,8 @@ app.post('/auth/google/callback', async (req, res) => {
     console.log('========================================');
     res.json({
       success: true,
-      userId: userId, // The userId used for token storage (Firebase or Google)
+      userId: userId, // Email address (gmail_id in new schema)
+      firebaseUid: firebaseUserId, // Firebase UID for reference
       tokens: {
         access_token: tokens.access_token,
         refresh_token: tokens.refresh_token,
@@ -1345,7 +1359,7 @@ app.post('/auth/google/callback', async (req, res) => {
         expiry_date: tokens.expiry_date
       },
       user: {
-        id: userId,
+        id: userId, // Email address
         googleId: googleUserId,
         email: userInfo.data.email,
         name: userInfo.data.name,
@@ -3892,6 +3906,176 @@ app.get('/debug/token-info', async (req, res) => {
     res.status(500).json({
       valid: false,
       error: 'Failed to validate token',
+      message: error.message
+    });
+  }
+});
+
+// Debug endpoint to sync user locations from GBP to new schema
+// Fixes business names and syncs all locations
+app.post('/api/debug/sync-user-locations', async (req, res) => {
+  try {
+    const { gmailId } = req.body;
+
+    if (!gmailId) {
+      return res.status(400).json({ error: 'gmailId is required' });
+    }
+
+    console.log(`[DEBUG] Syncing locations for user: ${gmailId}`);
+
+    // Get user from new schema
+    const user = await newSchemaAdapter.getUserByGmailId(gmailId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (!user.google_access_token || !user.google_account_id) {
+      return res.status(400).json({ error: 'User has no valid token or GBP account ID' });
+    }
+
+    // Set up OAuth client with user's tokens
+    const userOauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    userOauth2Client.setCredentials({
+      access_token: user.google_access_token,
+      refresh_token: user.google_refresh_token
+    });
+
+    // Fetch locations from GBP API
+    const mybusinessinfo = google.mybusinessbusinessinformation({
+      version: 'v1',
+      auth: userOauth2Client
+    });
+
+    const locationsResponse = await mybusinessinfo.accounts.locations.list({
+      parent: `accounts/${user.google_account_id}`,
+      readMask: 'name,title,storefrontAddress,categories'
+    });
+
+    const locations = locationsResponse.data.locations || [];
+    const syncedLocations = [];
+
+    for (const location of locations) {
+      const locationId = location.name.split('/').pop();
+      // IMPORTANT: Use location.title for business name, NOT location.name (which is the path)
+      const businessName = location.title || '';
+      const address = location.storefrontAddress ?
+        [
+          location.storefrontAddress.addressLines?.join(', '),
+          location.storefrontAddress.locality,
+          location.storefrontAddress.administrativeArea
+        ].filter(Boolean).join(', ') : '';
+      const category = location.categories?.primaryCategory?.displayName || 'business';
+
+      await newSchemaAdapter.upsertLocation({
+        gmailId: gmailId,
+        locationId: locationId,
+        businessName: businessName,
+        address: address,
+        category: category
+      });
+
+      syncedLocations.push({
+        locationId,
+        businessName,
+        address,
+        category
+      });
+    }
+
+    res.json({
+      success: true,
+      message: `Synced ${syncedLocations.length} locations`,
+      locations: syncedLocations
+    });
+
+  } catch (error) {
+    console.error('[DEBUG] Error syncing user locations:', error);
+    res.status(500).json({
+      error: 'Failed to sync locations',
+      message: error.message
+    });
+  }
+});
+
+// Debug endpoint to backfill missing google_account_id for users
+app.post('/api/debug/backfill-account-ids', async (req, res) => {
+  try {
+    const { gmailId } = req.body;
+
+    if (!gmailId) {
+      return res.status(400).json({ error: 'gmailId is required' });
+    }
+
+    console.log(`[DEBUG] Backfilling account ID for user: ${gmailId}`);
+
+    // Get user from new schema
+    const user = await newSchemaAdapter.getUserByGmailId(gmailId);
+
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user.google_account_id) {
+      return res.json({
+        success: true,
+        message: 'User already has google_account_id',
+        accountId: user.google_account_id
+      });
+    }
+
+    if (!user.google_access_token) {
+      return res.status(400).json({ error: 'User has no valid token' });
+    }
+
+    // Set up OAuth client with user's tokens
+    const userOauth2Client = new google.auth.OAuth2(
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_SECRET,
+      process.env.GOOGLE_REDIRECT_URI
+    );
+
+    userOauth2Client.setCredentials({
+      access_token: user.google_access_token,
+      refresh_token: user.google_refresh_token
+    });
+
+    // Fetch GBP accounts
+    const mybusiness = google.mybusinessaccountmanagement({
+      version: 'v1',
+      auth: userOauth2Client
+    });
+
+    const accountsResponse = await mybusiness.accounts.list();
+    const accounts = accountsResponse.data.accounts || [];
+
+    if (accounts.length === 0) {
+      return res.status(400).json({ error: 'No GBP accounts found for this user' });
+    }
+
+    const gbpAccountId = accounts[0].name.split('/')[1];
+
+    // Update user with account ID
+    await newSchemaAdapter.upsertUser({
+      gmailId: gmailId,
+      googleAccountId: gbpAccountId
+    });
+
+    res.json({
+      success: true,
+      message: 'Account ID backfilled successfully',
+      accountId: gbpAccountId
+    });
+
+  } catch (error) {
+    console.error('[DEBUG] Error backfilling account ID:', error);
+    res.status(500).json({
+      error: 'Failed to backfill account ID',
       message: error.message
     });
   }

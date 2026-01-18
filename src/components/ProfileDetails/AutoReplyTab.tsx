@@ -33,6 +33,24 @@ const AutoReplyTab = ({ profileId }: AutoReplyTabProps) => {
   }, [profileId]);
 
   const loadReviewConfiguration = async () => {
+    // First, try to fetch settings from database
+    if (currentUser?.email) {
+      try {
+        const dbSettings = await serverAutomationService.getAutomationSettings(profileId, currentUser.email);
+        if (dbSettings) {
+          console.log('[AutoReplyTab] Got settings from database:', dbSettings);
+          // Update local state with database values
+          setReviewConfig(prev => ({
+            ...prev,
+            enabled: dbSettings.autoReplyEnabled || prev.enabled,
+            autoReplyEnabled: dbSettings.autoReplyEnabled || prev.autoReplyEnabled,
+          }));
+        }
+      } catch (error) {
+        console.error('[AutoReplyTab] Error fetching database settings:', error);
+      }
+    }
+
     const existingReviewConfig = reviewAutomationService.getConfiguration(profileId);
     if (existingReviewConfig) {
       setReviewConfig({
@@ -43,7 +61,7 @@ const AutoReplyTab = ({ profileId }: AutoReplyTabProps) => {
         maxRating: existingReviewConfig.maxRating,
       });
     } else {
-      if (currentUser?.id) {
+      if (currentUser?.email) {
         console.log('New user detected - syncing default review automation settings to server');
 
         const accountId = localStorage.getItem('google_business_account_id');
@@ -71,7 +89,7 @@ const AutoReplyTab = ({ profileId }: AutoReplyTabProps) => {
           profileId,
           businessName,
           true,
-          currentUser.id,
+          currentUser.email,
           accountId || undefined,
           keywords,
           category
@@ -116,7 +134,7 @@ const AutoReplyTab = ({ profileId }: AutoReplyTabProps) => {
           profileId,
           businessName,
           true,
-          currentUser?.id,
+          currentUser?.email,
           accountId || undefined,
           keywords,
           category

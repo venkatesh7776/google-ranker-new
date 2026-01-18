@@ -16,11 +16,13 @@ import LocationSelector from "@/components/Automation/LocationSelector";
 import StatsCards from "@/components/Automation/StatsCards";
 import ActivityLog from "@/components/Automation/ActivityLog";
 import AutoReplyTab from "@/components/ProfileDetails/AutoReplyTab";
+import { NextReviewCheckCountdown } from "@/components/Automation/NextReviewCheckCountdown";
 import { useGoogleBusinessProfile } from "@/hooks/useGoogleBusinessProfile";
 import { useProfileLimitations } from "@/hooks/useProfileLimitations";
 import { useAuth } from "@/contexts/AuthContext";
 import activityHistoryService from "@/lib/activityHistoryService";
 import { googleBusinessProfileService } from "@/lib/googleBusinessProfile";
+import { serverAutomationService } from "@/lib/serverAutomationService";
 
 const AutoReply = () => {
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
@@ -32,6 +34,7 @@ const AutoReply = () => {
   const [loadingReviews, setLoadingReviews] = useState(false);
   const [hasMore, setHasMore] = useState(false);
   const [replyFilter, setReplyFilter] = useState<'all' | 'replied' | 'pending'>('all');
+  const [autoReplyEnabled, setAutoReplyEnabled] = useState(false);
 
   const { currentUser } = useAuth();
   const { accounts, isConnected, isLoading: googleLoading } = useGoogleBusinessProfile();
@@ -83,8 +86,24 @@ const AutoReply = () => {
     if (selectedLocationId && selectedLocation && currentUser) {
       fetchActivityData();
       fetchReviews();
+      fetchAutoReplySettings();
     }
   }, [selectedLocationId, selectedLocation, currentUser]);
+
+  // Fetch auto-reply settings from database
+  const fetchAutoReplySettings = async () => {
+    if (!selectedLocationId || !currentUser?.email) return;
+
+    try {
+      const settings = await serverAutomationService.getAutomationSettings(selectedLocationId, currentUser.email);
+      if (settings) {
+        setAutoReplyEnabled(settings.autoReplyEnabled || false);
+        console.log('[AutoReply] Fetched database settings:', settings);
+      }
+    } catch (error) {
+      console.error('[AutoReply] Error fetching database settings:', error);
+    }
+  };
 
   // Fetch activity data
   const fetchActivityData = async () => {
@@ -94,7 +113,7 @@ const AutoReply = () => {
     try {
       const { history, stats } = await activityHistoryService.fetchAutoReplyActivity(
         selectedLocationId,
-        currentUser.id,
+        currentUser.email,
         20,
         0
       );
@@ -141,7 +160,7 @@ const AutoReply = () => {
     try {
       const { history } = await activityHistoryService.fetchAutoReplyActivity(
         selectedLocationId,
-        currentUser.id,
+        currentUser.email,
         20,
         activityHistory.length
       );
@@ -276,15 +295,30 @@ const AutoReply = () => {
                   )}
                 </div>
                 <div className="flex items-center gap-2">
-                  <span className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-blue-100 text-blue-700 rounded-lg font-bold border border-blue-200" style={{ fontFamily: 'Onest' }}>
-                    <Bot className="h-4 w-4" />
-                    Auto-Reply Active
-                  </span>
+                  {autoReplyEnabled ? (
+                    <span className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-green-100 text-green-700 rounded-lg font-bold border border-green-200" style={{ fontFamily: 'Onest' }}>
+                      <CheckCircle className="h-4 w-4" />
+                      Auto-Reply Active
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center gap-2 text-sm px-4 py-2 bg-gray-100 text-gray-700 rounded-lg font-bold border border-gray-200" style={{ fontFamily: 'Onest' }}>
+                      <XCircle className="h-4 w-4" />
+                      Auto-Reply Disabled
+                    </span>
+                  )}
                 </div>
               </div>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Next Review Check Countdown */}
+      {selectedLocation && (
+        <NextReviewCheckCountdown
+          isEnabled={autoReplyEnabled}
+          checkIntervalMinutes={2}
+        />
       )}
 
       {/* Stats Cards */}

@@ -41,10 +41,10 @@ export const useGoogleBusinessProfile = (): UseGoogleBusinessProfileReturn => {
 
   // Save GBP-user association (ONLY ONCE PER SESSION)
   const saveGbpAssociation = useCallback(async (gbpAccountId: string) => {
-    if (!currentUser?.id) return;
+    if (!currentUser?.email) return;
 
     // Skip if already saved in this session
-    const cacheKey = `${currentUser.id}_${gbpAccountId}`;
+    const cacheKey = `${currentUser.email}_${gbpAccountId}`;
     if (savedAssociations.current.has(cacheKey)) {
       return; // Already saved, skip
     }
@@ -57,7 +57,7 @@ export const useGoogleBusinessProfile = (): UseGoogleBusinessProfileReturn => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: currentUser.id,
+          userId: currentUser.email,
           gbpAccountId: gbpAccountId
         })
       });
@@ -72,7 +72,7 @@ export const useGoogleBusinessProfile = (): UseGoogleBusinessProfileReturn => {
   // Update profile count (ONLY IF CHANGED)
   // UNIVERSAL: Works for all users - sends email for reliable lookup
   const updateProfileCount = useCallback(async (gbpAccountId: string, profileCount: number) => {
-    if (!currentUser?.id || !currentUser?.email) return;
+    if (!currentUser?.email || !currentUser?.email) return;
 
     // Skip if count hasn't changed (use global key for total count)
     const cacheKey = 'total_profile_count';
@@ -86,7 +86,7 @@ export const useGoogleBusinessProfile = (): UseGoogleBusinessProfileReturn => {
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://googleranker-backend.onrender.com';
 
       console.log('[Profile Count] Sending update:', {
-        userId: currentUser.id,
+        userId: currentUser.email,
         email: currentUser.email,
         gbpAccountId,
         currentProfileCount: profileCount
@@ -98,7 +98,7 @@ export const useGoogleBusinessProfile = (): UseGoogleBusinessProfileReturn => {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          userId: currentUser.id,
+          userId: currentUser.email,
           email: currentUser.email, // CRITICAL: Include email for universal lookup
           gbpAccountId: gbpAccountId,
           currentProfileCount: profileCount
@@ -273,7 +273,7 @@ export const useGoogleBusinessProfile = (): UseGoogleBusinessProfileReturn => {
 
   // Initialize and check existing connection
   useEffect(() => {
-    const currentUserId = currentUser?.id || null;
+    const currentUserId = currentUser?.email || null;
 
     // Skip if already initializing or if user hasn't changed
     if (isInitializing.current || (hasInitialized.current && lastUserId.current === currentUserId)) {
@@ -350,17 +350,17 @@ export const useGoogleBusinessProfile = (): UseGoogleBusinessProfileReturn => {
     };
     // Only re-initialize if the user ID actually changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentUser?.id]);
+  }, [currentUser?.email]);
 
   // Connect to Google Business Profile (frontend-only)
   const connectGoogleBusiness = useCallback(async () => {
     try {
       setIsLoading(true);
       console.log('🔄 Starting Google Business Profile connection...');
-      console.log('🔍 DEBUGGING: Supabase user for connection:', currentUser?.id);
+      console.log('🔍 DEBUGGING: Supabase user for connection:', currentUser?.email);
 
       // Set the current user ID in the service before connecting
-      googleBusinessProfileService.setCurrentUserId(currentUser?.id || null);
+      googleBusinessProfileService.setCurrentUserId(currentUser?.email || null);
       
       await googleBusinessProfileService.connectGoogleBusiness();
       setIsConnected(true);

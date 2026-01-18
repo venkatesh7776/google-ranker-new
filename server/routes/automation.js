@@ -1,8 +1,60 @@
 import express from 'express';
 import automationScheduler from '../services/automationScheduler.js';
 import automationHistoryService from '../services/automationHistoryService.js';
+import supabaseAutomationService from '../services/supabaseAutomationService.js';
 
 const router = express.Router();
+
+// Get automation settings for a location from database
+// This returns the actual database state (enabled, nextPostDate, etc.)
+router.get('/settings/:locationId', async (req, res) => {
+  try {
+    const { locationId } = req.params;
+    const { userId, gmailId } = req.query;
+
+    const userIdentifier = gmailId || userId;
+    if (!userIdentifier) {
+      return res.status(400).json({
+        success: false,
+        error: 'userId or gmailId query parameter is required'
+      });
+    }
+
+    console.log(`[Automation API] Getting settings for location ${locationId}, user ${userIdentifier}`);
+
+    const settings = await supabaseAutomationService.getSettings(userIdentifier, locationId);
+
+    if (!settings) {
+      return res.json({
+        success: true,
+        settings: null,
+        message: 'No automation settings found for this location'
+      });
+    }
+
+    res.json({
+      success: true,
+      settings: {
+        enabled: settings.autoPosting?.enabled || false,
+        autoReplyEnabled: settings.autoReply?.enabled || false,
+        schedule: settings.autoPosting?.schedule,
+        frequency: settings.autoPosting?.frequency,
+        nextPostDate: settings.nextPostDate,
+        lastPostDate: settings.lastPostDate,
+        lastPostSuccess: settings.lastPostSuccess,
+        totalPosts: settings.totalPostsCreated,
+        businessName: settings.businessName,
+        keywords: settings.keywords
+      }
+    });
+  } catch (error) {
+    console.error('[Automation API] Error getting automation settings:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get automation settings'
+    });
+  }
+});
 
 // Get automation status for a location
 router.get('/status/:locationId', (req, res) => {
@@ -17,7 +69,7 @@ router.get('/status/:locationId', (req, res) => {
 });
 
 // Update automation settings for a location
-router.post('/settings/:locationId', (req, res) => {
+router.post('/settings/:locationId', async (req, res) => {
   try {
     const { locationId } = req.params;
     const settings = req.body;
@@ -95,7 +147,7 @@ router.post('/settings/:locationId', (req, res) => {
       }
     }
     
-    const updatedSettings = automationScheduler.updateAutomationSettings(locationId, settings);
+    const updatedSettings = await automationScheduler.updateAutomationSettings(locationId, settings);
     console.log(`[Automation API] ✅ Settings saved successfully`);
     console.log(`[Automation API] Saved keywords:`, updatedSettings.autoPosting?.keywords || 'NONE');
     console.log(`[Automation API] 📍 Saved address info:`, {
@@ -110,9 +162,19 @@ router.post('/settings/:locationId', (req, res) => {
     console.log(`[Automation API] Full saved settings:`, JSON.stringify(updatedSettings, null, 2));
     console.log(`[Automation API] ========================================`);
     
-    res.json({ 
-      success: true, 
+    // Get the next post date from database
+    const gmailId = settings.gmailId || settings.userId || settings.autoPosting?.userId;
+    let nextPostDate = null;
+    if (gmailId) {
+      const dbSettings = await supabaseAutomationService.getSettings(gmailId, locationId);
+      nextPostDate = dbSettings?.nextPostDate || null;
+      console.log(`[Automation API] 📅 Next post date from DB: ${nextPostDate}`);
+    }
+
+    res.json({
+      success: true,
       settings: updatedSettings,
+      nextPostDate: nextPostDate,
       status: automationScheduler.getAutomationStatus(locationId)
     });
   } catch (error) {

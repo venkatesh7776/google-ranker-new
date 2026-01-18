@@ -8,7 +8,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { Clock, Zap, Calendar, BarChart3, Play, Pause, TestTube, Tags, Plus, X, MapPin, Building, Hash, Tag, Edit, RefreshCw, Trash2, Sparkles } from 'lucide-react';
+import { Clock, Zap, Calendar, BarChart3, Play, Pause, TestTube, Tags, Plus, X, MapPin, Building, Hash, Tag, Edit, RefreshCw, Trash2, Sparkles, Save } from 'lucide-react';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { automationStorage, type AutoPostingConfig } from '@/lib/automationStorage';
 import { automationService } from '@/lib/automationService';
@@ -18,6 +18,7 @@ import { useGoogleBusinessProfileContext } from '@/contexts/GoogleBusinessProfil
 import { toast } from '@/hooks/use-toast';
 import { LoadingSpinner } from '@/components/ui/loading-spinner';
 import { googleBusinessProfileService } from '@/lib/googleBusinessProfile';
+import { NextPostCountdown } from '@/components/Automation/NextPostCountdown';
 
 interface AutoPostingTabProps {
   location: {
@@ -46,6 +47,12 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
   const [newKeyword, setNewKeyword] = useState('');
   const [keywords, setKeywords] = useState<string[]>([]);
   const [isSavingToServer, setIsSavingToServer] = useState(false);
+  const [dbNextPostDate, setDbNextPostDate] = useState<string | null>(null);
+  const [scheduleHour, setScheduleHour] = useState('09');
+  const [scheduleMinute, setScheduleMinute] = useState('00');
+  const [schedulePeriod, setSchedulePeriod] = useState<'AM' | 'PM'>('AM');
+  const [isSavingSchedule, setIsSavingSchedule] = useState(false);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
 
   // Smart keyword filtering to avoid generic terms
   const getGenericKeywordBlacklist = () => [
@@ -151,6 +158,22 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
   }, [location.id]);
 
   const loadConfiguration = async () => {
+    // First, try to fetch settings from database
+    if (currentUser?.email) {
+      try {
+        const dbSettings = await serverAutomationService.getAutomationSettings(location.id, currentUser.email);
+        if (dbSettings) {
+          console.log('[AutoPostingTab] Got settings from database:', dbSettings);
+          // Use database nextPostDate for the timer
+          if (dbSettings.nextPostDate) {
+            setDbNextPostDate(dbSettings.nextPostDate);
+          }
+        }
+      } catch (error) {
+        console.error('[AutoPostingTab] Error fetching database settings:', error);
+      }
+    }
+
     let existingConfig = automationStorage.getConfiguration(location.id);
     let isNewConfig = false;
 
@@ -165,7 +188,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
       automationStorage.saveConfiguration(existingConfig);
 
       // Auto-sync to server for new configs with enabled=true (default)
-      if (existingConfig.enabled && currentUser?.id) {
+      if (existingConfig.enabled && currentUser?.email) {
         console.log('New user detected - syncing default automation settings to server');
 
         const accountId = localStorage.getItem('google_business_account_id');
@@ -186,7 +209,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           location.categories?.[0],
           existingConfig.keywords.join(', '),
           location.websiteUri,
-          currentUser.id,
+          currentUser.email,
           accountId || undefined,
           addressInfo,
           location.phoneNumber,
@@ -247,14 +270,14 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
 
   const handleToggleEnabled = async (enabled: boolean) => {
     saveConfiguration({ enabled });
-    
+
     // Save to server for persistent automation
     setIsSavingToServer(true);
     try {
       if (enabled) {
         // Get account ID from localStorage (set during Google connection)
         const accountId = localStorage.getItem('google_business_account_id');
-        
+
         // Build complete address information
         const addressInfo = location.address ? {
           fullAddress: location.address.addressLines?.join(', ') || '',
@@ -264,7 +287,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           postalCode: location.address.postalCode || ''
         } : {};
 
-        await serverAutomationService.enableAutoPosting(
+        const result = await serverAutomationService.enableAutoPosting(
           location.id,
           location.name,
           config?.schedule.time || '09:00',
@@ -272,21 +295,35 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           location.categories?.[0],
           keywords.join(', '),
           location.websiteUri,
-          currentUser?.id,
+          currentUser?.email,
           accountId || undefined,
           addressInfo,
           location.phoneNumber,
           config?.button
         );
-        
+
+        // Set the nextPostDate from the response
+        if (result.success && result.nextPostDate) {
+          setDbNextPostDate(result.nextPostDate);
+          console.log('[AutoPostingTab] Updated nextPostDate from response:', result.nextPostDate);
+        } else if (currentUser?.email) {
+          // Fallback: Fetch the updated nextPostDate from database
+          const dbSettings = await serverAutomationService.getAutomationSettings(location.id, currentUser.email);
+          if (dbSettings?.nextPostDate) {
+            setDbNextPostDate(dbSettings.nextPostDate);
+            console.log('[AutoPostingTab] Updated nextPostDate from database:', dbSettings.nextPostDate);
+          }
+        }
+
         toast({
-          title: "Auto-posting enabled! 🚀",
+          title: "Auto-posting enabled!",
           description: `Posts will be automatically generated for ${location.name} even when you're offline`,
           duration: 4000,
         });
       } else {
         await serverAutomationService.disableAutoPosting(location.id);
-        
+        setDbNextPostDate(null); // Clear the countdown when disabled
+
         toast({
           title: "Auto-posting disabled",
           description: `Automatic posting stopped for ${location.name}`,
@@ -344,7 +381,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
             phoneNumber: location.phoneNumber,
             button: config?.button,
           },
-          userId: currentUser?.id,
+          userId: currentUser?.email,
           accountId: accountId || undefined,
         });
       } catch (error) {
@@ -444,7 +481,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
             phoneNumber: location.phoneNumber,
             button: config?.button,
           },
-          userId: currentUser?.id,
+          userId: currentUser?.email,
           accountId: accountId || undefined,
         });
       } catch (error) {
@@ -552,7 +589,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
             phoneNumber: location.phoneNumber,
             button: config?.button,
           },
-          userId: currentUser?.id,
+          userId: currentUser?.email,
           accountId: accountId || undefined,
         });
         console.log('Keywords synced to server for automation');
@@ -619,11 +656,11 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
         throw new Error('You must be logged in to test auto-posting');
       }
 
-      console.log('[AutoPostingTab] Checking backend token status for user:', currentUser.id);
+      console.log('[AutoPostingTab] Checking backend token status for user:', currentUser.email);
 
       // FIRST: Verify tokens exist on backend before attempting test post
       const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://googleranker-backend.onrender.com';
-      const tokenCheckResponse = await fetch(`${backendUrl}/auth/google/token-status/${currentUser.id}`);
+      const tokenCheckResponse = await fetch(`${backendUrl}/auth/google/token-status/${currentUser.email}`);
 
       if (!tokenCheckResponse.ok) {
         throw new Error('Failed to check token status');
@@ -655,7 +692,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-User-ID': currentUser.id, // Send user ID to backend to get their token
+          'X-User-ID': currentUser.email, // Send user ID to backend to get their token
           ...(accessToken ? { 'Authorization': `Bearer ${accessToken}` } : {})
         },
         body: JSON.stringify({
@@ -669,7 +706,7 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           country: location.address?.countryCode || '',
           fullAddress: location.address?.addressLines?.join(', ') || '',
           phoneNumber: location.phoneNumber || '',
-          userId: currentUser.id, // Send user ID in body too
+          userId: currentUser.email, // Send user ID in body too
           accessToken: accessToken || undefined, // Send access token in body as fallback
           button: config.button // Send button configuration
         })
@@ -753,6 +790,110 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
       case 'test30s': return 'Test (30 seconds)';
       default: return frequency;
     }
+  };
+
+  // Convert 24-hour time to 12-hour format
+  const convertTo12Hour = (time24: string) => {
+    const [hours, minutes] = time24.split(':').map(Number);
+    const period = hours >= 12 ? 'PM' : 'AM';
+    const hour12 = hours % 12 || 12;
+    return {
+      hour: String(hour12).padStart(2, '0'),
+      minute: String(minutes).padStart(2, '0'),
+      period
+    };
+  };
+
+  // Convert 12-hour format to 24-hour time
+  const convertTo24Hour = (hour: string, minute: string, period: 'AM' | 'PM') => {
+    let hour24 = parseInt(hour, 10);
+    if (period === 'PM' && hour24 !== 12) {
+      hour24 += 12;
+    } else if (period === 'AM' && hour24 === 12) {
+      hour24 = 0;
+    }
+    return `${String(hour24).padStart(2, '0')}:${minute}`;
+  };
+
+  // Initialize schedule time from config
+  useEffect(() => {
+    if (config?.schedule?.time) {
+      const { hour, minute, period } = convertTo12Hour(config.schedule.time);
+      setScheduleHour(hour);
+      setScheduleMinute(minute);
+      setSchedulePeriod(period as 'AM' | 'PM');
+    }
+  }, [config?.schedule?.time]);
+
+  // Save schedule to database and update timer
+  const handleSaveSchedule = async () => {
+    if (!config) return;
+
+    setIsSavingSchedule(true);
+    const time24 = convertTo24Hour(scheduleHour, scheduleMinute, schedulePeriod);
+
+    try {
+      // Update local config first
+      const newConfig = { ...config };
+      newConfig.schedule.time = time24;
+      newConfig.nextPost = calculateNextPost(newConfig.schedule.frequency, time24);
+      saveConfiguration(newConfig);
+
+      // Save to server
+      const accountId = localStorage.getItem('google_business_account_id');
+      const addressInfo = location.address ? {
+        fullAddress: location.address.addressLines?.join(', ') || '',
+        city: location.address.locality || '',
+        region: location.address.administrativeArea || '',
+        country: location.address.countryCode || '',
+        postalCode: location.address.postalCode || ''
+      } : {};
+
+      const result = await serverAutomationService.enableAutoPosting(
+        location.id,
+        location.name,
+        time24,
+        newConfig.schedule.frequency,
+        location.categories?.[0],
+        keywords.join(', '),
+        location.websiteUri,
+        currentUser?.email,
+        accountId || undefined,
+        addressInfo,
+        location.phoneNumber,
+        config.button
+      );
+
+      // Update the timer with the new next post date
+      if (result.success && result.nextPostDate) {
+        setDbNextPostDate(result.nextPostDate);
+        console.log('[AutoPostingTab] Schedule saved, next post:', result.nextPostDate);
+      }
+
+      setHasUnsavedChanges(false);
+      toast({
+        title: "Schedule Saved!",
+        description: `Posts will be scheduled at ${scheduleHour}:${scheduleMinute} ${schedulePeriod}`,
+        duration: 3000,
+      });
+    } catch (error) {
+      console.error('Failed to save schedule:', error);
+      toast({
+        title: "Failed to save schedule",
+        description: "Please try again",
+        variant: "destructive",
+        duration: 4000,
+      });
+    } finally {
+      setIsSavingSchedule(false);
+    }
+  };
+
+  // Track unsaved changes
+  const handleScheduleChange = (hour: string, minute: string, period: 'AM' | 'PM') => {
+    const newTime24 = convertTo24Hour(hour, minute, period);
+    const currentTime24 = config?.schedule?.time || '09:00';
+    setHasUnsavedChanges(newTime24 !== currentTime24);
   };
 
   // Get timezone with abbreviation (IST, GMT, EST, etc.)
@@ -1001,35 +1142,50 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
             </div>
           </div>
 
-          {/* Status and Actions */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 pt-3 sm:pt-4 border-t">
-            <div className="min-w-0">
-              <Label className="text-xs sm:text-sm">Next Post</Label>
-              <div className="mt-1 p-2 sm:p-2.5 bg-muted rounded text-xs sm:text-sm break-words">
-                {getNextPostTime()}
-              </div>
-            </div>
-            <div className="min-w-0">
-              <Label className="text-xs sm:text-sm">Current Status</Label>
-              <div className="mt-1 flex items-center gap-1.5 sm:gap-2">
-                {config.enabled ? (
-                  <>
-                    <Play className="h-3 w-3 sm:h-4 sm:w-4 text-green-600 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm text-green-600 break-words">Active (Server-side)</span>
-                  </>
-                ) : (
-                  <>
-                    <Pause className="h-3 w-3 sm:h-4 sm:w-4 text-gray-600 flex-shrink-0" />
-                    <span className="text-xs sm:text-sm text-gray-600">Paused</span>
-                  </>
-                )}
-              </div>
-              {config.enabled && (
-                <p className="text-[10px] sm:text-xs text-muted-foreground mt-1 break-words">
-                  Running on server - continues even when offline
-                </p>
+          {/* Next Scheduled Post Countdown */}
+          <div className="pt-3 sm:pt-4 border-t">
+            <NextPostCountdown
+              nextPostTime={dbNextPostDate || config?.nextPost || null}
+              isEnabled={config?.enabled || false}
+              frequency={config?.schedule?.frequency}
+              onRefreshNeeded={async () => {
+                // Refresh the next post date from database
+                if (currentUser?.email) {
+                  try {
+                    const dbSettings = await serverAutomationService.getAutomationSettings(location.id, currentUser.email);
+                    if (dbSettings?.nextPostDate) {
+                      setDbNextPostDate(dbSettings.nextPostDate);
+                      console.log('[AutoPostingTab] Refreshed nextPostDate:', dbSettings.nextPostDate);
+                    }
+                  } catch (error) {
+                    console.error('[AutoPostingTab] Error refreshing nextPostDate:', error);
+                  }
+                }
+              }}
+            />
+          </div>
+
+          {/* Current Status */}
+          <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2">
+              <Label className="text-xs sm:text-sm font-medium">Status:</Label>
+              {config.enabled ? (
+                <div className="flex items-center gap-1.5">
+                  <Play className="h-3 w-3 sm:h-4 sm:w-4 text-green-600" />
+                  <span className="text-xs sm:text-sm text-green-600 font-medium">Active (Server-side)</span>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <Pause className="h-3 w-3 sm:h-4 sm:w-4 text-gray-500" />
+                  <span className="text-xs sm:text-sm text-gray-500">Paused</span>
+                </div>
               )}
             </div>
+            {config.enabled && (
+              <span className="text-[10px] sm:text-xs text-muted-foreground">
+                Runs even when offline
+              </span>
+            )}
           </div>
 
           {/* Test Button */}
@@ -1248,24 +1404,119 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
 
             {config.schedule.frequency !== 'custom' && config.schedule.frequency !== 'test30s' && (
               <div className="min-w-0">
-                <Label htmlFor="time" className="text-xs sm:text-sm">
+                <Label htmlFor="time" className="text-xs sm:text-sm mb-2 block">
                   <Clock className="h-3 w-3 sm:h-4 sm:w-4 inline mr-1" />
                   <span>Post Time</span>
-                  <span className="ml-2 text-muted-foreground font-normal">
+                  <span className="ml-2 text-muted-foreground font-normal text-[10px] sm:text-xs">
                     {getTimezoneInfo().display}
                   </span>
                 </Label>
-                <Input
-                  id="time"
-                  type="time"
-                  value={config.schedule.time}
-                  onChange={(e) => handleTimeChange(e.target.value)}
-                  disabled={!config.enabled}
-                  className="text-xs sm:text-sm"
-                />
-                <p className="text-[10px] text-muted-foreground mt-1">
-                  Your timezone: {getTimezoneInfo().timezone}
-                </p>
+
+                {/* Time Picker with Hour, Minute, AM/PM dropdowns */}
+                <div className="flex flex-wrap items-center gap-2">
+                  {/* Hour Dropdown */}
+                  <Select
+                    value={scheduleHour}
+                    onValueChange={(value) => {
+                      setScheduleHour(value);
+                      handleScheduleChange(value, scheduleMinute, schedulePeriod);
+                    }}
+                    disabled={!config.enabled}
+                  >
+                    <SelectTrigger className="w-[70px] text-xs sm:text-sm">
+                      <SelectValue placeholder="HH" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 12 }, (_, i) => {
+                        const hour = String(i + 1).padStart(2, '0');
+                        return (
+                          <SelectItem key={hour} value={hour}>
+                            {hour}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+
+                  <span className="text-lg font-semibold">:</span>
+
+                  {/* Minute Dropdown */}
+                  <Select
+                    value={scheduleMinute}
+                    onValueChange={(value) => {
+                      setScheduleMinute(value);
+                      handleScheduleChange(scheduleHour, value, schedulePeriod);
+                    }}
+                    disabled={!config.enabled}
+                  >
+                    <SelectTrigger className="w-[70px] text-xs sm:text-sm">
+                      <SelectValue placeholder="MM" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {Array.from({ length: 60 }, (_, i) => {
+                        const minute = String(i).padStart(2, '0');
+                        return (
+                          <SelectItem key={minute} value={minute}>
+                            {minute}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+
+                  {/* AM/PM Dropdown */}
+                  <Select
+                    value={schedulePeriod}
+                    onValueChange={(value: 'AM' | 'PM') => {
+                      setSchedulePeriod(value);
+                      handleScheduleChange(scheduleHour, scheduleMinute, value);
+                    }}
+                    disabled={!config.enabled}
+                  >
+                    <SelectTrigger className="w-[70px] text-xs sm:text-sm">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="AM">AM</SelectItem>
+                      <SelectItem value="PM">PM</SelectItem>
+                    </SelectContent>
+                  </Select>
+
+                  {/* Save Button */}
+                  <Button
+                    onClick={handleSaveSchedule}
+                    disabled={!config.enabled || isSavingSchedule}
+                    size="sm"
+                    className={`ml-2 ${hasUnsavedChanges ? 'bg-green-600 hover:bg-green-700' : ''}`}
+                  >
+                    {isSavingSchedule ? (
+                      <>
+                        <div className="animate-spin h-3 w-3 sm:h-4 sm:w-4 border-2 border-current border-t-transparent rounded-full mr-1" />
+                        <span className="text-xs sm:text-sm">Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3 sm:h-4 sm:w-4 mr-1" />
+                        <span className="text-xs sm:text-sm">
+                          {hasUnsavedChanges ? 'Save' : 'Save'}
+                        </span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Current scheduled time display */}
+                <div className="mt-2 p-2 bg-muted/50 rounded-md">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground">
+                    Current schedule: <span className="font-medium text-foreground">{scheduleHour}:{scheduleMinute} {schedulePeriod}</span>
+                    <span className="ml-1">({getTimezoneInfo().timezone})</span>
+                  </p>
+                  {hasUnsavedChanges && (
+                    <p className="text-[10px] sm:text-xs text-amber-600 mt-1">
+                      ⚠️ You have unsaved changes. Click "Save Schedule" to update.
+                    </p>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -1273,48 +1524,128 @@ export function AutoPostingTab({ location }: AutoPostingTabProps) {
           {/* Custom Times */}
           {config.schedule.frequency === 'custom' && (
             <div className="min-w-0">
-              <Label className="text-xs sm:text-sm">
+              <Label className="text-xs sm:text-sm mb-2 block">
                 Custom Post Times
-                <span className="ml-2 text-muted-foreground font-normal">
+                <span className="ml-2 text-muted-foreground font-normal text-[10px] sm:text-xs">
                   {getTimezoneInfo().display}
                 </span>
               </Label>
-              <div className="space-y-2 mt-2">
-                {customTimes.map((time, index) => (
-                  <div key={index} className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
-                    <Input
-                      type="time"
-                      value={time}
-                      onChange={(e) => {
-                        const newTimes = [...customTimes];
-                        newTimes[index] = e.target.value;
-                        handleCustomTimesChange(newTimes);
-                      }}
-                      disabled={!config.enabled}
-                      className="text-xs sm:text-sm flex-1"
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      size="sm"
-                      onClick={() => removeCustomTime(index)}
-                      disabled={!config.enabled || customTimes.length <= 1}
-                      className="w-full sm:w-auto text-xs sm:text-sm"
-                    >
-                      Remove
-                    </Button>
-                  </div>
-                ))}
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={addCustomTime}
-                  disabled={!config.enabled}
-                  className="w-full sm:w-auto text-xs sm:text-sm"
-                >
-                  Add Time
-                </Button>
+              <div className="space-y-3 mt-2">
+                {customTimes.map((time, index) => {
+                  const { hour, minute, period } = convertTo12Hour(time || '09:00');
+                  return (
+                    <div key={index} className="flex flex-wrap items-center gap-2 p-2 bg-muted/30 rounded-md">
+                      {/* Hour */}
+                      <Select
+                        value={hour}
+                        onValueChange={(newHour) => {
+                          const newTime24 = convertTo24Hour(newHour, minute, period as 'AM' | 'PM');
+                          const newTimes = [...customTimes];
+                          newTimes[index] = newTime24;
+                          handleCustomTimesChange(newTimes);
+                        }}
+                        disabled={!config.enabled}
+                      >
+                        <SelectTrigger className="w-[65px] text-xs sm:text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 12 }, (_, i) => {
+                            const h = String(i + 1).padStart(2, '0');
+                            return <SelectItem key={h} value={h}>{h}</SelectItem>;
+                          })}
+                        </SelectContent>
+                      </Select>
+
+                      <span className="text-lg font-semibold">:</span>
+
+                      {/* Minute */}
+                      <Select
+                        value={minute}
+                        onValueChange={(newMinute) => {
+                          const newTime24 = convertTo24Hour(hour, newMinute, period as 'AM' | 'PM');
+                          const newTimes = [...customTimes];
+                          newTimes[index] = newTime24;
+                          handleCustomTimesChange(newTimes);
+                        }}
+                        disabled={!config.enabled}
+                      >
+                        <SelectTrigger className="w-[65px] text-xs sm:text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {Array.from({ length: 60 }, (_, i) => {
+                            const m = String(i).padStart(2, '0');
+                            return <SelectItem key={m} value={m}>{m}</SelectItem>;
+                          })}
+                        </SelectContent>
+                      </Select>
+
+                      {/* AM/PM */}
+                      <Select
+                        value={period}
+                        onValueChange={(newPeriod: 'AM' | 'PM') => {
+                          const newTime24 = convertTo24Hour(hour, minute, newPeriod);
+                          const newTimes = [...customTimes];
+                          newTimes[index] = newTime24;
+                          handleCustomTimesChange(newTimes);
+                        }}
+                        disabled={!config.enabled}
+                      >
+                        <SelectTrigger className="w-[65px] text-xs sm:text-sm">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="AM">AM</SelectItem>
+                          <SelectItem value="PM">PM</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        onClick={() => removeCustomTime(index)}
+                        disabled={!config.enabled || customTimes.length <= 1}
+                        className="ml-auto text-xs"
+                      >
+                        <X className="h-3 w-3" />
+                      </Button>
+                    </div>
+                  );
+                })}
+
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomTime}
+                    disabled={!config.enabled}
+                    className="text-xs sm:text-sm"
+                  >
+                    <Plus className="h-3 w-3 mr-1" />
+                    Add Time
+                  </Button>
+                  <Button
+                    onClick={handleSaveSchedule}
+                    disabled={!config.enabled || isSavingSchedule}
+                    size="sm"
+                  >
+                    {isSavingSchedule ? (
+                      <>
+                        <div className="animate-spin h-3 w-3 border-2 border-current border-t-transparent rounded-full mr-1" />
+                        <span className="text-xs sm:text-sm">Saving...</span>
+                      </>
+                    ) : (
+                      <>
+                        <Save className="h-3 w-3 mr-1" />
+                        <span className="text-xs sm:text-sm">Save</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+
                 <p className="text-[10px] text-muted-foreground">
                   All times are in {getTimezoneInfo().timezone}
                 </p>

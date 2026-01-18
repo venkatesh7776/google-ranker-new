@@ -8,11 +8,13 @@ import LocationSelector from "@/components/Automation/LocationSelector";
 import StatsCards from "@/components/Automation/StatsCards";
 import ActivityLog from "@/components/Automation/ActivityLog";
 import { AutoPostingTab } from "@/components/ProfileDetails/AutoPostingTab";
+import { NextPostCountdown } from "@/components/Automation/NextPostCountdown";
 import { useGoogleBusinessProfile } from "@/hooks/useGoogleBusinessProfile";
 import { useProfileLimitations } from "@/hooks/useProfileLimitations";
 import { useAuth } from "@/contexts/AuthContext";
 import activityHistoryService from "@/lib/activityHistoryService";
 import { automationStorage } from "@/lib/automationStorage";
+import { serverAutomationService } from "@/lib/serverAutomationService";
 
 const AutoPosting = () => {
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
@@ -21,6 +23,11 @@ const AutoPosting = () => {
   const [activityStats, setActivityStats] = useState<any>(null);
   const [loading, setLoading] = useState(false);
   const [hasMore, setHasMore] = useState(false);
+  const [dbSettings, setDbSettings] = useState<{
+    enabled: boolean;
+    nextPostDate: string | null;
+    autoReplyEnabled: boolean;
+  } | null>(null);
 
   const { currentUser } = useAuth();
   const { accounts, isConnected, isLoading: googleLoading } = useGoogleBusinessProfile();
@@ -63,8 +70,28 @@ const AutoPosting = () => {
   useEffect(() => {
     if (selectedLocationId && currentUser) {
       fetchActivityData();
+      fetchDbSettings();
     }
   }, [selectedLocationId, currentUser]);
+
+  // Fetch settings from database
+  const fetchDbSettings = async () => {
+    if (!selectedLocationId || !currentUser?.email) return;
+
+    try {
+      const settings = await serverAutomationService.getAutomationSettings(selectedLocationId, currentUser.email);
+      if (settings) {
+        setDbSettings({
+          enabled: settings.enabled,
+          nextPostDate: settings.nextPostDate,
+          autoReplyEnabled: settings.autoReplyEnabled
+        });
+        console.log('[AutoPosting] Fetched database settings:', settings);
+      }
+    } catch (error) {
+      console.error('[AutoPosting] Error fetching database settings:', error);
+    }
+  };
 
   // Fetch activity data
   const fetchActivityData = async () => {
@@ -74,7 +101,7 @@ const AutoPosting = () => {
     try {
       const { history, stats } = await activityHistoryService.fetchAutoPostActivity(
         selectedLocationId,
-        currentUser.id,
+        currentUser.email,
         20,
         0
       );
@@ -103,7 +130,7 @@ const AutoPosting = () => {
     try {
       const { history } = await activityHistoryService.fetchAutoPostActivity(
         selectedLocationId,
-        currentUser.id,
+        currentUser.email,
         20,
         activityHistory.length
       );
@@ -127,7 +154,7 @@ const AutoPosting = () => {
     return locationConfig.nextPost || locationConfig.schedule?.time || 'Not set';
   };
 
-  // Prepare stats for StatsCards
+  // Prepare stats for StatsCards (without Next Run - we show countdown separately)
   const statsData = [
     {
       label: 'Total Posts',
@@ -146,12 +173,6 @@ const AutoPosting = () => {
       value: activityStats?.failed || 0,
       icon: XCircle,
       color: 'text-red-600'
-    },
-    {
-      label: 'Next Run',
-      value: getNextScheduledTime(),
-      icon: Clock,
-      color: 'text-blue-600'
     }
   ];
 
@@ -240,8 +261,17 @@ const AutoPosting = () => {
         </div>
       )}
 
+      {/* Next Scheduled Post Countdown */}
+      {selectedLocation && (
+        <NextPostCountdown
+          nextPostTime={dbSettings?.nextPostDate || locationConfig?.nextPost || null}
+          isEnabled={dbSettings?.enabled || locationConfig?.enabled || false}
+          frequency={locationConfig?.schedule?.frequency}
+        />
+      )}
+
       {/* Stats Cards */}
-      {selectedLocation && <StatsCards stats={statsData} columns={4} />}
+      {selectedLocation && <StatsCards stats={statsData} columns={3} />}
 
       {/* Auto-Posting Configuration */}
       {selectedLocation && (

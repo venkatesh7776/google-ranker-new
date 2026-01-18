@@ -20,6 +20,7 @@ const DEFAULT_TIMEZONE = appConfig.timezone || 'Asia/Kolkata';
 class AutomationScheduler {
   constructor() {
     // REMOVED: JSON file storage - now using Supabase only
+    // NEW SCHEMA: Uses gmail_id as primary identifier instead of userId
     this.settings = { automations: {} }; // In-memory cache, loaded from Supabase
     this.scheduledJobs = new Map();
     this.reviewCheckIntervals = new Map();
@@ -36,18 +37,20 @@ class AutomationScheduler {
     console.log('[AutomationScheduler] ✅ Gemini AI Configuration:');
     console.log(`  - API Key: ${this.geminiApiKey ? '✅ Configured' : '❌ Missing'}`);
     console.log(`  - Model: ✅ ${this.geminiModel}`);
+    console.log('[AutomationScheduler] ✅ Using NEW SCHEMA with gmail_id as primary identifier');
   }
 
   // Load settings from Supabase (called on initialization)
+  // NEW SCHEMA: Uses gmail_id as primary identifier
   async loadSettings() {
     try {
-      console.log('[AutomationScheduler] 📥 Loading automation settings from Supabase...');
+      console.log('[AutomationScheduler] 📥 Loading automation settings from Supabase (new schema)...');
       const allSettings = await supabaseAutomationService.getAllEnabledAutomations();
 
       // Convert Supabase format to existing format for compatibility
       this.settings = { automations: {} };
       for (const setting of allSettings) {
-        // formatSettings returns camelCase properties: locationId, userId, etc.
+        // formatSettings returns camelCase properties: locationId, gmailId, userId, etc.
         const locationId = setting.locationId || setting.location_id;
 
         if (!locationId) {
@@ -57,7 +60,13 @@ class AutomationScheduler {
 
         // The setting object already has the full settings merged in from formatSettings
         // Use the setting object directly instead of trying to parse setting.settings
+        // NEW SCHEMA: gmailId is the primary identifier, userId is an alias
         this.settings.automations[locationId] = setting;
+
+        // Ensure gmailId is set (new schema) - userId is alias for gmailId
+        if (!setting.gmailId && setting.userId) {
+          this.settings.automations[locationId].gmailId = setting.userId;
+        }
 
         // 🔧 FIX: Ensure autoPosting.enabled is set if database enabled=true
         // This prevents the double-check from filtering out accounts
@@ -84,7 +93,8 @@ class AutomationScheduler {
           autoPostingEnabled: setting?.autoPosting?.enabled,
           hasAutoReply: !!setting?.autoReply,
           autoReplyEnabled: setting?.autoReply?.enabled,
-          userId: setting.userId
+          gmailId: setting.gmailId,
+          userId: setting.userId // Alias for backward compatibility
         });
       }
 
@@ -107,8 +117,9 @@ class AutomationScheduler {
   }
 
   // Get valid token for user with automatic refresh
-  async getValidTokenForUser(userId) {
-    return await supabaseTokenStorage.getValidToken(userId);
+  // NEW SCHEMA: gmailId is the primary identifier (userId is alias)
+  async getValidTokenForUser(gmailId) {
+    return await supabaseTokenStorage.getValidToken(gmailId);
   }
 
   // Initialize all automation schedules (now async to load from Supabase)
@@ -135,7 +146,8 @@ class AutomationScheduler {
 
       if (config.autoPosting?.enabled) {
         console.log(`[AutomationScheduler] ✅ Scheduling auto-posting for location ${locationId}`);
-        this.scheduleAutoPosting(locationId, config.autoPosting);
+        // Pass full config so cron job has access to gmailId, userId, accountId
+        this.scheduleAutoPosting(locationId, config.autoPosting, config);
         scheduledCount++;
       } else {
         console.log(`[AutomationScheduler] ⏭️ Skipping auto-posting for location ${locationId} - not enabled`);
@@ -224,8 +236,25 @@ class AutomationScheduler {
           console.log(`  - Schedule: ${autoPosting.schedule}`);
           console.log(`  - 🕐 Checker time: ${new Date().toISOString()}`);
 
+          // IMPORTANT: Pass the FULL config (with gmailId, userId, accountId) not just autoPosting
+          // Merge autoPosting settings with the full config to ensure we have gmailId for token retrieval
+          const fullConfig = {
+            ...config,
+            ...autoPosting,
+            gmailId: config.gmailId || config.userId,
+            userId: config.userId || config.gmailId,
+            accountId: config.accountId
+          };
+
+          console.log(`[AutomationScheduler] 📋 Full config for post creation:`, {
+            gmailId: fullConfig.gmailId,
+            userId: fullConfig.userId,
+            accountId: fullConfig.accountId,
+            businessName: fullConfig.businessName
+          });
+
           // Create the post (will be prevented by lock if duplicate)
-          await this.createAutomatedPost(locationId, autoPosting);
+          await this.createAutomatedPost(locationId, fullConfig);
 
           // Update last run time in cache AND Supabase
           this.settings.automations[locationId].autoPosting.lastRun = now.toISOString();
@@ -246,18 +275,29 @@ class AutomationScheduler {
     }
 
     const [hour, minute] = config.schedule.split(':').map(Number);
+    const now = new Date();
 
     // If never run before, schedule for today (or tomorrow if time has passed)
     if (!lastRun) {
-      const today = new Date();
-      today.setHours(hour, minute, 0, 0);
+      const scheduledToday = new Date();
+      scheduledToday.setHours(hour, minute, 0, 0);
 
-      // If scheduled time today has passed, start from tomorrow
-      if (today < new Date()) {
-        return today;
+      console.log(`[AutomationScheduler] ⏰ First-time scheduling:`);
+      console.log(`  - Scheduled time today: ${scheduledToday.toISOString()}`);
+      console.log(`  - Current time: ${now.toISOString()}`);
+      console.log(`  - Time has passed: ${scheduledToday <= now}`);
+
+      // If scheduled time today has passed, schedule for tomorrow
+      // Otherwise schedule for today
+      if (scheduledToday <= now) {
+        // Time has passed - for FIRST run, still allow today's time to trigger
+        // so the scheduler can catch up on missed posts
+        console.log(`  - Result: Returning TODAY's time (for catch-up)`);
+        return scheduledToday;
       } else {
-        today.setDate(today.getDate() + 1);
-        return today;
+        // Time hasn't passed yet - schedule for today
+        console.log(`  - Result: Scheduled for TODAY`);
+        return scheduledToday;
       }
     }
 
@@ -304,6 +344,7 @@ class AutomationScheduler {
   }
 
   // Update automation settings (now updates Supabase AND in-memory cache)
+  // NEW SCHEMA: Uses gmail_id as primary identifier
   async updateAutomationSettings(locationId, settings) {
     console.log(`[AutomationScheduler] 💾 Updating settings for location ${locationId}`);
 
@@ -319,15 +360,16 @@ class AutomationScheduler {
     };
 
     // Save to Supabase (not JSON files anymore)
+    // NEW SCHEMA: Use gmailId as primary identifier, userId is alias
     try {
-      const userId = settings.userId || settings.autoPosting?.userId || settings.autoReply?.userId;
-      if (userId) {
-        await supabaseAutomationService.saveSettings(userId, locationId, {
+      const gmailId = settings.gmailId || settings.userId || settings.autoPosting?.userId || settings.autoReply?.userId;
+      if (gmailId) {
+        await supabaseAutomationService.saveSettings(gmailId, locationId, {
           ...this.settings.automations[locationId],
           enabled: settings.autoPosting?.enabled || settings.autoReply?.enabled || false,
           autoReplyEnabled: settings.autoReply?.enabled || false
         });
-        console.log(`[AutomationScheduler] ✅ Settings saved to Supabase for location ${locationId}`);
+        console.log(`[AutomationScheduler] ✅ Settings saved to Supabase for location ${locationId} (gmailId: ${gmailId})`);
       }
     } catch (error) {
       console.error('[AutomationScheduler] ❌ Error saving to Supabase:', error);
@@ -337,7 +379,8 @@ class AutomationScheduler {
     if (settings.autoPosting !== undefined) {
       this.stopAutoPosting(locationId);
       if (settings.autoPosting?.enabled) {
-        this.scheduleAutoPosting(locationId, settings.autoPosting);
+        // Pass full settings so cron job has access to gmailId, userId, accountId
+        this.scheduleAutoPosting(locationId, settings.autoPosting, settings);
       }
     }
 
@@ -362,7 +405,8 @@ class AutomationScheduler {
   }
 
   // Schedule auto-posting for a location
-  scheduleAutoPosting(locationId, config) {
+  // fullConfig contains gmailId, userId, accountId needed for token retrieval
+  scheduleAutoPosting(locationId, config, fullConfig = null) {
     if (!config.schedule || !config.frequency) {
       console.log(`[AutomationScheduler] No schedule configured for location ${locationId}`);
       return;
@@ -370,6 +414,15 @@ class AutomationScheduler {
 
     // Stop existing schedule if any
     this.stopAutoPosting(locationId);
+
+    // Merge config with fullConfig to ensure we have gmailId, userId, accountId
+    const mergedConfig = {
+      ...fullConfig,
+      ...config,
+      gmailId: fullConfig?.gmailId || fullConfig?.userId || config.gmailId || config.userId,
+      userId: fullConfig?.userId || fullConfig?.gmailId || config.userId || config.gmailId,
+      accountId: fullConfig?.accountId || config.accountId
+    };
 
     let cronExpression;
     const [hour, minute] = config.schedule.split(':');
@@ -418,21 +471,28 @@ class AutomationScheduler {
     const job = cron.schedule(cronExpression, async () => {
       console.log(`[AutomationScheduler] ⏰ CRON TRIGGERED - Running scheduled post for location ${locationId}`);
       console.log(`[AutomationScheduler] 🕐 Trigger time: ${new Date().toISOString()}`);
-      
+      console.log(`[AutomationScheduler] 📋 Config for post:`, {
+        gmailId: mergedConfig.gmailId,
+        userId: mergedConfig.userId,
+        accountId: mergedConfig.accountId,
+        businessName: mergedConfig.businessName
+      });
+
       // For frequencies that need interval checking (like "alternative"), verify it's time to post
-      if (config.frequency === 'alternative') {
-        const lastRun = config.lastRun ? new Date(config.lastRun) : null;
-        const nextScheduledTime = this.calculateNextScheduledTime(config, lastRun);
+      if (mergedConfig.frequency === 'alternative') {
+        const lastRun = mergedConfig.lastRun ? new Date(mergedConfig.lastRun) : null;
+        const nextScheduledTime = this.calculateNextScheduledTime(mergedConfig, lastRun);
         const now = new Date();
-        
+
         if (nextScheduledTime && now < nextScheduledTime) {
           console.log(`[AutomationScheduler] ⏭️  Skipping - Next post scheduled for: ${nextScheduledTime.toISOString()}`);
           console.log(`[AutomationScheduler] ⏱️  Time remaining: ${Math.floor((nextScheduledTime - now) / 1000 / 60 / 60)} hours`);
           return; // Skip this run
         }
       }
-      
-      await this.createAutomatedPost(locationId, config);
+
+      // Use mergedConfig which includes gmailId, userId, accountId
+      await this.createAutomatedPost(locationId, mergedConfig);
     }, {
       scheduled: true,
       timezone: config.timezone || DEFAULT_TIMEZONE
@@ -638,12 +698,14 @@ class AutomationScheduler {
   }
 
   // Create an automated post
+  // NEW SCHEMA: Uses gmail_id as primary identifier
   async createAutomatedPost(locationId, config) {
     try {
       console.log(`[AutomationScheduler] 🤖 Creating automated post for location ${locationId}`);
       console.log(`[AutomationScheduler] Config:`, {
         businessName: config.businessName,
-        userId: config.userId,
+        gmailId: config.gmailId,
+        userId: config.userId, // Alias for gmailId
         frequency: config.frequency,
         schedule: config.schedule
       });
@@ -669,15 +731,16 @@ class AutomationScheduler {
       console.log(`[AutomationScheduler] 🔓 Lock acquired for location ${locationId} at ${new Date(now).toISOString()}`);
 
       // Try to get a valid token for the configured user first
+      // NEW SCHEMA: Use gmailId as primary identifier, userId is alias
       let userToken = null;
-      const targetUserId = config.userId || 'default';
+      const targetGmailId = config.gmailId || config.userId || 'default';
 
       console.log(`[AutomationScheduler] ========================================`);
       console.log(`[AutomationScheduler] 🔍 TOKEN RETRIEVAL DIAGNOSTICS`);
-      console.log(`[AutomationScheduler] Target User ID: ${targetUserId}`);
-      console.log(`[AutomationScheduler] Attempting to get valid token for user: ${targetUserId}`);
+      console.log(`[AutomationScheduler] Target Gmail ID: ${targetGmailId}`);
+      console.log(`[AutomationScheduler] Attempting to get valid token for user: ${targetGmailId}`);
 
-      userToken = await this.getValidTokenForUser(targetUserId);
+      userToken = await this.getValidTokenForUser(targetGmailId);
 
       console.log(`[AutomationScheduler] Token retrieval result:`, {
         hasToken: !!userToken,
@@ -688,25 +751,25 @@ class AutomationScheduler {
 
       if (!userToken) {
         // Try to find any available token from automation settings
-        console.log(`[AutomationScheduler] ❌ No token found for ${targetUserId}`);
+        console.log(`[AutomationScheduler] ❌ No token found for ${targetGmailId}`);
         console.log(`[AutomationScheduler] 🔍 Checking for tokens from other automation users...`);
 
-        // Get unique user IDs from automation settings
-        const userIds = this.getAutomationUserIds();
-        console.log(`[AutomationScheduler] Found ${userIds.length} user(s) with automations:`, userIds);
+        // Get unique gmail IDs from automation settings
+        const gmailIds = this.getAutomationUserIds();
+        console.log(`[AutomationScheduler] Found ${gmailIds.length} user(s) with automations:`, gmailIds);
 
-        if (userIds.length > 0) {
+        if (gmailIds.length > 0) {
           // Try each available user
-          for (const userId of userIds) {
-            if (userId === targetUserId) continue; // Already tried this one
-            console.log(`[AutomationScheduler] 🔄 Trying to get valid token for fallback user: ${userId}`);
-            const validToken = await this.getValidTokenForUser(userId);
+          for (const gmailId of gmailIds) {
+            if (gmailId === targetGmailId) continue; // Already tried this one
+            console.log(`[AutomationScheduler] 🔄 Trying to get valid token for fallback user: ${gmailId}`);
+            const validToken = await this.getValidTokenForUser(gmailId);
             if (validToken) {
               userToken = validToken;
-              console.log(`[AutomationScheduler] ✅ Using valid token from fallback user: ${userId}`);
+              console.log(`[AutomationScheduler] ✅ Using valid token from fallback user: ${gmailId}`);
               break;
             } else {
-              console.log(`[AutomationScheduler] ❌ Token for fallback user ${userId} is invalid or expired`);
+              console.log(`[AutomationScheduler] ❌ Token for fallback user ${gmailId} is invalid or expired`);
             }
           }
         } else {
@@ -718,7 +781,7 @@ class AutomationScheduler {
           console.error(`[AutomationScheduler] ❌ CRITICAL: No valid tokens available!`);
           console.error(`[AutomationScheduler] 💡 SOLUTION: User needs to reconnect to Google Business Profile.`);
           console.error(`[AutomationScheduler] 💡 Go to: Settings > Connections > Connect Google Business Profile`);
-          console.error(`[AutomationScheduler] 💡 Target User ID: ${targetUserId}`);
+          console.error(`[AutomationScheduler] 💡 Target Gmail ID: ${targetGmailId}`);
           console.error(`[AutomationScheduler] ========================================`);
 
           // Log this as a failed attempt
@@ -726,11 +789,9 @@ class AutomationScheduler {
             error: 'No valid tokens available',
             timestamp: new Date().toISOString(),
             reason: 'authentication_required',
-            userId: targetUserId,
+            gmailId: targetGmailId,
             diagnostics: {
-              targetUserId: targetUserId,
-              legacyStorageUsers: tokenKeys,
-              legacyStorageCount: tokenKeys.length
+              targetGmailId: targetGmailId
             }
           });
 
@@ -743,9 +804,9 @@ class AutomationScheduler {
 
       // 🔒 SUBSCRIPTION CHECK - Verify user has valid trial or active subscription
       const gbpAccountId = config.gbpAccountId || config.accountId;
-      console.log(`[AutomationScheduler] 🔒 Validating subscription for user ${targetUserId}, GBP Account: ${gbpAccountId}`);
+      console.log(`[AutomationScheduler] 🔒 Validating subscription for user ${targetGmailId}, GBP Account: ${gbpAccountId}`);
 
-      const validationResult = await subscriptionGuard.validateBeforeAutomation(targetUserId, gbpAccountId, 'auto_posting');
+      const validationResult = await subscriptionGuard.validateBeforeAutomation(targetGmailId, gbpAccountId, 'auto_posting');
 
       if (!validationResult.allowed) {
         console.error(`[AutomationScheduler] ❌ SUBSCRIPTION CHECK FAILED`);
@@ -755,7 +816,7 @@ class AutomationScheduler {
 
         // Log this blocked attempt
         this.logAutomationActivity(locationId, 'post_failed', {
-          userId: targetUserId,
+          gmailId: targetGmailId,
           error: validationResult.message,
           reason: validationResult.reason,
           timestamp: new Date().toISOString(),
@@ -792,9 +853,10 @@ class AutomationScheduler {
       console.error(`[AutomationScheduler] Error stack:`, error.stack);
 
       // Log the error
-      const targetUserId = config?.userId || config?.autoPosting?.userId || 'system';
+      // NEW SCHEMA: Use gmailId as primary identifier
+      const targetGmailId = config?.gmailId || config?.userId || config?.autoPosting?.userId || 'system';
       this.logAutomationActivity(locationId, 'post_failed', {
-        userId: targetUserId,
+        gmailId: targetGmailId,
         error: error.message,
         timestamp: new Date().toISOString(),
         reason: 'system_error',
@@ -1444,19 +1506,21 @@ CRITICAL FORMATTING RULES:
   }
 
   // Check for new reviews and auto-reply
+  // NEW SCHEMA: Uses gmail_id as primary identifier
   async checkAndReplyToReviews(locationId, config) {
     try {
       console.log(`[AutomationScheduler] 🔍 Checking for new reviews to auto-reply for location ${locationId}`);
 
       // Get a valid token using the new token system
-      const targetUserId = config.userId || 'default';
-      console.log(`[AutomationScheduler] Getting valid token for user: ${targetUserId}`);
+      // NEW SCHEMA: Use gmailId as primary identifier
+      const targetGmailId = config.gmailId || config.userId || 'default';
+      console.log(`[AutomationScheduler] Getting valid token for user: ${targetGmailId}`);
 
       // 🔒 SUBSCRIPTION CHECK - Verify user has valid trial or active subscription before replying
       const gbpAccountId = config.gbpAccountId || config.accountId;
-      console.log(`[AutomationScheduler] 🔒 Validating subscription for user ${targetUserId}, GBP Account: ${gbpAccountId}`);
+      console.log(`[AutomationScheduler] 🔒 Validating subscription for user ${targetGmailId}, GBP Account: ${gbpAccountId}`);
 
-      const validationResult = await subscriptionGuard.validateBeforeAutomation(targetUserId, gbpAccountId, 'auto_reply');
+      const validationResult = await subscriptionGuard.validateBeforeAutomation(targetGmailId, gbpAccountId, 'auto_reply');
 
       if (!validationResult.allowed) {
         console.error(`[AutomationScheduler] ❌ SUBSCRIPTION CHECK FAILED`);
@@ -1466,7 +1530,7 @@ CRITICAL FORMATTING RULES:
 
         // Log this blocked attempt
         this.logAutomationActivity(locationId, 'review_check_failed', {
-          userId: targetUserId,
+          gmailId: targetGmailId,
           error: validationResult.message,
           reason: validationResult.reason,
           timestamp: new Date().toISOString(),
@@ -1477,21 +1541,21 @@ CRITICAL FORMATTING RULES:
       }
 
       console.log(`[AutomationScheduler] ✅ Subscription validated - ${validationResult.status} (${validationResult.daysRemaining} days remaining)`);
-      
-      let userToken = await this.getValidTokenForUser(targetUserId);
-      
+
+      let userToken = await this.getValidTokenForUser(targetGmailId);
+
       if (!userToken) {
         // Try to find any available valid token from automation users
-        console.log(`[AutomationScheduler] No token for ${targetUserId}, checking other automation users...`);
-        const userIds = this.getAutomationUserIds();
+        console.log(`[AutomationScheduler] No token for ${targetGmailId}, checking other automation users...`);
+        const gmailIds = this.getAutomationUserIds();
 
-        if (userIds.length > 0) {
-          for (const userId of userIds) {
-            if (userId === targetUserId) continue;
-            const validToken = await this.getValidTokenForUser(userId);
+        if (gmailIds.length > 0) {
+          for (const gmailId of gmailIds) {
+            if (gmailId === targetGmailId) continue;
+            const validToken = await this.getValidTokenForUser(gmailId);
             if (validToken) {
               userToken = validToken;
-              console.log(`[AutomationScheduler] ⚡ Using valid token from user: ${userId} for review checking`);
+              console.log(`[AutomationScheduler] ⚡ Using valid token from user: ${gmailId} for review checking`);
               break;
             }
           }
@@ -1758,8 +1822,8 @@ CRITICAL FORMATTING RULES:
     const keywords = config.keywords || '';
     const category = config.category || 'business';
 
-    if (!this.apiKey || !this.azureEndpoint) {
-      throw new Error('[AutomationScheduler] Azure OpenAI not configured - AI generation is required for review replies');
+    if (!this.geminiApiKey) {
+      throw new Error('[AutomationScheduler] Gemini AI not configured - AI generation is required for review replies');
     }
 
     try {
@@ -1807,36 +1871,46 @@ CONTENT Requirements:
 
 Return ONLY the middle content paragraph with no greeting or closing.`;
 
+      // Combine system instruction with user prompt for Gemini
+      const fullPrompt = `You are a professional content writer for ${businessName}. Generate ONLY the middle content of a review reply. DO NOT include greetings like "Dear..." or closings like "Warm regards" - those will be added automatically. Write authentic, varied content that is different every time. Focus on making each response unique and personalized to the specific review.
+
+${prompt}`;
+
+      const generationConfig = {
+        temperature: 0.9, // Higher for more variation
+        topK: 40,
+        topP: 0.95,
+        maxOutputTokens: 200
+      };
+
       const response = await fetch(
-        `${this.azureEndpoint}openai/deployments/${this.deploymentName}/chat/completions?api-version=${this.apiVersion}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/${this.geminiModel}:generateContent?key=${this.geminiApiKey}`,
         {
           method: 'POST',
           headers: {
-            'Content-Type': 'application/json',
-            'api-key': this.apiKey
+            'Content-Type': 'application/json'
           },
           body: JSON.stringify({
-            messages: [
-              {
-                role: 'system',
-                content: `You are a professional content writer for ${businessName}. Generate ONLY the middle content of a review reply. DO NOT include greetings like "Dear..." or closings like "Warm regards" - those will be added automatically. Write authentic, varied content that is different every time. Focus on making each response unique and personalized to the specific review.`
-              },
-              {
-                role: 'user',
-                content: prompt
-              }
-            ],
-            max_tokens: 200,
-            temperature: 0.9, // Higher for more variation
-            frequency_penalty: 0.8, // Prevent repetitive phrases
-            presence_penalty: 0.6 // Encourage new topics/words
+            contents: [{
+              parts: [{
+                text: fullPrompt
+              }]
+            }],
+            generationConfig
           })
         }
       );
 
       if (response.ok) {
         const data = await response.json();
-        let middleContent = data.choices[0].message.content.trim();
+
+        // Check if response has expected Gemini structure
+        if (!data.candidates || !data.candidates[0] || !data.candidates[0].content) {
+          console.error('[AutomationScheduler] ❌ Invalid Gemini response structure for review reply!');
+          throw new Error('Invalid response from Gemini API - no candidates found');
+        }
+
+        let middleContent = data.candidates[0].content.parts[0].text.trim();
 
         // Clean up any greeting/closing that AI might have added despite instructions
         middleContent = middleContent
@@ -1859,11 +1933,11 @@ Team ${businessName}`;
         return completeReply;
       } else {
         const errorText = await response.text();
-        throw new Error(`Azure OpenAI API error: ${response.status} - ${errorText}`);
+        throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
     } catch (error) {
       console.error('[AutomationScheduler] Critical error - AI reply generation failed:', error);
-      throw new Error(`AI reply generation failed: ${error.message}. Please ensure Azure OpenAI is properly configured.`);
+      throw new Error(`AI reply generation failed: ${error.message}. Please ensure Gemini AI is properly configured.`);
     }
   }
 
@@ -1900,9 +1974,11 @@ Team ${businessName}`;
   }
 
   // Log automation activities to Supabase
+  // NEW SCHEMA: Uses gmail_id as primary identifier
   async logAutomationActivity(locationId, type, details) {
     try {
-      const userId = details.userId || 'system';
+      // NEW SCHEMA: Use gmailId as primary, userId is alias for backward compatibility
+      const gmailId = details.gmailId || details.userId || 'system';
       const reviewId = details.reviewId || null;
 
       // Determine status based on type
@@ -1923,7 +1999,7 @@ Team ${businessName}`;
 
       // Log to Supabase instead of JSON file
       await supabaseAutomationService.logActivity(
-        userId,
+        gmailId,
         locationId,
         actionType,
         reviewId,
@@ -1932,34 +2008,39 @@ Team ${businessName}`;
         errorMessage
       );
 
-      console.log(`[AutomationScheduler] ✅ Logged activity: ${actionType} for location ${locationId}`);
+      console.log(`[AutomationScheduler] ✅ Logged activity: ${actionType} for location ${locationId} (gmailId: ${gmailId})`);
     } catch (error) {
       console.error('[AutomationScheduler] Error logging activity to Supabase:', error);
       // Don't throw error - logging failure shouldn't stop automation
     }
   }
 
-  // Get unique user IDs from all automation settings
+  // Get unique gmail IDs from all automation settings
+  // NEW SCHEMA: Returns gmail_id values (userId is alias for gmailId)
   getAutomationUserIds() {
-    const userIds = new Set();
+    const gmailIds = new Set();
     const automations = this.settings.automations || {};
 
     for (const [locationId, config] of Object.entries(automations)) {
-      if (config.autoPosting?.userId) {
-        userIds.add(config.autoPosting.userId);
-      }
-      if (config.autoReply?.userId) {
-        userIds.add(config.autoReply.userId);
+      // Check gmailId first (new schema), then userId (backward compatibility)
+      if (config.gmailId) {
+        gmailIds.add(config.gmailId);
       }
       if (config.userId) {
-        userIds.add(config.userId);
+        gmailIds.add(config.userId);
+      }
+      if (config.autoPosting?.userId) {
+        gmailIds.add(config.autoPosting.userId);
+      }
+      if (config.autoReply?.userId) {
+        gmailIds.add(config.autoReply.userId);
       }
     }
 
     // Remove 'default' as it's not a real user
-    userIds.delete('default');
+    gmailIds.delete('default');
 
-    return Array.from(userIds);
+    return Array.from(gmailIds);
   }
 
   // Get automation status for a location

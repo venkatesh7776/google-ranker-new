@@ -105,7 +105,7 @@ class ServerAutomationService {
   async getAutomationStatus(locationId: string): Promise<AutomationStatus | null> {
     try {
       const response = await fetch(`${this.backendUrl}/api/automation/status/${locationId}`);
-      
+
       if (!response.ok) {
         throw new Error(`Failed to get automation status: ${response.statusText}`);
       }
@@ -115,6 +115,43 @@ class ServerAutomationService {
       return status;
     } catch (error) {
       console.error('❌ Error getting automation status:', error);
+      return null;
+    }
+  }
+
+  // Get automation settings from database
+  async getAutomationSettings(locationId: string, userId: string): Promise<{
+    enabled: boolean;
+    autoReplyEnabled: boolean;
+    schedule: string | null;
+    frequency: string | null;
+    nextPostDate: string | null;
+    lastPostDate: string | null;
+    lastPostSuccess: boolean | null;
+    totalPosts: number;
+    businessName: string | null;
+    keywords: string | null;
+  } | null> {
+    try {
+      console.log(`📥 Fetching automation settings for location ${locationId}, user ${userId}`);
+
+      const response = await fetch(`${this.backendUrl}/api/automation/settings/${locationId}?userId=${encodeURIComponent(userId)}`);
+
+      if (!response.ok) {
+        throw new Error(`Failed to get automation settings: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+
+      if (result.success && result.settings) {
+        console.log(`✅ Got automation settings from database:`, result.settings);
+        return result.settings;
+      }
+
+      console.log(`ℹ️ No automation settings found in database for location ${locationId}`);
+      return null;
+    } catch (error) {
+      console.error('❌ Error getting automation settings:', error);
       return null;
     }
   }
@@ -235,6 +272,7 @@ class ServerAutomationService {
   }
 
   // Enable auto-posting for a location
+  // Returns the nextPostDate if successful, null otherwise
   async enableAutoPosting(
     locationId: string,
     businessName: string,
@@ -259,7 +297,7 @@ class ServerAutomationService {
       phoneNumber?: string;
       customUrl?: string;
     }
-  ): Promise<boolean> {
+  ): Promise<{ success: boolean; nextPostDate: string | null }> {
     const settings: AutomationSettings = {
       autoPosting: {
         enabled: true,
@@ -278,7 +316,35 @@ class ServerAutomationService {
       accountId,
     };
 
-    return this.saveAutomationSettings(locationId, settings);
+    try {
+      console.log(`📤 Enabling auto-posting for location ${locationId}:`, settings);
+
+      const response = await fetch(`${this.backendUrl}/api/automation/settings/${locationId}`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(settings),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to enable auto-posting: ${response.statusText}`);
+      }
+
+      const result = await response.json();
+      console.log('✅ Auto-posting enabled, response:', result);
+
+      return {
+        success: true,
+        nextPostDate: result.nextPostDate || null
+      };
+    } catch (error) {
+      console.error('❌ Error enabling auto-posting:', error);
+      return {
+        success: false,
+        nextPostDate: null
+      };
+    }
   }
 
   // Disable auto-posting for a location
