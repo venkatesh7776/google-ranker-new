@@ -865,6 +865,57 @@ router.get('/activity/replies/:locationId', async (req, res) => {
   }
 });
 
+// Clean up Firebase UID records from user_locations (fix for gmail_id containing UID instead of email)
+router.post('/debug/cleanup-firebase-uid-records', async (req, res) => {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    console.log('[Automation API] 🧹 Cleaning up Firebase UID records from user_locations...');
+
+    // Find records where gmail_id doesn't contain '@' (these are Firebase UIDs, not emails)
+    const { data: badRecords, error: fetchError } = await supabase
+      .from('user_locations')
+      .select('id, gmail_id, location_id, business_name')
+      .not('gmail_id', 'like', '%@%');
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    console.log(`[Automation API] Found ${badRecords?.length || 0} records with Firebase UID instead of email`);
+
+    if (badRecords && badRecords.length > 0) {
+      // Delete the bad records
+      const { error: deleteError } = await supabase
+        .from('user_locations')
+        .delete()
+        .not('gmail_id', 'like', '%@%');
+
+      if (deleteError) {
+        throw deleteError;
+      }
+
+      console.log(`[Automation API] ✅ Deleted ${badRecords.length} bad records`);
+    }
+
+    res.json({
+      success: true,
+      message: `Cleaned up ${badRecords?.length || 0} records with Firebase UID`,
+      deletedRecords: badRecords || []
+    });
+  } catch (error) {
+    console.error('[Automation API] Error cleaning up records:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clean up records',
+      details: error.message
+    });
+  }
+});
+
 // Get recent activity summary for a location (last 7 days)
 router.get('/activity/summary/:locationId', async (req, res) => {
   try {
