@@ -390,7 +390,7 @@ router.post('/test-post-now/:locationId', async (req, res) => {
       country: country || '',
       fullAddress: fullAddress || '',
       phoneNumber: phoneNumber || settings.autoPosting.phoneNumber || '',
-      button: button || settings.autoPosting.button || { enabled: false, type: 'none' },
+      button: button || settings.autoPosting.button || { enabled: true, type: 'call_now' },
       userId: finalUserId || settings.autoPosting.userId || 'default',
       accountId: settings.autoPosting.accountId || settings.accountId, // No hardcoded fallback
       test: true

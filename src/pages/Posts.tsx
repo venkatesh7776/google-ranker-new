@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Plus, Calendar, Clock, Image, Search, Filter, MoreHorizontal, Users, Info, X, FileText, ArrowRight } from "lucide-react";
+import { Plus, Calendar, Clock, Image, Search, Filter, MoreHorizontal, Users, Info, X, FileText, ArrowRight, Phone, ExternalLink, ShoppingCart, CalendarCheck, UserPlus } from "lucide-react";
 import { serverAutomationService } from "@/lib/serverAutomationService";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -41,6 +41,10 @@ interface Post {
   postedAt?: string;
   status: 'draft' | 'scheduled' | 'published' | 'failed';
   imageUrl?: string;
+  callToAction?: {
+    actionType: string;
+    url?: string;
+  };
 }
 
 const Posts = () => {
@@ -124,7 +128,8 @@ const Posts = () => {
                   profileName: location.displayName,
                   content: post.summary || '',
                   status: 'published' as const,
-                  postedAt: post.createTime
+                  postedAt: post.createTime,
+                  callToAction: post.callToAction
                 }));
                 
                 return convertedPosts;
@@ -233,6 +238,30 @@ const Posts = () => {
       default:
         return <Badge variant="outline">{status}</Badge>;
     }
+  };
+
+  // Get CTA button display info
+  const getCTADisplay = (callToAction?: Post['callToAction']) => {
+    if (!callToAction) return null;
+
+    const ctaConfig: Record<string, { label: string; icon: typeof Phone; color: string; bg: string }> = {
+      'CALL': { label: 'Call Now', icon: Phone, color: 'text-green-700', bg: 'bg-green-100' },
+      'BOOK': { label: 'Book', icon: CalendarCheck, color: 'text-blue-700', bg: 'bg-blue-100' },
+      'ORDER': { label: 'Order', icon: ShoppingCart, color: 'text-orange-700', bg: 'bg-orange-100' },
+      'SHOP': { label: 'Shop', icon: ShoppingCart, color: 'text-purple-700', bg: 'bg-purple-100' },
+      'LEARN_MORE': { label: 'Learn More', icon: ExternalLink, color: 'text-gray-700', bg: 'bg-gray-100' },
+      'SIGN_UP': { label: 'Sign Up', icon: UserPlus, color: 'text-indigo-700', bg: 'bg-indigo-100' },
+    };
+
+    const config = ctaConfig[callToAction.actionType] || ctaConfig['LEARN_MORE'];
+    const Icon = config.icon;
+
+    return (
+      <div className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium ${config.bg} ${config.color}`}>
+        <Icon className="h-3 w-3" />
+        {config.label}
+      </div>
+    );
   };
 
   // Get all available profiles for selection (only accessible ones)
@@ -653,9 +682,14 @@ const Posts = () => {
                     {/* Card Footer */}
                     <div className="px-5 pb-5">
                       <div className="flex items-center justify-between pt-3 border-t border-gray-100">
-                        <span className="text-xs text-gray-500 font-medium" style={{ fontFamily: 'Onest' }}>
-                          Click to view details
-                        </span>
+                        <div className="flex items-center gap-2">
+                          {post.callToAction && getCTADisplay(post.callToAction)}
+                          {!post.callToAction && (
+                            <span className="text-xs text-gray-500 font-medium" style={{ fontFamily: 'Onest' }}>
+                              No CTA button
+                            </span>
+                          )}
+                        </div>
                         <div className="text-purple-600 group-hover:translate-x-1 transition-transform">
                           <ArrowRight className="h-4 w-4" />
                         </div>
@@ -725,6 +759,24 @@ const Posts = () => {
               <div className="prose prose-sm max-w-none">
                 <p className="text-base leading-relaxed whitespace-pre-wrap">{selectedPost.content}</p>
               </div>
+
+              {/* CTA Button Info */}
+              {selectedPost.callToAction && (
+                <div className="flex items-center gap-2 p-3 bg-gray-50 rounded-lg border">
+                  <span className="text-sm text-gray-600 font-medium">CTA Button:</span>
+                  {getCTADisplay(selectedPost.callToAction)}
+                  {selectedPost.callToAction.url && (
+                    <a
+                      href={selectedPost.callToAction.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-xs text-blue-600 hover:underline ml-2"
+                    >
+                      {selectedPost.callToAction.url}
+                    </a>
+                  )}
+                </div>
+              )}
 
               {/* Actions */}
               <div className="flex gap-2 pt-4 border-t">
