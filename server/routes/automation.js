@@ -63,6 +63,13 @@ router.get('/settings/:locationId', async (req, res) => {
       }
     }
 
+    // Calculate stats from user_locations table
+    const totalPosts = settings.totalPostsCreated || 0;
+    const lastSuccess = settings.lastPostSuccess;
+    // If lastPostSuccess is true, count as successful; if false, count as failed
+    const successfulPosts = lastSuccess === true ? totalPosts : (lastSuccess === false ? totalPosts - 1 : totalPosts);
+    const failedPosts = lastSuccess === false ? 1 : 0;
+
     res.json({
       success: true,
       settings: {
@@ -73,9 +80,17 @@ router.get('/settings/:locationId', async (req, res) => {
         nextPostDate: nextPostDate,
         lastPostDate: settings.lastPostDate,
         lastPostSuccess: settings.lastPostSuccess,
-        totalPosts: settings.totalPostsCreated,
+        lastPostError: settings.lastPostError,
+        totalPosts: totalPosts,
         businessName: settings.businessName,
-        keywords: settings.keywords
+        keywords: settings.keywords,
+        // Stats for display
+        stats: {
+          total: totalPosts,
+          successful: successfulPosts,
+          failed: failedPosts,
+          pending: 0
+        }
       }
     });
   } catch (error) {

@@ -5,6 +5,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Plus, Calendar, Clock, Image, Search, Filter, MoreHorizontal, Users, Info, X, FileText, ArrowRight } from "lucide-react";
+import { serverAutomationService } from "@/lib/serverAutomationService";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -50,7 +52,11 @@ const Posts = () => {
   const [selectedProfileFilter, setSelectedProfileFilter] = useState<string>("all");
   const [selectedPost, setSelectedPost] = useState<Post | null>(null);
   const [showPostModal, setShowPostModal] = useState(false);
-  
+  const [scheduledPostsCount, setScheduledPostsCount] = useState(0);
+
+  // Get auth context
+  const { currentUser } = useAuth();
+
   // Get real-time Google Business Profile data
   const {
     accounts,
@@ -162,6 +168,46 @@ const Posts = () => {
     setLoading(true);
     fetchPosts();
   }, [accessibleAccounts, isConnected, googleLoading]);
+
+  // Fetch scheduled posts count from automation settings
+  useEffect(() => {
+    const fetchScheduledPosts = async () => {
+      if (!currentUser?.email || !accessibleAccounts.length) {
+        setScheduledPostsCount(0);
+        return;
+      }
+
+      try {
+        let count = 0;
+        // Check each location for scheduled auto-posts
+        for (const account of accessibleAccounts) {
+          for (const location of account.locations) {
+            try {
+              const settings = await serverAutomationService.getAutomationSettings(
+                location.locationId,
+                currentUser.email
+              );
+              // If auto-posting is enabled and there's a next post date, count it as scheduled
+              if (settings?.enabled && settings?.nextPostDate) {
+                const nextPostTime = new Date(settings.nextPostDate).getTime();
+                if (nextPostTime > Date.now()) {
+                  count++;
+                }
+              }
+            } catch (err) {
+              // Ignore individual location errors
+            }
+          }
+        }
+        setScheduledPostsCount(count);
+      } catch (error) {
+        console.error('Error fetching scheduled posts count:', error);
+        setScheduledPostsCount(0);
+      }
+    };
+
+    fetchScheduledPosts();
+  }, [currentUser, accessibleAccounts]);
 
   const formatDateTime = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
@@ -326,11 +372,14 @@ const Posts = () => {
   };
 
   const getStatusCounts = () => {
+    const publishedCount = posts.filter(p => p.status === 'published').length;
+    const draftCount = posts.filter(p => p.status === 'draft').length;
+    // Use scheduledPostsCount from automation settings for accurate scheduled count
     return {
       all: posts.length,
-      published: posts.filter(p => p.status === 'published').length,
-      scheduled: posts.filter(p => p.status === 'scheduled').length,
-      draft: posts.filter(p => p.status === 'draft').length,
+      published: publishedCount,
+      scheduled: scheduledPostsCount, // From automation settings
+      draft: draftCount,
     };
   };
 

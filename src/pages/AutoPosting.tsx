@@ -27,6 +27,15 @@ const AutoPosting = () => {
     enabled: boolean;
     nextPostDate: string | null;
     autoReplyEnabled: boolean;
+    lastPostDate?: string | null;
+    lastPostSuccess?: boolean | null;
+    lastPostError?: string | null;
+    stats?: {
+      total: number;
+      successful: number;
+      failed: number;
+      pending: number;
+    };
   } | null>(null);
 
   const { currentUser } = useAuth();
@@ -66,25 +75,26 @@ const AutoPosting = () => {
     }
   }, [selectedLocationId, locations]);
 
-  // Fetch activity history when location changes
+  // Fetch activity history when location changes - fetch settings first, then activity
   useEffect(() => {
-    if (selectedLocationId && currentUser) {
-      fetchActivityData();
-      fetchDbSettings();
-    }
+    const loadData = async () => {
+      if (selectedLocationId && currentUser) {
+        await fetchDbSettings();
+        await fetchActivityData();
+      }
+    };
+    loadData();
   }, [selectedLocationId, currentUser]);
 
   // Poll settings every 30 seconds to stay in sync with server (matching working code)
   useEffect(() => {
     if (!selectedLocationId || !currentUser) return;
 
-    // Initial fetch
-    fetchDbSettings();
-
-    // Poll every 30 seconds
-    const pollInterval = setInterval(() => {
+    // Poll every 30 seconds (initial fetch happens in the effect above)
+    const pollInterval = setInterval(async () => {
       console.log('[AutoPosting] 🔄 Polling server for settings update...');
-      fetchDbSettings();
+      await fetchDbSettings();
+      await fetchActivityData();
     }, 30000); // 30 seconds
 
     return () => clearInterval(pollInterval);
@@ -100,9 +110,18 @@ const AutoPosting = () => {
         setDbSettings({
           enabled: settings.enabled,
           nextPostDate: settings.nextPostDate,
-          autoReplyEnabled: settings.autoReplyEnabled
+          autoReplyEnabled: settings.autoReplyEnabled,
+          lastPostDate: settings.lastPostDate,
+          lastPostSuccess: settings.lastPostSuccess,
+          lastPostError: settings.lastPostError,
+          stats: settings.stats
         });
         console.log('[AutoPosting] Fetched database settings:', settings);
+
+        // Use stats from settings as primary source
+        if (settings.stats) {
+          setActivityStats(settings.stats);
+        }
       }
     } catch (error) {
       console.error('[AutoPosting] Error fetching database settings:', error);
@@ -122,8 +141,24 @@ const AutoPosting = () => {
         0
       );
 
-      setActivityHistory(history);
-      setActivityStats(stats);
+      // If history is empty but we have lastPostDate from settings, create an entry
+      let finalHistory = history;
+      if (history.length === 0 && dbSettings?.lastPostDate) {
+        finalHistory = [{
+          id: 'last-post-' + selectedLocationId,
+          created_at: dbSettings.lastPostDate,
+          status: dbSettings.lastPostSuccess === true ? 'success' : dbSettings.lastPostSuccess === false ? 'failed' : 'success',
+          post_content: dbSettings.lastPostError || 'Auto-generated post',
+          post_summary: dbSettings.lastPostSuccess === false ? dbSettings.lastPostError : 'Last auto-posted content',
+          error_message: dbSettings.lastPostSuccess === false ? dbSettings.lastPostError : undefined
+        }];
+      }
+
+      setActivityHistory(finalHistory);
+      // Stats from dbSettings take priority (set in fetchDbSettings)
+      if (!dbSettings?.stats) {
+        setActivityStats(stats);
+      }
       setHasMore(history.length >= 20);
     } catch (error) {
       console.error('Error fetching activity data:', error);
