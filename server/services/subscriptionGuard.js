@@ -1,39 +1,102 @@
-import supabaseSubscriptionService from './supabaseSubscriptionService.js';
 import supabaseAutomationService from './supabaseAutomationService.js';
-import admin from 'firebase-admin';
+import { createClient } from '@supabase/supabase-js';
+
+// Admin emails that bypass subscription checks
+const ADMIN_EMAILS = [
+  'digibusy01shakti@gmail.com',
+  'admin@googleranker.io'
+];
 
 /**
  * Subscription Guard Service
  * Enforces feature access based on subscription/trial status
  * Automatically disables features when trial/subscription expires
  * ADMINS BYPASS ALL CHECKS
+ *
+ * NEW SCHEMA: Uses `users` table with `subscription_status` field
  */
 class SubscriptionGuard {
   constructor() {
     this.checkInterval = null;
+    this.supabase = null;
     console.log('[SubscriptionGuard] Initializing subscription enforcement system...');
+  }
+
+  async getSupabaseClient() {
+    if (!this.supabase) {
+      const supabaseUrl = process.env.SUPABASE_URL;
+      const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+      if (supabaseUrl && supabaseKey) {
+        this.supabase = createClient(supabaseUrl, supabaseKey);
+      }
+    }
+    return this.supabase;
   }
 
   /**
    * Check if user is admin (bypasses subscription checks)
+   * NEW: Check via hardcoded admin list or users table is_admin field
    */
   async isAdmin(userId) {
     try {
       if (!userId) return false;
 
-      // Get user from Firebase
-      const userRecord = await admin.auth().getUser(userId);
-      
-      // Check custom claims for admin role
-      if (userRecord.customClaims && userRecord.customClaims.role === 'admin') {
-        console.log(`[SubscriptionGuard] ✅ User ${userId} is ADMIN - bypassing subscription checks`);
+      // Check hardcoded admin list first (by email)
+      if (ADMIN_EMAILS.includes(userId.toLowerCase())) {
+        console.log(`[SubscriptionGuard] ✅ User ${userId} is ADMIN (hardcoded) - bypassing subscription checks`);
         return true;
+      }
+
+      // Check users table for is_admin flag
+      const client = await this.getSupabaseClient();
+      if (client) {
+        const { data } = await client
+          .from('users')
+          .select('is_admin')
+          .eq('gmail_id', userId)
+          .single();
+
+        if (data?.is_admin) {
+          console.log(`[SubscriptionGuard] ✅ User ${userId} is ADMIN (database) - bypassing subscription checks`);
+          return true;
+        }
       }
 
       return false;
     } catch (error) {
-      console.error('[SubscriptionGuard] Error checking admin status:', error);
+      // Don't log error for normal users, just return false
       return false;
+    }
+  }
+
+  /**
+   * Get subscription status from users table
+   * NEW SCHEMA: subscription_status is in users table, not separate subscriptions table
+   */
+  async getSubscriptionFromUsers(userId) {
+    try {
+      const client = await this.getSupabaseClient();
+      if (!client) return null;
+
+      const { data, error } = await client
+        .from('users')
+        .select('gmail_id, subscription_status, trial_end_date, subscription_end_date')
+        .eq('gmail_id', userId)
+        .single();
+
+      if (error || !data) {
+        return null;
+      }
+
+      return {
+        userId: data.gmail_id,
+        status: data.subscription_status || 'trial',
+        trialEndDate: data.trial_end_date,
+        subscriptionEndDate: data.subscription_end_date
+      };
+    } catch (error) {
+      console.error('[SubscriptionGuard] Error getting subscription from users:', error.message);
+      return null;
     }
   }
 
@@ -57,14 +120,18 @@ class SubscriptionGuard {
         }
       }
 
-      const subscription = await supabaseSubscriptionService.getSubscriptionByGbpId(gbpAccountId);
+      // NEW: Get subscription from users table
+      const subscription = await this.getSubscriptionFromUsers(userId);
 
       if (!subscription) {
+        // No user record - allow access (new user gets trial)
+        console.log(`[SubscriptionGuard] No user record for ${userId}, allowing access as trial`);
         return {
-          hasAccess: false,
-          reason: 'no_subscription',
-          message: 'No subscription found. Please start a free trial.',
-          requiresPayment: true
+          hasAccess: true,
+          status: 'trial',
+          daysRemaining: 7,
+          subscription: null,
+          message: 'New user - trial access granted'
         };
       }
 
@@ -243,37 +310,55 @@ class SubscriptionGuard {
 
   /**
    * Check all subscriptions and disable expired ones
+   * NEW: Uses users table instead of subscriptions table
    */
   async checkAllSubscriptions() {
     try {
-      const subscriptions = await supabaseSubscriptionService.getAllSubscriptions();
-      console.log(`[SubscriptionGuard] Checking ${subscriptions.length} subscriptions...`);
+      const client = await this.getSupabaseClient();
+      if (!client) {
+        console.log('[SubscriptionGuard] No Supabase client, skipping check');
+        return;
+      }
+
+      // Get all users with trial or active subscriptions from users table
+      const { data: users, error } = await client
+        .from('users')
+        .select('gmail_id, subscription_status, trial_end_date, subscription_end_date')
+        .in('subscription_status', ['trial', 'active']);
+
+      if (error) {
+        console.error('[SubscriptionGuard] Error fetching users:', error.message);
+        return;
+      }
+
+      console.log(`[SubscriptionGuard] Checking ${users?.length || 0} subscriptions...`);
 
       const now = new Date();
       let expiredCount = 0;
 
-      for (const subscription of subscriptions) {
-        const userId = subscription.userId;
-        const gbpAccountId = subscription.gbpAccountId;
+      for (const user of (users || [])) {
+        const userId = user.gmail_id;
 
         // Check if trial expired
-        if (subscription.status === 'trial' && subscription.trialEndDate) {
-          const trialEndDate = new Date(subscription.trialEndDate);
+        if (user.subscription_status === 'trial' && user.trial_end_date) {
+          const trialEndDate = new Date(user.trial_end_date);
           if (trialEndDate <= now) {
             console.log(`[SubscriptionGuard] ⚠️ Trial expired for user ${userId}`);
-            await this.disableAllFeatures(userId, gbpAccountId, 'trial_expired');
-            await supabaseSubscriptionService.updateSubscriptionStatus(gbpAccountId, 'expired');
+            await this.disableAllFeatures(userId, null, 'trial_expired');
+            // Update user status
+            await client.from('users').update({ subscription_status: 'expired' }).eq('gmail_id', userId);
             expiredCount++;
           }
         }
 
         // Check if subscription expired
-        if (subscription.status === 'active' && subscription.subscriptionEndDate) {
-          const endDate = new Date(subscription.subscriptionEndDate);
+        if (user.subscription_status === 'active' && user.subscription_end_date) {
+          const endDate = new Date(user.subscription_end_date);
           if (endDate <= now) {
             console.log(`[SubscriptionGuard] ⚠️ Subscription expired for user ${userId}`);
-            await this.disableAllFeatures(userId, gbpAccountId, 'subscription_expired');
-            await supabaseSubscriptionService.updateSubscriptionStatus(gbpAccountId, 'expired');
+            await this.disableAllFeatures(userId, null, 'subscription_expired');
+            // Update user status
+            await client.from('users').update({ subscription_status: 'expired' }).eq('gmail_id', userId);
             expiredCount++;
           }
         }
