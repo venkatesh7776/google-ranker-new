@@ -844,6 +844,13 @@ class AutomationScheduler {
           await this.updateAutomationSettings(locationId, this.settings.automations[locationId]);
           console.log(`[AutomationScheduler] ✅ lastRun updated in Supabase: ${this.settings.automations[locationId].autoPosting.lastRun}`);
         }
+
+        // Also update last_post_date in database for UI display
+        const gmailId = config.gmailId || config.userId;
+        if (gmailId) {
+          await supabaseAutomationService.updatePostResult(gmailId, locationId, true);
+          console.log(`[AutomationScheduler] ✅ last_post_date updated in database for ${gmailId}`);
+        }
       }
 
       return result;
