@@ -183,28 +183,52 @@ class AutomationScheduler {
     this.checkAndCreateMissedPosts();
   }
 
-  // Start a background checker for missed posts (runs every 2 minutes for more reliability)
+  // Start a background checker for missed posts (runs every 1 minute as per working code)
   startMissedPostChecker() {
     if (this.missedPostCheckerInterval) {
       clearInterval(this.missedPostCheckerInterval);
     }
 
-    console.log('[AutomationScheduler] ⏰ Starting missed post checker (every 2 minutes)');
+    console.log('[AutomationScheduler] ⏰ Starting missed post checker (every 1 minute)');
 
-    // Check every 2 minutes for any posts that should have been created
+    // Check every 1 minute for any posts that should have been created
     this.missedPostCheckerInterval = setInterval(async () => {
       console.log('[AutomationScheduler] 🔍 Running periodic check for missed posts...');
       await this.checkAndCreateMissedPosts();
-    }, 2 * 60 * 1000); // 2 minutes for more reliable posting
+    }, 1 * 60 * 1000); // 1 minute interval (matching working code)
+
+    // Track last settings reload time
+    this.lastSettingsReload = Date.now();
   }
 
   // Check for missed posts and create them
+  // CRITICAL: Uses IST time comparison (matching working code)
   async checkAndCreateMissedPosts() {
     try {
       const automations = this.settings.automations || {};
-      const now = new Date();
 
-      console.log(`[AutomationScheduler] 📅 Checking ${Object.keys(automations).length} locations for missed posts at ${now.toISOString()}`);
+      // Reload settings from database every 5 minutes to catch UI changes
+      const now = Date.now();
+      const SETTINGS_RELOAD_INTERVAL = 5 * 60 * 1000; // 5 minutes
+
+      if (!this.lastSettingsReload || (now - this.lastSettingsReload) > SETTINGS_RELOAD_INTERVAL) {
+        console.log('[AutomationScheduler] 🔄 Reloading settings from database to ensure freshness...');
+        await this.loadSettings();
+        this.lastSettingsReload = now;
+      }
+
+      // Get current time in IST (critical for correct comparison)
+      const nowUTC = new Date();
+      const istOffset = 5.5 * 60 * 60 * 1000; // 5 hours 30 minutes in milliseconds
+      const nowISTMillis = nowUTC.getTime() + istOffset;
+      const nowIST = new Date(nowISTMillis);
+
+      // Extract IST time components
+      const currentISTHour = nowIST.getUTCHours();
+      const currentISTMinute = nowIST.getUTCMinutes();
+
+      console.log(`[AutomationScheduler] 📅 Checking ${Object.keys(automations).length} locations for missed posts`);
+      console.log(`[AutomationScheduler] 🕐 Current IST time: ${currentISTHour}:${String(currentISTMinute).padStart(2, '0')}`);
 
       for (const [locationId, config] of Object.entries(automations)) {
         if (!config.autoPosting?.enabled) {
@@ -212,32 +236,27 @@ class AutomationScheduler {
         }
 
         const autoPosting = config.autoPosting;
-        const lastRun = autoPosting.lastRun ? new Date(autoPosting.lastRun) : null;
 
-        // Calculate when the next post should be created based on schedule
-        const nextScheduledTime = this.calculateNextScheduledTime(autoPosting, lastRun);
+        // Get the configured schedule time (e.g., "10:30" or "17:49")
+        const scheduleTime = autoPosting.schedule || '10:00';
+        const [scheduleHour, scheduleMinute] = scheduleTime.split(':').map(Number);
 
-        if (!nextScheduledTime) {
-          console.log(`[AutomationScheduler] ⏭️  Skipping ${locationId} - no schedule configured`);
-          continue;
-        }
+        // Check if we are EXACTLY at the schedule time (within current minute)
+        const isExactScheduleTime = (currentISTHour === scheduleHour && currentISTMinute === scheduleMinute);
 
         console.log(`[AutomationScheduler] 📊 Location ${locationId}:`);
-        console.log(`  - Last run: ${lastRun ? lastRun.toISOString() : 'NEVER'}`);
-        console.log(`  - Next scheduled: ${nextScheduledTime.toISOString()}`);
-        console.log(`  - Current time: ${now.toISOString()}`);
-        console.log(`  - Is overdue: ${now >= nextScheduledTime}`);
+        console.log(`  - Business: ${autoPosting.businessName || config.businessName || 'Unknown'}`);
+        console.log(`  - Schedule: ${scheduleTime} IST`);
+        console.log(`  - Current IST: ${currentISTHour}:${String(currentISTMinute).padStart(2, '0')}`);
+        console.log(`  - Is exact match: ${isExactScheduleTime}`);
 
-        // If we're past the scheduled time and haven't run yet, create the post
-        if (now >= nextScheduledTime) {
-          console.log(`[AutomationScheduler] ⚡ MISSED POST CHECKER TRIGGERED for ${locationId}! Creating now...`);
-          console.log(`  - Business: ${autoPosting.businessName}`);
+        // If current IST time matches schedule, create the post
+        if (isExactScheduleTime) {
+          console.log(`[AutomationScheduler] ⚡ EXACT SCHEDULE TIME MATCH for ${locationId}! Creating post now...`);
           console.log(`  - Frequency: ${autoPosting.frequency}`);
-          console.log(`  - Schedule: ${autoPosting.schedule}`);
-          console.log(`  - 🕐 Checker time: ${new Date().toISOString()}`);
+          console.log(`  - 🕐 Trigger time: ${nowUTC.toISOString()}`);
 
-          // IMPORTANT: Pass the FULL config (with gmailId, userId, accountId) not just autoPosting
-          // Merge autoPosting settings with the full config to ensure we have gmailId for token retrieval
+          // IMPORTANT: Pass the FULL config (with gmailId, userId, accountId)
           const fullConfig = {
             ...config,
             ...autoPosting,
@@ -257,10 +276,10 @@ class AutomationScheduler {
           await this.createAutomatedPost(locationId, fullConfig);
 
           // Update last run time in cache AND Supabase
-          this.settings.automations[locationId].autoPosting.lastRun = now.toISOString();
+          this.settings.automations[locationId].autoPosting.lastRun = nowUTC.toISOString();
           await this.updateAutomationSettings(locationId, this.settings.automations[locationId]);
 
-          console.log(`[AutomationScheduler] ✅ Missed post created and lastRun updated for ${locationId}`);
+          console.log(`[AutomationScheduler] ✅ Post created and lastRun updated for ${locationId}`);
         }
       }
     } catch (error) {

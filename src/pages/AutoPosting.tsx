@@ -74,6 +74,22 @@ const AutoPosting = () => {
     }
   }, [selectedLocationId, currentUser]);
 
+  // Poll settings every 30 seconds to stay in sync with server (matching working code)
+  useEffect(() => {
+    if (!selectedLocationId || !currentUser) return;
+
+    // Initial fetch
+    fetchDbSettings();
+
+    // Poll every 30 seconds
+    const pollInterval = setInterval(() => {
+      console.log('[AutoPosting] 🔄 Polling server for settings update...');
+      fetchDbSettings();
+    }, 30000); // 30 seconds
+
+    return () => clearInterval(pollInterval);
+  }, [selectedLocationId, currentUser]);
+
   // Fetch settings from database
   const fetchDbSettings = async () => {
     if (!selectedLocationId || !currentUser?.email) return;
@@ -267,6 +283,11 @@ const AutoPosting = () => {
           nextPostTime={dbSettings?.nextPostDate || locationConfig?.nextPost || null}
           isEnabled={dbSettings?.enabled || locationConfig?.enabled || false}
           frequency={locationConfig?.schedule?.frequency}
+          onRefreshNeeded={() => {
+            console.log('[AutoPosting] ⏰ Timer reached zero, refreshing settings...');
+            fetchDbSettings();
+            fetchActivityData();
+          }}
         />
       )}
 
