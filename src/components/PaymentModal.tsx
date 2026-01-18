@@ -374,9 +374,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
         modal: {
           ondismiss: () => {
             setIsProcessing(false);
+            // Modal already closed, just show info toast
             toast({
               title: "Payment Cancelled",
-              description: "You can complete payment later from the dashboard.",
+              description: "You can complete payment later from the Billing page.",
               variant: "default"
             });
           },
@@ -389,6 +390,10 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
 
       // Initialize Razorpay and open payment modal
       console.log('[Payment] 🚀 Opening Razorpay checkout...');
+
+      // Close our dialog before opening Razorpay to prevent interference
+      onClose();
+
       const razorpayInstance = new Razorpay(options);
 
       // Listen for payment failure
