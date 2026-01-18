@@ -543,12 +543,58 @@ class AutomationScheduler {
 
       // Generate post content using AI
       const postContent = await this.generatePostContent(config, locationId, userId);
-      
+
       // Create the post via Google Business Profile API (v4 - current version)
       // v4 requires accountId in the path - MUST have valid accountId
-      const accountId = config.accountId;
+      let accountId = config.accountId;
+
+      // If accountId is missing, try to fetch it from GBP API
       if (!accountId) {
-        console.error(`[AutomationScheduler] ❌ No accountId provided for location ${locationId} - cannot create post`);
+        console.log(`[AutomationScheduler] ⚠️ No accountId in config for location ${locationId}, fetching from GBP API...`);
+        try {
+          const accountsResponse = await fetch(
+            'https://mybusinessaccountmanagement.googleapis.com/v1/accounts',
+            {
+              headers: {
+                'Authorization': `Bearer ${accessToken}`,
+                'Content-Type': 'application/json'
+              }
+            }
+          );
+
+          if (accountsResponse.ok) {
+            const accountsData = await accountsResponse.json();
+            const accounts = accountsData.accounts || [];
+            if (accounts.length > 0) {
+              accountId = accounts[0].name.split('/')[1];
+              console.log(`[AutomationScheduler] ✅ Fetched accountId from GBP API: ${accountId}`);
+
+              // Save accountId to database for future use
+              const gmailId = config.gmailId || config.userId;
+              if (gmailId) {
+                try {
+                  const { createClient } = await import('@supabase/supabase-js');
+                  const supabase = createClient(process.env.SUPABASE_URL, process.env.SUPABASE_SERVICE_KEY);
+                  await supabase
+                    .from('users')
+                    .update({ google_account_id: accountId, updated_at: new Date().toISOString() })
+                    .eq('gmail_id', gmailId);
+                  console.log(`[AutomationScheduler] ✅ Saved accountId to database for user ${gmailId}`);
+                } catch (saveError) {
+                  console.error(`[AutomationScheduler] ⚠️ Failed to save accountId to database:`, saveError.message);
+                }
+              }
+            }
+          } else {
+            console.error(`[AutomationScheduler] ❌ Failed to fetch accounts from GBP API:`, accountsResponse.status);
+          }
+        } catch (fetchError) {
+          console.error(`[AutomationScheduler] ❌ Error fetching accountId from GBP API:`, fetchError.message);
+        }
+      }
+
+      if (!accountId) {
+        console.error(`[AutomationScheduler] ❌ No accountId available for location ${locationId} - cannot create post`);
         console.error(`[AutomationScheduler] User must reconnect Google Business Profile to get accountId`);
         return null;
       }

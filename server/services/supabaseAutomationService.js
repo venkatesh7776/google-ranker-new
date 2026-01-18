@@ -438,6 +438,11 @@ class SupabaseAutomationService {
       formatted.hasValidToken = data.users.has_valid_token;
     }
 
+    // Log if accountId is missing - will be fetched from GBP API at runtime
+    if (!formatted.accountId) {
+      console.log(`[SupabaseAutomationService] ⚠️ accountId missing for ${formatted.gmailId} - will be fetched from GBP API at runtime`);
+    }
+
     return formatted;
   }
 
@@ -447,8 +452,6 @@ class SupabaseAutomationService {
    */
   async updateNextPostDate(gmailId, locationId, nextPostDate) {
     try {
-      await this.initialize();
-
       if (!this.client) {
         console.error('[SupabaseAutomationService] Client not initialized');
         return false;
