@@ -610,7 +610,9 @@ router.get('/debug/settings-cache', (req, res) => {
     const allSettings = automationScheduler.settings.automations || {};
     const summary = Object.entries(allSettings).map(([locationId, config]) => ({
       locationId,
-      businessName: config.autoPosting?.businessName || config.autoReply?.businessName || 'Unknown',
+      gmailId: config.gmailId,
+      userId: config.userId,
+      businessName: config.autoPosting?.businessName || config.autoReply?.businessName || config.businessName || 'Unknown',
       autoPostingEnabled: config.autoPosting?.enabled || false,
       autoReplyEnabled: config.autoReply?.enabled || false,
       schedule: config.autoPosting?.schedule,
