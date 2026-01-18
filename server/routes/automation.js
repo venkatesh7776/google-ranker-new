@@ -865,6 +865,67 @@ router.get('/activity/replies/:locationId', async (req, res) => {
   }
 });
 
+// Clear post creation locks (for debugging stuck posts)
+router.post('/debug/clear-post-locks', (req, res) => {
+  try {
+    const lockCount = automationScheduler.postCreationLocks.size;
+    const lockedLocations = Array.from(automationScheduler.postCreationLocks.keys());
+
+    console.log(`[Automation API] 🔓 Clearing ${lockCount} post creation locks...`);
+    console.log(`[Automation API] Locked locations:`, lockedLocations);
+
+    automationScheduler.postCreationLocks.clear();
+
+    res.json({
+      success: true,
+      message: `Cleared ${lockCount} post creation lock(s)`,
+      clearedLocations: lockedLocations
+    });
+  } catch (error) {
+    console.error('[Automation API] Error clearing locks:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to clear locks',
+      details: error.message
+    });
+  }
+});
+
+// Get detailed automation config including gmailId/userId for debugging
+router.get('/debug/automation-config/:locationId', (req, res) => {
+  try {
+    const { locationId } = req.params;
+    const config = automationScheduler.settings.automations?.[locationId];
+
+    if (!config) {
+      return res.status(404).json({
+        success: false,
+        error: 'No automation config found for this location'
+      });
+    }
+
+    res.json({
+      success: true,
+      locationId,
+      config: {
+        gmailId: config.autoPosting?.gmailId || config.gmailId,
+        userId: config.autoPosting?.userId || config.userId,
+        autoPosting: config.autoPosting,
+        autoReply: config.autoReply,
+        accessToken: config.accessToken ? 'PRESENT' : 'MISSING',
+        refreshToken: config.refreshToken ? 'PRESENT' : 'MISSING'
+      }
+    });
+  } catch (error) {
+    console.error('[Automation API] Error getting config:', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to get config',
+      details: error.message
+    });
+  }
+});
+
 // Clean up Firebase UID records from user_locations (fix for gmail_id containing UID instead of email)
 router.post('/debug/cleanup-firebase-uid-records', async (req, res) => {
   try {

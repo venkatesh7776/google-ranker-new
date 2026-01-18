@@ -1,6 +1,6 @@
 [
   {
-    "id": "audit_1767799803142_8s0dmwc93",
+    "id": "audit_1768721017952_88ozzgpft",
     "userId": "e4c4aed9-0654-471c-8f95-46d266f72e5b",
     "userEmail": "digibusy01shakti@gmail.com",
     "locationId": "locations/12580110398960005959",
@@ -12,95 +12,7 @@
           "impressions": 1,
           "calls": 0,
           "websiteClicks": 0,
-          "directionRequests": 0,
-          "date": "2025-12-08"
-        },
-        {
-          "views": 0,
-          "impressions": 0,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 3,
-          "date": "2025-12-09"
-        },
-        {
-          "views": 3,
-          "impressions": 3,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 0,
-          "date": "2025-12-10"
-        },
-        {
-          "views": 1,
-          "impressions": 1,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 0,
-          "date": "2025-12-11"
-        },
-        {
-          "views": 4,
-          "impressions": 4,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 0,
-          "date": "2025-12-12"
-        },
-        {
-          "views": 0,
-          "impressions": 0,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 0,
-          "date": "2025-12-13"
-        },
-        {
-          "views": 1,
-          "impressions": 1,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 2,
-          "date": "2025-12-14"
-        },
-        {
-          "views": 3,
-          "impressions": 3,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 5,
-          "date": "2025-12-15"
-        },
-        {
-          "views": 4,
-          "impressions": 4,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 0,
-          "date": "2025-12-16"
-        },
-        {
-          "views": 7,
-          "impressions": 7,
-          "calls": 0,
-          "websiteClicks": 0,
           "directionRequests": 1,
-          "date": "2025-12-17"
-        },
-        {
-          "views": 3,
-          "impressions": 3,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 5,
-          "date": "2025-12-18"
-        },
-        {
-          "views": 1,
-          "impressions": 1,
-          "calls": 0,
-          "websiteClicks": 0,
-          "directionRequests": 0,
           "date": "2025-12-19"
         },
         {
@@ -156,7 +68,7 @@
           "impressions": 2,
           "calls": 0,
           "websiteClicks": 0,
-          "directionRequests": 0,
+          "directionRequests": 1,
           "date": "2025-12-26"
         },
         {
@@ -188,7 +100,7 @@
           "impressions": 0,
           "calls": 0,
           "websiteClicks": 0,
-          "directionRequests": 1,
+          "directionRequests": 3,
           "date": "2025-12-30"
         },
         {
@@ -204,7 +116,7 @@
           "impressions": 6,
           "calls": 0,
           "websiteClicks": 0,
-          "directionRequests": 0,
+          "directionRequests": 1,
           "date": "2026-01-01"
         },
         {
@@ -224,8 +136,8 @@
           "date": "2026-01-03"
         },
         {
-          "views": 0,
-          "impressions": 0,
+          "views": 1,
+          "impressions": 1,
           "calls": 0,
           "websiteClicks": 0,
           "directionRequests": 0,
@@ -240,12 +152,68 @@
           "date": "2026-01-05"
         },
         {
-          "views": 0,
-          "impressions": 0,
+          "views": 1,
+          "impressions": 1,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 5,
+          "date": "2026-01-06"
+        },
+        {
+          "views": 2,
+          "impressions": 2,
           "calls": 0,
           "websiteClicks": 0,
           "directionRequests": 0,
-          "date": "2026-01-06"
+          "date": "2026-01-07"
+        },
+        {
+          "views": 4,
+          "impressions": 4,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 0,
+          "date": "2026-01-08"
+        },
+        {
+          "views": 6,
+          "impressions": 6,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 0,
+          "date": "2026-01-09"
+        },
+        {
+          "views": 2,
+          "impressions": 2,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 4,
+          "date": "2026-01-10"
+        },
+        {
+          "views": 2,
+          "impressions": 2,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 0,
+          "date": "2026-01-11"
+        },
+        {
+          "views": 1,
+          "impressions": 1,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 0,
+          "date": "2026-01-12"
+        },
+        {
+          "views": 2,
+          "impressions": 2,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 1,
+          "date": "2026-01-13"
         },
         {
           "views": 0,
@@ -253,7 +221,39 @@
           "calls": 0,
           "websiteClicks": 0,
           "directionRequests": 0,
-          "date": "2026-01-07"
+          "date": "2026-01-14"
+        },
+        {
+          "views": 0,
+          "impressions": 0,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 1,
+          "date": "2026-01-15"
+        },
+        {
+          "views": 0,
+          "impressions": 0,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 0,
+          "date": "2026-01-16"
+        },
+        {
+          "views": 0,
+          "impressions": 0,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 0,
+          "date": "2026-01-17"
+        },
+        {
+          "views": 0,
+          "impressions": 0,
+          "calls": 0,
+          "websiteClicks": 0,
+          "directionRequests": 0,
+          "date": "2026-01-18"
         }
       ]
     },
@@ -262,7 +262,7 @@
     },
     "score": {
       "overall": 67,
-      "performance": 2,
+      "performance": 0,
       "engagement": 100,
       "searchRank": 5,
       "profileCompletion": 67,
@@ -286,21 +286,21 @@
         "hasCategories": true
       },
       "reviewDetails": {
-        "totalReviews": 8,
-        "reviewsLast30Days": 1,
-        "reviewsPerWeek": 0.23333333333333334,
-        "repliedReviews": 8,
+        "totalReviews": 9,
+        "reviewsLast30Days": 2,
+        "reviewsPerWeek": 0.4666666666666667,
+        "repliedReviews": 9,
         "replyRate": 100
       }
     },
     "dateRange": {
-      "startDate": "2025-12-08",
-      "endDate": "2026-01-07"
+      "startDate": "2025-12-19",
+      "endDate": "2026-01-18"
     },
-    "timestamp": "2026-01-07T15:30:03.142Z",
+    "timestamp": "2026-01-18T07:23:37.952Z",
     "metadata": {
       "source": "audit_tool",
-      "timestamp": "2026-01-07T15:30:03.107Z"
+      "timestamp": "2026-01-18T07:23:37.944Z"
     }
   },
   {

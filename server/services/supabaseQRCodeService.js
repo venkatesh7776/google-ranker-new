@@ -2,7 +2,8 @@ import supabaseConfig from '../config/supabase.js';
 
 /**
  * Supabase QR Code Service
- * Stores QR codes in PostgreSQL
+ * Uses NEW SCHEMA with gmail_id as primary identifier
+ * Table: qr_codes
  */
 class SupabaseQRCodeService {
   constructor() {
@@ -27,17 +28,28 @@ class SupabaseQRCodeService {
 
   /**
    * Save QR code
+   * @param {object} qrCodeData - QR code data
+   * @param {string} qrCodeData.gmailId - User's Gmail (PRIMARY KEY reference)
+   * @param {string} qrCodeData.userId - Alias for gmailId (backward compatibility)
    */
   async saveQRCode(qrCodeData) {
     try {
       await this.initialize();
 
+      // Use gmailId as primary, fall back to userId for compatibility
+      const gmailId = qrCodeData.gmailId || qrCodeData.userId;
+
+      if (!gmailId) {
+        throw new Error('gmailId (or userId) is required to save QR code');
+      }
+
       const record = {
         code: qrCodeData.code,
+        gmail_id: gmailId,
+        user_id: gmailId, // Keep for backward compatibility
         location_id: qrCodeData.locationId,
         location_name: qrCodeData.locationName || null,
         address: qrCodeData.address || null,
-        user_id: qrCodeData.userId,
         place_id: qrCodeData.placeId || null,
         qr_data_url: qrCodeData.qrDataUrl || null,
         review_link: qrCodeData.reviewLink || null,
@@ -56,7 +68,7 @@ class SupabaseQRCodeService {
 
       if (error) throw error;
 
-      console.log(`[SupabaseQRCodeService] ✅ Saved QR code: ${qrCodeData.code} (${qrCodeData.locationName || 'Unknown'}) with keywords: ${qrCodeData.keywords || 'none'}`);
+      console.log(`[SupabaseQRCodeService] ✅ Saved QR code: ${qrCodeData.code} for ${gmailId} (${qrCodeData.locationName || 'Unknown'})`);
       return qrCodeData;
     } catch (error) {
       console.error('[SupabaseQRCodeService] Error saving QR code:', error);
@@ -91,15 +103,17 @@ class SupabaseQRCodeService {
 
   /**
    * Get all QR codes for user
+   * @param {string} gmailId - User's Gmail (or userId for backward compatibility)
    */
-  async getQRCodesForUser(userId) {
+  async getQRCodesForUser(gmailId) {
     try {
       await this.initialize();
 
+      // Query by gmail_id (new schema)
       const { data, error } = await this.client
         .from('qr_codes')
         .select('*')
-        .eq('user_id', userId)
+        .eq('gmail_id', gmailId)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
@@ -225,17 +239,18 @@ class SupabaseQRCodeService {
   }
 
   /**
-   * Format QR code from database
+   * Format QR code from database (new schema with gmail_id)
    */
   formatQRCode(qr) {
     if (!qr) return null;
 
     return {
       code: qr.code,
+      gmailId: qr.gmail_id,
+      userId: qr.gmail_id, // Alias for backward compatibility
       locationId: qr.location_id,
       locationName: qr.location_name || '',
       address: qr.address || '',
-      userId: qr.user_id,
       placeId: qr.place_id || '',
       qrCodeUrl: qr.qr_data_url || '',
       qrDataUrl: qr.qr_data_url || '', // Keep both for compatibility
