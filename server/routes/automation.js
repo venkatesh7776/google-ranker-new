@@ -115,8 +115,8 @@ router.post('/settings/:locationId', async (req, res) => {
       if (!settings.autoPosting.userId) {
         settings.autoPosting.userId = settings.userId || 'default';
       }
-      if (!settings.autoPosting.accountId) {
-        settings.autoPosting.accountId = settings.accountId || '106433552101751461082';
+      if (!settings.autoPosting.accountId && settings.accountId) {
+        settings.autoPosting.accountId = settings.accountId;
       }
       // Ensure phone number and button config are preserved
       if (settings.phoneNumber && !settings.autoPosting.phoneNumber) {
@@ -135,12 +135,14 @@ router.post('/settings/:locationId', async (req, res) => {
         keywords: settings.keywords || settings.autoPosting?.keywords || 'quality service, customer satisfaction',
         replyToAll: true,
         userId: settings.userId || 'default',
-        accountId: settings.accountId || '106433552101751461082'
+        accountId: settings.accountId // No hardcoded fallback
       };
     } else {
       // Preserve all incoming autoReply properties (including keywords!)
       settings.autoReply.userId = settings.userId || settings.autoReply.userId || 'default';
-      settings.autoReply.accountId = settings.accountId || settings.autoReply.accountId || '106433552101751461082';
+      if (!settings.autoReply.accountId && settings.accountId) {
+        settings.autoReply.accountId = settings.accountId;
+      }
       // Ensure keywords from autoReply settings are preserved
       if (settings.autoReply.keywords === undefined && (settings.keywords || settings.autoPosting?.keywords)) {
         settings.autoReply.keywords = settings.keywords || settings.autoPosting?.keywords;
@@ -320,7 +322,7 @@ router.post('/test-post-now/:locationId', async (req, res) => {
           keywords: keywords || 'quality service, customer satisfaction, professional',
           replyToAll: true,
           userId: 'default',
-          accountId: '106433552101751461082'
+          accountId: null // Will be set from user's stored google_account_id
         }
       };
       
@@ -344,7 +346,7 @@ router.post('/test-post-now/:locationId', async (req, res) => {
       phoneNumber: phoneNumber || settings.autoPosting.phoneNumber || '',
       button: button || settings.autoPosting.button || { enabled: false, type: 'none' },
       userId: finalUserId || settings.autoPosting.userId || 'default',
-      accountId: settings.autoPosting.accountId || settings.accountId || '106433552101751461082',
+      accountId: settings.autoPosting.accountId || settings.accountId, // No hardcoded fallback
       test: true
     };
     
@@ -461,7 +463,7 @@ router.post('/test-review-check/:locationId', async (req, res) => {
           replyToNegative: true,
           replyToNeutral: true,
           userId: 'default',
-          accountId: '106433552101751461082'
+          accountId: null // Will be set from user's stored google_account_id
         },
         autoPosting: {
           enabled: true,
@@ -483,7 +485,7 @@ router.post('/test-review-check/:locationId', async (req, res) => {
     const testConfig = {
       ...settings.autoReply,
       userId: settings.autoReply.userId || 'default',
-      accountId: settings.autoReply.accountId || settings.accountId || '106433552101751461082',
+      accountId: settings.autoReply.accountId || settings.accountId, // No hardcoded fallback
       test: true
     };
     

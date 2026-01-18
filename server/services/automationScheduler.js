@@ -526,8 +526,13 @@ class AutomationScheduler {
       const postContent = await this.generatePostContent(config, locationId, userId);
       
       // Create the post via Google Business Profile API (v4 - current version)
-      // v4 requires accountId in the path
-      const accountId = config.accountId || '106433552101751461082';
+      // v4 requires accountId in the path - MUST have valid accountId
+      const accountId = config.accountId;
+      if (!accountId) {
+        console.error(`[AutomationScheduler] ❌ No accountId provided for location ${locationId} - cannot create post`);
+        console.error(`[AutomationScheduler] User must reconnect Google Business Profile to get accountId`);
+        return null;
+      }
       const postUrl = `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/localPosts`;
       console.log(`[AutomationScheduler] Posting to URL: ${postUrl}`);
       
@@ -615,8 +620,12 @@ class AutomationScheduler {
   // Fallback method for post creation using alternative API
   async createPostWithFallbackAPI(locationId, postContent, accessToken, config) {
     try {
-      // Use Google My Business API v4 as fallback
-      const accountId = config.accountId || '106433552101751461082';
+      // Use Google My Business API v4 as fallback - MUST have accountId
+      const accountId = config.accountId;
+      if (!accountId) {
+        console.error(`[AutomationScheduler] ❌ No accountId for fallback API`);
+        return null;
+      }
       const fallbackUrl = `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/localPosts`;
       
       console.log(`[AutomationScheduler] Using fallback API: ${fallbackUrl}`);
@@ -1078,7 +1087,7 @@ class AutomationScheduler {
   }
 
   // Fetch location details from Google API if address is missing
-  async fetchLocationAddress(locationId, userId) {
+  async fetchLocationAddress(locationId, userId, accountId) {
     try {
       const token = await this.getValidTokenForUser(userId);
       if (!token || !token.access_token) {
@@ -1086,58 +1095,60 @@ class AutomationScheduler {
         return null;
       }
 
-      const HARDCODED_ACCOUNT_ID = '106433552101751461082';
+      // Try Google My Business API v4 first if we have accountId
+      if (accountId) {
+        console.log('[AutomationScheduler] 📍 Fetching location address from Google API v4...');
+        const v4Url = `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}`;
 
-      // Try Google My Business API v4 first (same format as posting API)
-      console.log('[AutomationScheduler] 📍 Fetching location address from Google API...');
-      const v4Url = `https://mybusiness.googleapis.com/v4/accounts/${HARDCODED_ACCOUNT_ID}/locations/${locationId}`;
+        let response = await fetch(v4Url, {
+          headers: {
+            'Authorization': `Bearer ${token.access_token}`,
+            'Content-Type': 'application/json'
+          }
+        });
 
-      let response = await fetch(v4Url, {
-        headers: {
-          'Authorization': `Bearer ${token.access_token}`,
-          'Content-Type': 'application/json'
-        }
-      });
+        if (response.ok) {
+          const data = await response.json();
+          console.log('[AutomationScheduler] 📍 Location data received:', JSON.stringify(data, null, 2).substring(0, 500));
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('[AutomationScheduler] 📍 Location data received:', JSON.stringify(data, null, 2).substring(0, 500));
+          // Parse address from v4 API response
+          if (data.address || data.storefrontAddress) {
+            const addr = data.address || data.storefrontAddress;
+            const result = {
+              fullAddress: addr.addressLines?.join(', ') || addr.address || '',
+              city: addr.locality || addr.city || '',
+              region: addr.administrativeArea || addr.region || addr.state || '',
+              country: addr.regionCode || addr.country || 'India',
+              postalCode: addr.postalCode || ''
+            };
+            console.log('[AutomationScheduler] ✅ Parsed address:', result);
+            return result;
+          }
 
-        // Parse address from v4 API response
-        if (data.address || data.storefrontAddress) {
-          const addr = data.address || data.storefrontAddress;
-          const result = {
-            fullAddress: addr.addressLines?.join(', ') || addr.address || '',
-            city: addr.locality || addr.city || '',
-            region: addr.administrativeArea || addr.region || addr.state || '',
-            country: addr.regionCode || addr.country || 'India',
-            postalCode: addr.postalCode || ''
-          };
-          console.log('[AutomationScheduler] ✅ Parsed address:', result);
-          return result;
-        }
-
-        // Try alternate field names
-        if (data.locationName || data.title) {
-          console.log('[AutomationScheduler] 📍 Using location name as fallback:', data.locationName || data.title);
-          return {
-            fullAddress: data.locationName || data.title || '',
-            city: '',
-            region: '',
-            country: 'India',
-            postalCode: ''
-          };
+          // Try alternate field names
+          if (data.locationName || data.title) {
+            console.log('[AutomationScheduler] 📍 Using location name as fallback:', data.locationName || data.title);
+            return {
+              fullAddress: data.locationName || data.title || '',
+              city: '',
+              region: '',
+              country: 'India',
+              postalCode: ''
+            };
+          }
+        } else {
+          const errorText = await response.text();
+          console.log('[AutomationScheduler] ⚠️ V4 API failed:', response.status, errorText.substring(0, 200));
         }
       } else {
-        const errorText = await response.text();
-        console.log('[AutomationScheduler] ⚠️ V4 API failed:', response.status, errorText.substring(0, 200));
+        console.log('[AutomationScheduler] ⚠️ No accountId provided - skipping v4 API, trying v1 fallback');
       }
 
-      // Try Business Information API v1 as fallback
+      // Try Business Information API v1 as fallback (doesn't need accountId)
       console.log('[AutomationScheduler] 📍 Trying Business Information API v1...');
       const v1Url = `https://mybusinessbusinessinformation.googleapis.com/v1/locations/${locationId}?readMask=storefrontAddress,title,name`;
 
-      response = await fetch(v1Url, {
+      const response = await fetch(v1Url, {
         headers: {
           'Authorization': `Bearer ${token.access_token}`,
           'Content-Type': 'application/json'
@@ -1194,7 +1205,7 @@ class AutomationScheduler {
     // If address is missing, fetch it from Google API
     if ((!fullAddress || !city) && locationId && userId) {
       console.log('[AutomationScheduler] 📍 Address incomplete in config, fetching from Google API...');
-      const addressData = await this.fetchLocationAddress(locationId, userId);
+      const addressData = await this.fetchLocationAddress(locationId, userId, config.accountId);
       if (addressData) {
         // Only update if we got better data
         if (!fullAddress && addressData.fullAddress) {
@@ -1579,8 +1590,12 @@ CRITICAL FORMATTING RULES:
       let response;
       let reviews = [];
       
-      // Use Google Business Profile API v4 (current version)
-      const accountId = config.accountId || '106433552101751461082';
+      // Use Google Business Profile API v4 (current version) - MUST have accountId
+      const accountId = config.accountId;
+      if (!accountId) {
+        console.error(`[AutomationScheduler] ❌ No accountId for reviews - user must reconnect GBP`);
+        return null;
+      }
       console.log(`[AutomationScheduler] Fetching reviews using API v4 for location ${locationId}...`);
       response = await fetch(
         `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/reviews`,
@@ -1689,8 +1704,12 @@ CRITICAL FORMATTING RULES:
       // Send reply via Google Business Profile API - try modern endpoint first
       let success = false;
       
-      // Use Google Business Profile API v4
-      const accountId = config.accountId || '106433552101751461082';
+      // Use Google Business Profile API v4 - MUST have accountId
+      const accountId = config.accountId;
+      if (!accountId) {
+        console.error(`[AutomationScheduler] ❌ No accountId for review reply - skipping`);
+        return false;
+      }
       console.log(`[AutomationScheduler] Attempting to reply using API v4...`);
       const apiResponse = await fetch(
         `https://mybusiness.googleapis.com/v4/accounts/${accountId}/locations/${locationId}/reviews/${reviewId}/reply`,
