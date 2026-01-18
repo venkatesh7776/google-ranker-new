@@ -30,6 +30,20 @@ class LeaderElection {
         console.log(`[LeaderElection] 🎯 Server ID: ${this.serverId}`);
         console.log(`[LeaderElection] 🔄 Starting leader election for role: ${this.role}`);
 
+        // Check if leader_election table exists
+        const tableExists = await this.checkTableExists();
+
+        if (!tableExists) {
+            // Table doesn't exist - run as single server mode (always leader)
+            console.log(`[LeaderElection] ⚠️ leader_election table not found`);
+            console.log(`[LeaderElection] 🏆 Running in SINGLE SERVER MODE - always acting as leader`);
+            this.isLeader = true;
+            this.singleServerMode = true;
+            this.onBecomeLeader();
+            console.log(`[LeaderElection] ✅ Single server mode started (no leader election needed)`);
+            return;
+        }
+
         // Try to become leader immediately
         await this.tryBecomeLeader();
 
@@ -44,6 +58,30 @@ class LeaderElection {
         }, this.HEARTBEAT_INTERVAL_MS);
 
         console.log(`[LeaderElection] ✅ Leader election started (checking every 30s)`);
+    }
+
+    /**
+     * Check if leader_election table exists
+     */
+    async checkTableExists() {
+        try {
+            const client = await connectionPool.getClient();
+
+            // Try a simple query to check if table exists
+            const { data, error } = await client
+                .from('leader_election')
+                .select('role')
+                .limit(1);
+
+            if (error && error.message.includes('leader_election')) {
+                return false;
+            }
+
+            return true;
+        } catch (error) {
+            console.log(`[LeaderElection] ⚠️ Table check error: ${error.message}`);
+            return false;
+        }
     }
 
     /**

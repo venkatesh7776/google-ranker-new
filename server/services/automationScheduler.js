@@ -1013,8 +1013,9 @@ class AutomationScheduler {
       return 'learn_more';
     }
 
-    // Default: CALL if phone available, otherwise LEARN_MORE
-    return phoneNumber ? 'call_now' : 'learn_more';
+    // Default: Always prefer CALL - Google will use the business profile phone number
+    // Changed from conditional to always 'call_now' as per user request
+    return 'call_now';
   }
 
   // Generate call-to-action based on button configuration
@@ -1060,31 +1061,14 @@ class AutomationScheduler {
 
     switch (buttonType) {
       case 'call_now':
-        // Use phone number from button config first, then from business profile
-        const phone = button?.phoneNumber || phoneNumber;
-        console.log('[AutomationScheduler] 📞 Call Now button - Phone numbers:', {
+        // Google My Business API v4 uses the business profile phone number automatically
+        // We don't need to pass phone number - Google gets it from the business profile
+        console.log('[AutomationScheduler] 📞 Call Now button - Using business profile phone number');
+        console.log('[AutomationScheduler] 📞 Config phone (optional reference):', {
           fromButton: button?.phoneNumber || 'NONE',
-          fromProfile: phoneNumber || 'NONE',
-          finalPhone: phone || 'NONE'
+          fromProfile: phoneNumber || 'NONE'
         });
-        if (!phone) {
-          console.error('[AutomationScheduler] ❌ Call Now button selected but no phone number available');
-          console.error('[AutomationScheduler] ⚠️ Falling back to LEARN_MORE with website URL');
-          if (!url) {
-            console.log('[AutomationScheduler] ========================================');
-            return null;
-          }
-          // Fallback to LEARN_MORE if no phone
-          const fallbackCTA = {
-            actionType: 'LEARN_MORE',
-            url: url
-          };
-          console.log('[AutomationScheduler] ⚠️ Generated fallback CTA:', fallbackCTA);
-          console.log('[AutomationScheduler] ========================================');
-          return fallbackCTA;
-        }
-        // Google My Business API v4 doesn't accept phoneNumber in callToAction
-        // It automatically uses the phone number from the business profile
+        // Google My Business API v4 handles CALL action by using the business profile phone
         const callCTA = {
           actionType: 'CALL'
         };
