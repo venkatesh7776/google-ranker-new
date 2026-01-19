@@ -111,7 +111,6 @@ const AdminLayout = () => {
   const navigation = [
     { name: 'Dashboard', href: '/admin/dashboard', icon: LayoutDashboard },
     { name: 'Users', href: '/admin/users', icon: Users },
-    { name: 'User Audits', href: '/admin/user-audits', icon: BarChart3 },
     { name: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
     { name: 'Coupons', href: '/admin/coupons', icon: Ticket },
@@ -141,14 +140,30 @@ const AdminLayout = () => {
         <div className="p-4 sm:p-6 flex items-center justify-between">
           {sidebarOpen ? (
             <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary" />
+              <img
+                src="/google-ranker-logo.png"
+                alt="Google Ranker"
+                className="h-8 w-8 sm:h-10 sm:w-10 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                  e.currentTarget.nextElementSibling?.classList.remove('hidden');
+                }}
+              />
+              <Shield className="h-6 w-6 sm:h-8 sm:w-8 text-primary hidden" />
               <div>
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900">Admin Panel</h1>
-                <p className="text-xs text-gray-500">LOBAISEO</p>
+                <p className="text-xs text-gray-500">Google Ranker</p>
               </div>
             </div>
           ) : (
-            <Shield className="h-6 w-6 sm:h-8 sm:w-8 mx-auto text-primary" />
+            <img
+              src="/google-ranker-logo.png"
+              alt="Google Ranker"
+              className="h-8 w-8 mx-auto object-contain"
+              onError={(e) => {
+                e.currentTarget.style.display = 'none';
+              }}
+            />
           )}
           <Button
             variant="ghost"
@@ -237,7 +252,7 @@ const AdminLayout = () => {
               </Button>
               <div>
                 <h2 className="text-lg sm:text-xl md:text-2xl font-bold text-gray-900">Admin Portal</h2>
-                <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage your LOBAISEO application</p>
+                <p className="text-xs sm:text-sm text-gray-500 hidden sm:block">Manage your Google Ranker application</p>
               </div>
             </div>
             <div className="flex items-center gap-2 sm:gap-4">

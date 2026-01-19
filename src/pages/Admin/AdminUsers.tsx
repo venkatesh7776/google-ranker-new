@@ -75,14 +75,60 @@ const AdminUsers = () => {
 
     switch (subscription.status) {
       case 'active':
-        return <Badge className="bg-green-500">Active</Badge>;
+        return <Badge className="bg-green-500">Paid</Badge>;
       case 'trial':
         return <Badge className="bg-blue-500">Trial</Badge>;
       case 'expired':
         return <Badge variant="destructive">Expired</Badge>;
+      case 'cancelled':
+        return <Badge variant="destructive">Cancelled</Badge>;
       default:
         return <Badge variant="secondary">{subscription.status}</Badge>;
     }
+  };
+
+  const getPlanDetails = (subscription: any) => {
+    if (!subscription) return '-';
+
+    if (subscription.status === 'trial') {
+      const trialEnd = subscription.trialEndDate ? new Date(subscription.trialEndDate) : null;
+      if (trialEnd) {
+        const daysLeft = Math.ceil((trialEnd.getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+        return (
+          <div className="text-sm">
+            <span className="font-medium text-blue-600">Free Trial</span>
+            <br />
+            <span className="text-gray-500 text-xs">
+              {daysLeft > 0 ? `${daysLeft} days left` : 'Expired'}
+            </span>
+          </div>
+        );
+      }
+      return <span className="text-blue-600">Free Trial</span>;
+    }
+
+    if (subscription.status === 'active') {
+      const planId = subscription.planId || 'yearly_plan';
+      const planName = planId.includes('monthly') ? 'Monthly Plan' :
+                      planId.includes('six_month') ? '6-Month Plan' :
+                      planId.includes('yearly') ? 'Yearly Plan' : planId;
+
+      const profiles = subscription.profileCount || subscription.paidSlots || 1;
+      const endDate = subscription.subscriptionEndDate ? new Date(subscription.subscriptionEndDate) : null;
+
+      return (
+        <div className="text-sm">
+          <span className="font-medium text-green-600">{planName}</span>
+          <br />
+          <span className="text-gray-500 text-xs">
+            {profiles} profile{profiles > 1 ? 's' : ''}
+            {endDate && ` • Expires ${format(endDate, 'MMM dd, yyyy')}`}
+          </span>
+        </div>
+      );
+    }
+
+    return <span className="text-gray-500">-</span>;
   };
 
   return (
@@ -138,8 +184,9 @@ const AdminUsers = () => {
                 <TableRow>
                   <TableHead>Email</TableHead>
                   <TableHead>Display Name</TableHead>
-                  <TableHead>Status</TableHead>
+                  <TableHead>Account Status</TableHead>
                   <TableHead>Subscription</TableHead>
+                  <TableHead>Plan Details</TableHead>
                   <TableHead>GBP Connected</TableHead>
                   <TableHead>Joined</TableHead>
                   <TableHead>Actions</TableHead>
@@ -165,6 +212,7 @@ const AdminUsers = () => {
                         )}
                       </TableCell>
                       <TableCell>{getStatusBadge(user.subscription)}</TableCell>
+                      <TableCell>{getPlanDetails(user.subscription)}</TableCell>
                       <TableCell>
                         {user.gbpAccountId ? (
                           <Badge variant="outline" className="bg-green-50">
@@ -226,7 +274,7 @@ const AdminUsers = () => {
                   ))
                 ) : (
                   <TableRow>
-                    <TableCell colSpan={7} className="text-center text-gray-500 py-8">
+                    <TableCell colSpan={8} className="text-center text-gray-500 py-8">
                       No users found
                     </TableCell>
                   </TableRow>
