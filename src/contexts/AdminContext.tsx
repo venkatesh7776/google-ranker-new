@@ -139,15 +139,21 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const fetchDashboardStats = async () => {
     try {
+      console.log('[AdminContext] 📊 Fetching dashboard stats...');
       const headers = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/admin/dashboard/stats`, { headers });
 
-      if (!response.ok) throw new Error('Failed to fetch dashboard stats');
-
       const result = await response.json();
+      console.log('[AdminContext] 📊 Dashboard stats response:', response.status, result);
+
+      if (!response.ok) {
+        throw new Error(result.error || `Server error: ${response.status}`);
+      }
+
       setDashboardStats(result.data);
+      console.log('[AdminContext] ✅ Dashboard stats loaded:', result.data);
     } catch (error: any) {
-      console.error('Error fetching dashboard stats:', error);
+      console.error('[AdminContext] ❌ Error fetching dashboard stats:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to fetch dashboard statistics',
@@ -158,16 +164,22 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const fetchUsers = async (params: any = {}) => {
     try {
+      console.log('[AdminContext] 👥 Fetching users...');
       const headers = await getAuthHeaders();
       const queryParams = new URLSearchParams(params).toString();
       const response = await fetch(`${BACKEND_URL}/api/admin/users?${queryParams}`, { headers });
 
-      if (!response.ok) throw new Error('Failed to fetch users');
-
       const result = await response.json();
-      setUsers(result.data.users || []);
+      console.log('[AdminContext] 👥 Users response:', response.status, result);
+
+      if (!response.ok) {
+        throw new Error(result.error || `Server error: ${response.status}`);
+      }
+
+      setUsers(result.data?.users || []);
+      console.log('[AdminContext] ✅ Users loaded:', result.data?.users?.length || 0);
     } catch (error: any) {
-      console.error('Error fetching users:', error);
+      console.error('[AdminContext] ❌ Error fetching users:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to fetch users',
@@ -178,15 +190,21 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const fetchSubscriptions = async () => {
     try {
+      console.log('[AdminContext] 💳 Fetching subscriptions...');
       const headers = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/admin/subscriptions`, { headers });
 
-      if (!response.ok) throw new Error('Failed to fetch subscriptions');
-
       const result = await response.json();
+      console.log('[AdminContext] 💳 Subscriptions response:', response.status, result);
+
+      if (!response.ok) {
+        throw new Error(result.error || `Server error: ${response.status}`);
+      }
+
       setSubscriptions(result.data || []);
+      console.log('[AdminContext] ✅ Subscriptions loaded:', result.data?.length || 0);
     } catch (error: any) {
-      console.error('Error fetching subscriptions:', error);
+      console.error('[AdminContext] ❌ Error fetching subscriptions:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to fetch subscriptions',
@@ -216,15 +234,21 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
 
   const fetchCoupons = async () => {
     try {
+      console.log('[AdminContext] 🎟️ Fetching coupons...');
       const headers = await getAuthHeaders();
       const response = await fetch(`${BACKEND_URL}/api/admin/coupons`, { headers });
 
-      if (!response.ok) throw new Error('Failed to fetch coupons');
-
       const result = await response.json();
+      console.log('[AdminContext] 🎟️ Coupons response:', response.status, result);
+
+      if (!response.ok) {
+        throw new Error(result.error || `Server error: ${response.status}`);
+      }
+
       setCoupons(result.data || []);
+      console.log('[AdminContext] ✅ Coupons loaded:', result.data?.length || 0);
     } catch (error: any) {
-      console.error('Error fetching coupons:', error);
+      console.error('[AdminContext] ❌ Error fetching coupons:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to fetch coupons',

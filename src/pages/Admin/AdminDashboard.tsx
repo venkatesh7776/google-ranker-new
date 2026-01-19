@@ -19,14 +19,21 @@ import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, Cart
 const AdminDashboard = () => {
   const { dashboardStats, analytics, fetchDashboardStats, fetchAnalytics } = useAdmin();
   const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const loadData = async () => {
     setIsLoading(true);
+    setError(null);
+    console.log('[AdminDashboard] Loading data...');
     try {
       await Promise.all([
         fetchDashboardStats(),
         fetchAnalytics('30days')
       ]);
+      console.log('[AdminDashboard] Data loaded successfully');
+    } catch (err: any) {
+      console.error('[AdminDashboard] Error loading data:', err);
+      setError(err.message || 'Failed to load dashboard data');
     } finally {
       setIsLoading(false);
     }
@@ -38,6 +45,12 @@ const AdminDashboard = () => {
 
   const stats = dashboardStats || {};
   const revenueData = analytics?.dailyRevenue || [];
+
+  // Debug logging
+  useEffect(() => {
+    console.log('[AdminDashboard] dashboardStats:', dashboardStats);
+    console.log('[AdminDashboard] analytics:', analytics);
+  }, [dashboardStats, analytics]);
 
   const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042'];
 
@@ -79,6 +92,48 @@ const AdminDashboard = () => {
           Refresh
         </Button>
       </div>
+
+      {/* Error Banner */}
+      {error && (
+        <Card className="border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-red-700">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">Error loading dashboard data</p>
+                <p className="text-sm">{error}</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Loading State Info */}
+      {isLoading && (
+        <Card className="border-blue-200 bg-blue-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-blue-700">
+              <RefreshCw className="h-5 w-5 animate-spin" />
+              <p>Loading dashboard data...</p>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Debug Info - Shows current data state */}
+      {!isLoading && !error && !dashboardStats && (
+        <Card className="border-yellow-200 bg-yellow-50">
+          <CardContent className="pt-6">
+            <div className="flex items-center gap-3 text-yellow-700">
+              <AlertCircle className="h-5 w-5" />
+              <div>
+                <p className="font-medium">No data received from server</p>
+                <p className="text-sm">The backend might need to be redeployed or the database might be empty.</p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
