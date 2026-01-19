@@ -1,6 +1,7 @@
 import express from 'express';
 import { verifyAdmin, checkAdminLevel } from '../middleware/supabaseAdminAuth.js';
-import adminUserService from '../services/adminUserService.js';
+// Use Supabase-based admin user service instead of Firebase-based one
+import adminUserService from '../services/supabaseAdminUserService.js';
 import adminAnalyticsService from '../services/adminAnalyticsService.js';
 import couponService from '../services/couponService.js';
 import auditLogService from '../services/auditLogService.js';
