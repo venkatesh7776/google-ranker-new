@@ -192,7 +192,42 @@ class SubscriptionGuard {
         }
       }
 
-      // Invalid status
+      // If status is 'none' or empty, grant trial access automatically
+      // This ensures new users can use the platform without manual intervention
+      if (!subscription.status || subscription.status === 'none' || subscription.status === '') {
+        console.log(`[SubscriptionGuard] User ${userId} has no subscription status, granting automatic trial access`);
+
+        // Auto-set trial for this user in database
+        try {
+          const client = await this.getSupabaseClient();
+          if (client) {
+            const trialEndDate = new Date();
+            trialEndDate.setDate(trialEndDate.getDate() + 7); // 7-day trial
+
+            await client
+              .from('users')
+              .update({
+                subscription_status: 'trial',
+                trial_end_date: trialEndDate.toISOString()
+              })
+              .eq('gmail_id', userId);
+
+            console.log(`[SubscriptionGuard] ✅ Auto-created 7-day trial for user ${userId}`);
+          }
+        } catch (updateError) {
+          console.error(`[SubscriptionGuard] Failed to auto-create trial:`, updateError.message);
+        }
+
+        return {
+          hasAccess: true,
+          status: 'trial',
+          daysRemaining: 7,
+          subscription,
+          message: 'Automatic trial access granted'
+        };
+      }
+
+      // Invalid status (not none, not trial, not active)
       return {
         hasAccess: false,
         reason: 'invalid_status',

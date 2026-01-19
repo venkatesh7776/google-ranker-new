@@ -786,6 +786,44 @@ router.get('/debug/diagnose-auto-reply', async (req, res) => {
   }
 });
 
+// Force check and reply to reviews NOW for a specific location
+router.post('/check-reviews-now/:locationId', async (req, res) => {
+  try {
+    const { locationId } = req.params;
+    const { userId, accountId, businessName, keywords, category } = req.body;
+
+    if (!userId) {
+      return res.status(400).json({ error: 'userId is required in request body' });
+    }
+
+    console.log(`[Automation API] 🔄 Force checking reviews for location ${locationId}...`);
+
+    // Build config for the review check
+    const config = {
+      gmailId: userId,
+      userId: userId,
+      accountId: accountId,
+      businessName: businessName || 'Business',
+      keywords: keywords || '',
+      category: category || 'business',
+      enabled: true
+    };
+
+    // Force check reviews and reply
+    await automationScheduler.checkAndReplyToReviews(locationId, config);
+
+    res.json({
+      success: true,
+      message: `Review check triggered for location ${locationId}`,
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    console.error('[Automation API] Error in force review check:', error);
+    res.status(500).json({ error: 'Review check failed', details: error.message });
+  }
+});
+
 // Enable auto-reply for ALL existing locations (one-time migration)
 router.post('/enable-autoreply-all', async (req, res) => {
   try {
