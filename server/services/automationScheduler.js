@@ -1749,17 +1749,22 @@ CRITICAL FORMATTING RULES:
         }
         
         console.log(`[AutomationScheduler] ✅ AUTO-REPLY COMPLETE! All new reviews have been replied to automatically.`);
+        return { success: true, repliedCount: unrepliedReviews.length, totalReviews: reviews.length };
       } else {
         console.log(`[AutomationScheduler] 📭 No new reviews found. All reviews already have replies.`);
+        return { success: true, repliedCount: 0, totalReviews: reviews.length, message: 'All reviews already have replies' };
       }
     } catch (error) {
       console.error(`[AutomationScheduler] ❌ Error checking reviews:`, error);
-      
+      console.error(`[AutomationScheduler] Error stack:`, error.stack);
+
       // Log the error
       this.logAutomationActivity(locationId, 'review_check_failed', {
         error: error.message,
         timestamp: new Date().toISOString()
       });
+
+      return { success: false, error: error.message };
     }
   }
 
