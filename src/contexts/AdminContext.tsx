@@ -48,7 +48,7 @@ interface AdminProviderProps {
 }
 
 export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
-  const { currentUser } = useAuth();
+  const { currentUser, loading: authLoading } = useAuth();
   const [isAdmin, setIsAdmin] = useState(false);
   const [adminLevel, setAdminLevel] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -64,7 +64,13 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   // Check if user is admin
   useEffect(() => {
     const checkAdminStatus = async () => {
-      console.log('[AdminContext] 🔍 Checking admin status for user:', currentUser?.email);
+      console.log('[AdminContext] 🔍 Checking admin status for user:', currentUser?.email, 'authLoading:', authLoading);
+
+      // Wait for auth to finish loading before making any decisions
+      if (authLoading) {
+        console.log('[AdminContext] ⏳ Auth still loading, waiting...');
+        return;
+      }
 
       if (!currentUser) {
         console.log('[AdminContext] ❌ No currentUser, setting isAdmin=false');
@@ -114,7 +120,7 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
     };
 
     checkAdminStatus();
-  }, [currentUser]);
+  }, [currentUser, authLoading]);
 
   const getAuthHeaders = async () => {
     if (!currentUser) throw new Error('Not authenticated');
