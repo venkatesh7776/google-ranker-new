@@ -23,7 +23,8 @@ const verifySupabaseAdmin = async (req, res, next) => {
 
     // ADMIN WHITELIST: Allow specific users as admin
     const adminEmails = [
-      'digibusy01shakti@gmail.com'
+      'digibusy01shakti@gmail.com',
+      'meenakarjale73@gmail.com'
     ];
 
     try {

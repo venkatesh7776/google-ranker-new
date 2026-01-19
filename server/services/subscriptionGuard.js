@@ -4,7 +4,8 @@ import { createClient } from '@supabase/supabase-js';
 // Admin emails that bypass subscription checks
 const ADMIN_EMAILS = [
   'digibusy01shakti@gmail.com',
-  'admin@googleranker.io'
+  'admin@googleranker.io',
+  'meenakarjale73@gmail.com'
 ];
 
 /**

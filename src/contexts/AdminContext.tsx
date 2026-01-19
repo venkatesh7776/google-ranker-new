@@ -64,7 +64,10 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   // Check if user is admin
   useEffect(() => {
     const checkAdminStatus = async () => {
+      console.log('[AdminContext] 🔍 Checking admin status for user:', currentUser?.email);
+
       if (!currentUser) {
+        console.log('[AdminContext] ❌ No currentUser, setting isAdmin=false');
         setIsAdmin(false);
         setAdminLevel(null);
         setIsLoading(false);
@@ -74,21 +77,32 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
       try {
         // Admin whitelist - must match backend whitelist
         const adminEmails = [
-          'digibusy01shakti@gmail.com'
+          'digibusy01shakti@gmail.com',
+          'meenakarjale73@gmail.com'
         ];
 
         const userEmail = currentUser.email;
+        console.log('[AdminContext] 🔍 User email:', userEmail);
+        console.log('[AdminContext] 🔍 Admin whitelist:', adminEmails);
+
         const isAdminUser = adminEmails.includes(userEmail || '');
+        console.log('[AdminContext] 🔍 Is admin user (whitelist check):', isAdminUser);
 
         // Also check Supabase user metadata as fallback
         const roleFromMetadata = currentUser.user_metadata?.role || currentUser.app_metadata?.role;
         const levelFromMetadata = currentUser.user_metadata?.adminLevel || currentUser.app_metadata?.adminLevel;
+        console.log('[AdminContext] 🔍 Role from metadata:', roleFromMetadata);
 
-        setIsAdmin(isAdminUser || roleFromMetadata === 'admin');
+        const finalIsAdmin = isAdminUser || roleFromMetadata === 'admin';
+        console.log('[AdminContext] 🔍 Final isAdmin value:', finalIsAdmin);
+
+        setIsAdmin(finalIsAdmin);
         setAdminLevel(isAdminUser ? 'super' : (levelFromMetadata || 'viewer'));
 
         if (isAdminUser) {
           console.log('[AdminContext] ✅ Admin access granted via whitelist:', userEmail);
+        } else {
+          console.log('[AdminContext] ❌ User NOT in admin whitelist:', userEmail);
         }
       } catch (error) {
         console.error('Error checking admin status:', error);
