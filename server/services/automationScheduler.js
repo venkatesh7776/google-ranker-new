@@ -78,13 +78,34 @@ class AutomationScheduler {
           }
         }
 
-        // 🔧 FIX: Ensure autoReply.enabled is set if database autoReplyEnabled=true
-        if (setting.autoReplyEnabled && setting.autoReply) {
+        // 🔧 FIX: Ensure autoReply is properly configured if database autoReplyEnabled=true
+        if (setting.autoReplyEnabled) {
+          // Create autoReply object if it doesn't exist
+          if (!setting.autoReply) {
+            setting.autoReply = { enabled: true };
+            this.settings.automations[locationId].autoReply = { enabled: true };
+          }
+          // Ensure enabled is set
           if (!setting.autoReply.enabled) {
             console.log(`[AutomationScheduler] ⚠️ Fixing autoReply.enabled for location ${locationId} - setting to true`);
             setting.autoReply.enabled = true;
             this.settings.automations[locationId].autoReply.enabled = true;
           }
+          // Ensure autoReply has all required fields for reply generation
+          setting.autoReply.businessName = setting.businessName || 'Business';
+          setting.autoReply.keywords = setting.keywords || '';
+          setting.autoReply.category = setting.category || 'business';
+          setting.autoReply.userId = setting.gmailId || setting.userId;
+          setting.autoReply.gmailId = setting.gmailId || setting.userId;
+          setting.autoReply.accountId = setting.accountId;
+          setting.autoReply.gbpAccountId = setting.accountId;
+          this.settings.automations[locationId].autoReply = setting.autoReply;
+          console.log(`[AutomationScheduler] ✅ AutoReply configured for ${locationId}:`, {
+            enabled: setting.autoReply.enabled,
+            businessName: setting.autoReply.businessName,
+            accountId: setting.autoReply.accountId,
+            userId: setting.autoReply.userId
+          });
         }
 
         console.log(`[AutomationScheduler] ✅ Loaded settings for location ${locationId}:`, {
@@ -157,15 +178,22 @@ class AutomationScheduler {
       if (config.autoReply?.enabled) {
         console.log(`[AutomationScheduler] ✅ Starting review monitoring for location ${locationId}`);
         // Merge full config with autoReply settings to include businessName, keywords, etc.
+        // 🔧 FIX: Include gmailId which is the primary identifier for token retrieval
         const fullAutoReplyConfig = {
           ...config.autoReply,
-          businessName: config.businessName,
-          keywords: config.keywords,
-          category: config.category,
-          userId: config.userId,
-          accountId: config.accountId,
-          gbpAccountId: config.gbpAccountId
+          businessName: config.businessName || config.autoReply.businessName || 'Business',
+          keywords: config.keywords || config.autoReply.keywords || '',
+          category: config.category || config.autoReply.category || 'business',
+          gmailId: config.gmailId || config.autoReply.gmailId || config.userId,
+          userId: config.userId || config.autoReply.userId,
+          accountId: config.accountId || config.autoReply.accountId,
+          gbpAccountId: config.gbpAccountId || config.autoReply.gbpAccountId || config.accountId
         };
+        console.log(`[AutomationScheduler] 📋 AutoReply config for ${locationId}:`, {
+          gmailId: fullAutoReplyConfig.gmailId,
+          accountId: fullAutoReplyConfig.accountId,
+          businessName: fullAutoReplyConfig.businessName
+        });
         this.startReviewMonitoring(locationId, fullAutoReplyConfig);
       } else {
         console.log(`[AutomationScheduler] ⏭️ Skipping review monitoring for location ${locationId} - not enabled`);
@@ -407,15 +435,22 @@ class AutomationScheduler {
       this.stopReviewMonitoring(locationId);
       if (settings.autoReply?.enabled) {
         // Merge full settings with autoReply config to include businessName, keywords, etc.
+        // 🔧 FIX: Include gmailId which is the primary identifier for token retrieval
         const fullAutoReplyConfig = {
           ...settings.autoReply,
-          businessName: settings.businessName,
-          keywords: settings.keywords,
-          category: settings.category,
-          userId: settings.userId,
-          accountId: settings.accountId,
-          gbpAccountId: settings.gbpAccountId
+          businessName: settings.businessName || settings.autoReply.businessName || 'Business',
+          keywords: settings.keywords || settings.autoReply.keywords || '',
+          category: settings.category || settings.autoReply.category || 'business',
+          gmailId: settings.gmailId || settings.autoReply.gmailId || settings.userId,
+          userId: settings.userId || settings.autoReply.userId,
+          accountId: settings.accountId || settings.autoReply.accountId,
+          gbpAccountId: settings.gbpAccountId || settings.autoReply.gbpAccountId || settings.accountId
         };
+        console.log(`[AutomationScheduler] 📋 AutoReply config updated for ${locationId}:`, {
+          gmailId: fullAutoReplyConfig.gmailId,
+          accountId: fullAutoReplyConfig.accountId,
+          businessName: fullAutoReplyConfig.businessName
+        });
         this.startReviewMonitoring(locationId, fullAutoReplyConfig);
       }
     }

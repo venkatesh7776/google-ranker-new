@@ -796,13 +796,19 @@ router.post('/check-reviews-now/:locationId', async (req, res) => {
       return res.status(400).json({ error: 'userId is required in request body' });
     }
 
-    console.log(`[Automation API] 🔄 Force checking reviews for location ${locationId}...`);
+    if (!accountId) {
+      return res.status(400).json({ error: 'accountId is required in request body for API calls' });
+    }
 
-    // Build config for the review check
+    console.log(`[Automation API] 🔄 Force checking reviews for location ${locationId}...`);
+    console.log(`[Automation API] Config: userId=${userId}, accountId=${accountId}, businessName=${businessName}`);
+
+    // Build config for the review check - must include all required fields
     const config = {
       gmailId: userId,
       userId: userId,
       accountId: accountId,
+      gbpAccountId: accountId,  // Required for API calls
       businessName: businessName || 'Business',
       keywords: keywords || '',
       category: category || 'business',
@@ -810,11 +816,12 @@ router.post('/check-reviews-now/:locationId', async (req, res) => {
     };
 
     // Force check reviews and reply
-    await automationScheduler.checkAndReplyToReviews(locationId, config);
+    const result = await automationScheduler.checkAndReplyToReviews(locationId, config);
 
     res.json({
       success: true,
       message: `Review check triggered for location ${locationId}`,
+      result: result,
       timestamp: new Date().toISOString()
     });
 
