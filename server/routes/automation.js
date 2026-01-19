@@ -786,6 +786,181 @@ router.get('/debug/diagnose-auto-reply', async (req, res) => {
   }
 });
 
+// Enable auto-reply for ALL existing locations (one-time migration)
+router.post('/enable-autoreply-all', async (req, res) => {
+  try {
+    const { createClient } = await import('@supabase/supabase-js');
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    console.log('[Automation API] 🔄 Enabling auto-reply for ALL existing locations...');
+
+    // Update all locations to have autoreply_enabled = true
+    const { data, error } = await supabase
+      .from('user_locations')
+      .update({
+        autoreply_enabled: true,
+        autoreply_status: 'active',
+        updated_at: new Date().toISOString()
+      })
+      .eq('autoreply_enabled', false)
+      .select('location_id, business_name');
+
+    if (error) throw error;
+
+    const updatedCount = data?.length || 0;
+    console.log(`[Automation API] ✅ Enabled auto-reply for ${updatedCount} locations`);
+
+    // Reinitialize the automation scheduler to pick up new settings
+    console.log('[Automation API] 🔄 Reinitializing automation scheduler...');
+    await automationScheduler.initializeAutomations();
+
+    res.json({
+      success: true,
+      message: `Auto-reply enabled for ${updatedCount} locations`,
+      updatedLocations: data,
+      activeMonitors: automationScheduler.reviewCheckIntervals.size
+    });
+
+  } catch (error) {
+    console.error('[Automation API] Error enabling auto-reply for all:', error);
+    res.status(500).json({ error: 'Failed to enable auto-reply', details: error.message });
+  }
+});
+
+// Full diagnostic endpoint to check ALL possible blockers for auto-reply
+router.get('/debug/full-diagnosis', async (req, res) => {
+  try {
+    const supabaseAutomationService = (await import('../services/supabaseAutomationService.js')).default;
+    const supabaseTokenStorage = (await import('../services/supabaseTokenStorage.js')).default;
+    const { createClient } = await import('@supabase/supabase-js');
+
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
+    const supabase = createClient(supabaseUrl, supabaseKey);
+
+    const diagnosis = {
+      timestamp: new Date().toISOString(),
+      blockers: [],
+      recommendations: [],
+      locations: []
+    };
+
+    // 1. Check Gemini AI configuration
+    diagnosis.geminiConfigured = !!process.env.GEMINI_API_KEY;
+    if (!diagnosis.geminiConfigured) {
+      diagnosis.blockers.push('GEMINI_API_KEY not configured - will use fallback templates');
+    }
+
+    // 2. Get ALL user_locations with autoreply_enabled
+    const { data: allLocations, error: locError } = await supabase
+      .from('user_locations')
+      .select('*')
+      .eq('autoreply_enabled', true);
+
+    if (locError) {
+      diagnosis.blockers.push(`Database error: ${locError.message}`);
+    }
+
+    diagnosis.totalLocationsWithAutoReply = allLocations?.length || 0;
+
+    // 3. For each location, check all blockers
+    for (const loc of (allLocations || [])) {
+      const locationDiag = {
+        locationId: loc.location_id,
+        businessName: loc.business_name || 'Unknown',
+        gmailId: loc.gmail_id,
+        autoReplyEnabled: loc.autoreply_enabled,
+        blockers: [],
+        status: 'UNKNOWN'
+      };
+
+      // Get user info
+      const { data: user } = await supabase
+        .from('users')
+        .select('*')
+        .eq('gmail_id', loc.gmail_id)
+        .single();
+
+      if (!user) {
+        locationDiag.blockers.push('No user record found in users table');
+        locationDiag.status = 'BLOCKED';
+      } else {
+        locationDiag.subscriptionStatus = user.subscription_status;
+        locationDiag.hasValidToken = user.has_valid_token;
+        locationDiag.hasAccessToken = !!user.google_access_token;
+        locationDiag.hasRefreshToken = !!user.google_refresh_token;
+        locationDiag.accountId = user.google_account_id;
+
+        // Check subscription
+        if (!['active', 'trial', 'admin'].includes(user.subscription_status)) {
+          locationDiag.blockers.push(`Subscription status '${user.subscription_status}' not valid - must be 'active', 'trial', or 'admin'`);
+        }
+
+        // Check token
+        if (!user.has_valid_token) {
+          locationDiag.blockers.push('has_valid_token is false - user needs to reconnect GBP');
+        }
+
+        if (!user.google_access_token) {
+          locationDiag.blockers.push('No access token stored');
+        }
+
+        if (!user.google_account_id) {
+          locationDiag.blockers.push('No google_account_id - cannot call GBP API');
+        }
+
+        // Final status
+        if (locationDiag.blockers.length === 0) {
+          locationDiag.status = 'OK - Should be monitored';
+        } else {
+          locationDiag.status = 'BLOCKED';
+        }
+      }
+
+      // Check if this location is actually being monitored
+      locationDiag.isBeingMonitored = automationScheduler.reviewCheckIntervals.has(loc.location_id);
+
+      if (!locationDiag.isBeingMonitored && locationDiag.blockers.length === 0) {
+        locationDiag.blockers.push('Location passed validation but NOT in active monitors - server may need restart');
+      }
+
+      diagnosis.locations.push(locationDiag);
+    }
+
+    // Summary
+    const blockedCount = diagnosis.locations.filter(l => l.status === 'BLOCKED').length;
+    const okCount = diagnosis.locations.filter(l => l.status.includes('OK')).length;
+    const monitoredCount = diagnosis.locations.filter(l => l.isBeingMonitored).length;
+
+    diagnosis.summary = {
+      totalLocations: diagnosis.locations.length,
+      okLocations: okCount,
+      blockedLocations: blockedCount,
+      activelyMonitored: monitoredCount,
+      activeReviewMonitors: automationScheduler.reviewCheckIntervals.size
+    };
+
+    // Recommendations
+    if (blockedCount > 0) {
+      diagnosis.recommendations.push('Fix blocked locations by addressing their individual blockers');
+    }
+    if (okCount > 0 && monitoredCount === 0) {
+      diagnosis.recommendations.push('URGENT: Restart backend server to start monitoring');
+    }
+    if (!diagnosis.geminiConfigured) {
+      diagnosis.recommendations.push('Configure GEMINI_API_KEY for personalized AI replies (fallback templates will be used otherwise)');
+    }
+
+    res.json(diagnosis);
+  } catch (error) {
+    console.error('Error in full diagnosis:', error);
+    res.status(500).json({ error: 'Diagnosis failed', details: error.message });
+  }
+});
+
 // Check scheduler status and statistics
 router.get('/debug/scheduler-status', (req, res) => {
   try {

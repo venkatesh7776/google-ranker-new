@@ -251,6 +251,7 @@ class NewSchemaAdapter {
 
   /**
    * Upsert a location for a user
+   * AUTO-REPLY IS ENABLED BY DEFAULT for new locations
    */
   async upsertLocation(locationData) {
     const {
@@ -272,6 +273,10 @@ class NewSchemaAdapter {
     }
 
     try {
+      // First check if location already exists
+      const existing = await this.getLocation(gmailId, locationId);
+      const isNewLocation = !existing;
+
       const upsertData = {
         gmail_id: gmailId,
         location_id: locationId,
@@ -286,7 +291,16 @@ class NewSchemaAdapter {
       if (autopostingSchedule !== undefined) upsertData.autoposting_schedule = autopostingSchedule;
       if (autopostingFrequency !== undefined) upsertData.autoposting_frequency = autopostingFrequency;
       if (autopostingTimezone !== undefined) upsertData.autoposting_timezone = autopostingTimezone;
-      if (autoreplyEnabled !== undefined) upsertData.autoreply_enabled = autoreplyEnabled;
+
+      // AUTO-REPLY: Enable by default for new locations, or use provided value
+      if (autoreplyEnabled !== undefined) {
+        upsertData.autoreply_enabled = autoreplyEnabled;
+      } else if (isNewLocation) {
+        // NEW LOCATION - enable auto-reply by default!
+        console.log(`[NewSchemaAdapter] 🆕 New location ${locationId} - enabling auto-reply by DEFAULT`);
+        upsertData.autoreply_enabled = true;
+        upsertData.autoreply_status = 'active';
+      }
 
       // Update status based on enabled
       if (autopostingEnabled === true) upsertData.autoposting_status = 'active';

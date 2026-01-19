@@ -82,11 +82,19 @@ class SupabaseAutomationService {
       }
       if (settings.enabled !== undefined) upsertData.autoposting_enabled = settings.enabled;
 
-      // Auto-reply settings
+      // Auto-reply settings - ENABLED BY DEFAULT for new locations
       if (settings.autoReply) {
-        upsertData.autoreply_enabled = settings.autoReply.enabled || false;
+        upsertData.autoreply_enabled = settings.autoReply.enabled !== undefined ? settings.autoReply.enabled : true;
+      } else if (settings.autoReplyEnabled !== undefined) {
+        upsertData.autoreply_enabled = settings.autoReplyEnabled;
+      } else {
+        // Check if this is a new location - if so, enable auto-reply by default
+        const existing = await this.getSettings(gmailId, locationId);
+        if (!existing) {
+          console.log(`[SupabaseAutomationService] 🆕 New location ${locationId} - enabling auto-reply by DEFAULT`);
+          upsertData.autoreply_enabled = true;
+        }
       }
-      if (settings.autoReplyEnabled !== undefined) upsertData.autoreply_enabled = settings.autoReplyEnabled;
 
       // Update status
       if (upsertData.autoposting_enabled) upsertData.autoposting_status = 'active';
@@ -183,11 +191,39 @@ class SupabaseAutomationService {
 
       if (error) throw error;
 
+      console.log(`[SupabaseAutomationService] 📊 Found ${(data || []).length} locations with automation enabled`);
+
+      // Log each location's status for debugging
+      for (const loc of (data || [])) {
+        const status = (loc.users?.subscription_status || '').trim();
+        const hasToken = loc.users?.has_valid_token;
+        const isValid = ['active', 'trial', 'admin'].includes(status) && hasToken;
+
+        console.log(`[SupabaseAutomationService] 📍 Location ${loc.location_id}:`);
+        console.log(`   - Business: ${loc.business_name || 'Unknown'}`);
+        console.log(`   - User: ${loc.gmail_id}`);
+        console.log(`   - Subscription: ${status || 'NONE'}`);
+        console.log(`   - Has Token: ${hasToken}`);
+        console.log(`   - AutoReply Enabled: ${loc.autoreply_enabled}`);
+        console.log(`   - Will be monitored: ${isValid ? '✅ YES' : '❌ NO'}`);
+
+        if (!isValid) {
+          if (!hasToken) {
+            console.log(`   ⚠️ BLOCKED: User needs to reconnect Google Business Profile`);
+          }
+          if (!['active', 'trial', 'admin'].includes(status)) {
+            console.log(`   ⚠️ BLOCKED: Invalid subscription status (${status})`);
+          }
+        }
+      }
+
       // Filter valid subscriptions
       const validData = (data || []).filter(loc => {
         const status = (loc.users?.subscription_status || '').trim();
         return ['active', 'trial', 'admin'].includes(status) && loc.users?.has_valid_token;
       });
+
+      console.log(`[SupabaseAutomationService] ✅ ${validData.length} locations passed validation and will be monitored`);
 
       return validData.map(s => this.formatSettings(s));
     } catch (error) {
