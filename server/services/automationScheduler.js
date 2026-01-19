@@ -1701,13 +1701,30 @@ CRITICAL FORMATTING RULES:
 
       // Get list of already replied reviews
       const repliedReviews = this.getRepliedReviews(locationId);
-      
+
+      // Helper to extract just the review ID from full path
+      const extractReviewId = (id) => {
+        if (id && id.includes('/')) {
+          const parts = id.split('/');
+          return parts[parts.length - 1];
+        }
+        return id;
+      };
+
       // Filter reviews that need replies - AUTOMATICALLY REPLY TO ALL NEW REVIEWS
-      const unrepliedReviews = reviews.filter(review => 
-        !review.reviewReply && 
-        !review.reply &&
-        !repliedReviews.includes(review.reviewId || review.name)
-      );
+      const unrepliedReviews = reviews.filter(review => {
+        const reviewId = extractReviewId(review.reviewId || review.name);
+        const hasReply = review.reviewReply || review.reply;
+        const alreadyReplied = repliedReviews.includes(reviewId) || repliedReviews.includes(review.name);
+
+        if (hasReply) {
+          console.log(`[AutomationScheduler] ⏭️ Skipping ${reviewId} - already has reply on Google`);
+        } else if (alreadyReplied) {
+          console.log(`[AutomationScheduler] ⏭️ Skipping ${reviewId} - in local replied list`);
+        }
+
+        return !hasReply && !alreadyReplied;
+      });
 
       if (unrepliedReviews.length > 0) {
         console.log(`[AutomationScheduler] 🎯 Found ${unrepliedReviews.length} NEW REVIEWS that need automatic replies!`);
@@ -1767,7 +1784,14 @@ CRITICAL FORMATTING RULES:
   // Reply to a single review
   async replyToReview(locationId, review, config, token) {
     try {
-      const reviewId = review.reviewId || review.name;
+      // Extract just the review ID from the full path if needed
+      // Google API returns review.name as "accounts/xxx/locations/xxx/reviews/yyy"
+      let reviewId = review.reviewId || review.name;
+      if (reviewId && reviewId.includes('/')) {
+        // Extract just the last part (the actual review ID)
+        const parts = reviewId.split('/');
+        reviewId = parts[parts.length - 1];
+      }
 
       // Convert rating string to number for display
       const ratingMap = { 'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5 };
