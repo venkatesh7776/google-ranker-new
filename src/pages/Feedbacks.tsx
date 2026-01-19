@@ -107,32 +107,56 @@ const Feedbacks = () => {
   const fetchFeedbacks = async () => {
     if (!selectedLocationId || !currentUser) return;
 
-    // IMPORTANT: Use email as userId to match how QR codes store feedback
-    // QR codes use googleBusinessProfileService.getUserId() which returns email
-    const userId = currentUser.email || currentUser.id;
+    // Database has inconsistent user_id formats: UUID, Firebase UID, email, or null
+    // We need to try multiple formats to find all feedback for this user
+    const possibleUserIds = [
+      currentUser.email,
+      currentUser.id,
+      currentUser.uid,
+    ].filter(Boolean);
 
     console.log('[Feedbacks] 🔍 Fetching feedback...');
     console.log('[Feedbacks] Location ID:', selectedLocationId);
-    console.log('[Feedbacks] User ID (email):', userId);
-    console.log('[Feedbacks] URL:', `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${userId}`);
+    console.log('[Feedbacks] Possible User IDs:', possibleUserIds);
 
     setLoading(true);
     try {
-      const response = await fetch(
-        `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${encodeURIComponent(userId)}`
-      );
+      // Fetch feedback for all possible user IDs
+      const allFeedback: any[] = [];
+      let combinedStats: any = null;
 
-      if (response.ok) {
-        const data = await response.json();
-        console.log('[Feedbacks] ✅ Response received:', data);
-        console.log('[Feedbacks] Feedback count:', data.feedback?.length || 0);
-        setFeedbacks(data.feedback || []);
-        setStats(data.stats || null);
-      } else {
-        console.error('[Feedbacks] ❌ Response not OK:', response.status);
-        const errorData = await response.json();
-        console.error('[Feedbacks] Error data:', errorData);
+      for (const userId of possibleUserIds) {
+        console.log('[Feedbacks] Trying userId:', userId);
+        const response = await fetch(
+          `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${encodeURIComponent(userId)}`
+        );
+
+        if (response.ok) {
+          const data = await response.json();
+          console.log(`[Feedbacks] ✅ Response for ${userId}:`, data.feedback?.length || 0, 'items');
+
+          if (data.feedback && data.feedback.length > 0) {
+            // Add feedback items that aren't already in allFeedback (avoid duplicates)
+            for (const fb of data.feedback) {
+              if (!allFeedback.find(existing => existing.id === fb.id)) {
+                allFeedback.push(fb);
+              }
+            }
+          }
+
+          // Use the stats from whichever response has data
+          if (data.stats && data.stats.total > 0) {
+            combinedStats = data.stats;
+          }
+        }
       }
+
+      // Sort by created_at descending
+      allFeedback.sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+
+      console.log('[Feedbacks] ✅ Total feedback found:', allFeedback.length);
+      setFeedbacks(allFeedback);
+      setStats(combinedStats || { total: allFeedback.length, resolved: 0, pending: allFeedback.length, avgRating: 0 });
     } catch (error) {
       console.error('[Feedbacks] ❌ Error fetching feedbacks:', error);
       toast({
@@ -155,8 +179,9 @@ const Feedbacks = () => {
   const handleResolveFeedback = async () => {
     if (!selectedFeedback || !currentUser) return;
 
-    // Use email as userId to match how feedback is stored
-    const userId = currentUser.email || currentUser.id;
+    // Use the feedback's actual user_id to resolve it
+    // This handles the inconsistent user_id formats in the database
+    const userId = selectedFeedback.user_id || currentUser.email || currentUser.id;
 
     setIsResolving(true);
     try {
