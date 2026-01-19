@@ -107,15 +107,19 @@ const Feedbacks = () => {
   const fetchFeedbacks = async () => {
     if (!selectedLocationId || !currentUser) return;
 
+    // IMPORTANT: Use email as userId to match how QR codes store feedback
+    // QR codes use googleBusinessProfileService.getUserId() which returns email
+    const userId = currentUser.email || currentUser.id;
+
     console.log('[Feedbacks] 🔍 Fetching feedback...');
     console.log('[Feedbacks] Location ID:', selectedLocationId);
-    console.log('[Feedbacks] User ID:', currentUser.id);
-    console.log('[Feedbacks] URL:', `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${currentUser.id}`);
+    console.log('[Feedbacks] User ID (email):', userId);
+    console.log('[Feedbacks] URL:', `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${userId}`);
 
     setLoading(true);
     try {
       const response = await fetch(
-        `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${currentUser.id}`
+        `${BACKEND_URL}/api/feedback/location/${selectedLocationId}?userId=${encodeURIComponent(userId)}`
       );
 
       if (response.ok) {
@@ -151,6 +155,9 @@ const Feedbacks = () => {
   const handleResolveFeedback = async () => {
     if (!selectedFeedback || !currentUser) return;
 
+    // Use email as userId to match how feedback is stored
+    const userId = currentUser.email || currentUser.id;
+
     setIsResolving(true);
     try {
       const response = await fetch(
@@ -159,7 +166,7 @@ const Feedbacks = () => {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: currentUser.id,
+            userId,
             resolutionNotes
           })
         }
