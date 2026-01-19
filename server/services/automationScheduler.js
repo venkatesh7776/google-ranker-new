@@ -1639,7 +1639,7 @@ CRITICAL FORMATTING RULES:
           blockedBy: 'subscription_guard'
         });
 
-        return null; // Stop - don't reply to reviews
+        return { success: false, error: 'subscription_blocked', reason: validationResult.reason, message: validationResult.message };
       }
 
       console.log(`[AutomationScheduler] ✅ Subscription validated - ${validationResult.status} (${validationResult.daysRemaining} days remaining)`);
@@ -1666,19 +1666,19 @@ CRITICAL FORMATTING RULES:
         if (!userToken) {
           console.error(`[AutomationScheduler] ⚠️ No valid tokens available. User needs to reconnect to Google Business Profile.`);
           console.log(`[AutomationScheduler] 💡 Token will be saved when user reconnects via Settings > Connections`);
-          return null;
+          return { success: false, error: 'no_token', message: 'No valid token available. User needs to reconnect GBP.' };
         }
       }
 
       // Get reviews from Google Business Profile API - try modern endpoint first
       let response;
       let reviews = [];
-      
+
       // Use Google Business Profile API v4 (current version) - MUST have accountId
       const accountId = config.accountId;
       if (!accountId) {
         console.error(`[AutomationScheduler] ❌ No accountId for reviews - user must reconnect GBP`);
-        return null;
+        return { success: false, error: 'no_account_id', message: 'No accountId provided. User needs to reconnect GBP.' };
       }
       console.log(`[AutomationScheduler] Fetching reviews using API v4 for location ${locationId}...`);
       response = await fetch(
@@ -1691,8 +1691,9 @@ CRITICAL FORMATTING RULES:
       );
 
       if (!response.ok) {
-        console.error(`[AutomationScheduler] ❌ Failed to fetch reviews:`, await response.text());
-        return;
+        const errorText = await response.text();
+        console.error(`[AutomationScheduler] ❌ Failed to fetch reviews:`, errorText);
+        return { success: false, error: 'fetch_reviews_failed', message: errorText, statusCode: response.status };
       }
 
       const data = await response.json();
