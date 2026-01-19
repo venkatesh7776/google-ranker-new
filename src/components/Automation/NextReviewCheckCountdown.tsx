@@ -9,6 +9,8 @@ interface NextReviewCheckCountdownProps {
   compact?: boolean;
 }
 
+const LAST_CHECK_STORAGE_KEY = 'auto_reply_last_check_time';
+
 export function NextReviewCheckCountdown({
   isEnabled,
   checkIntervalMinutes = 2,
@@ -21,7 +23,26 @@ export function NextReviewCheckCountdown({
     total: number;
   } | null>(null);
 
-  const [lastCheckTime, setLastCheckTime] = useState<Date | null>(null);
+  const [lastCheckTime, setLastCheckTime] = useState<Date | null>(() => {
+    // Initialize from localStorage to persist across page refreshes
+    const stored = localStorage.getItem(LAST_CHECK_STORAGE_KEY);
+    if (stored) {
+      const storedTime = new Date(stored);
+      // Only use stored time if it's from within the last interval period
+      const timeSinceStored = Date.now() - storedTime.getTime();
+      if (timeSinceStored < checkIntervalMinutes * 60 * 1000) {
+        return storedTime;
+      }
+    }
+    return null;
+  });
+
+  // Save lastCheckTime to localStorage whenever it changes
+  useEffect(() => {
+    if (lastCheckTime) {
+      localStorage.setItem(LAST_CHECK_STORAGE_KEY, lastCheckTime.toISOString());
+    }
+  }, [lastCheckTime]);
 
   useEffect(() => {
     if (!isEnabled) {
@@ -31,7 +52,9 @@ export function NextReviewCheckCountdown({
 
     // Initialize last check time if not set
     if (!lastCheckTime) {
-      setLastCheckTime(new Date());
+      const newCheckTime = new Date();
+      setLastCheckTime(newCheckTime);
+      localStorage.setItem(LAST_CHECK_STORAGE_KEY, newCheckTime.toISOString());
     }
 
     const calculateTimeRemaining = () => {

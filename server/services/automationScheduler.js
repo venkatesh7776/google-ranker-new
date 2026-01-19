@@ -1897,8 +1897,10 @@ CRITICAL FORMATTING RULES:
     const keywords = config.keywords || '';
     const category = config.category || 'business';
 
+    // If no Gemini API key, use fallback smart templates
     if (!this.geminiApiKey) {
-      throw new Error('[AutomationScheduler] Gemini AI not configured - AI generation is required for review replies');
+      console.log('[AutomationScheduler] ⚠️ Gemini AI not configured - using smart fallback templates');
+      return this.generateFallbackReply(review, config, rating, reviewerName, businessName);
     }
 
     try {
@@ -2011,9 +2013,58 @@ Team ${businessName}`;
         throw new Error(`Gemini API error: ${response.status} - ${errorText}`);
       }
     } catch (error) {
-      console.error('[AutomationScheduler] Critical error - AI reply generation failed:', error);
-      throw new Error(`AI reply generation failed: ${error.message}. Please ensure Gemini AI is properly configured.`);
+      console.error('[AutomationScheduler] ⚠️ Gemini AI failed, using fallback template:', error.message);
+      // Fall back to smart template instead of throwing
+      return this.generateFallbackReply(review, config, rating, reviewerName, businessName);
     }
+  }
+
+  // Generate a smart fallback reply when AI is unavailable
+  // This ensures reviews still get replies even without Gemini
+  generateFallbackReply(review, config, rating, reviewerName, businessName) {
+    const reviewText = review.comment || '';
+
+    // Create varied responses based on rating and review content
+    let middleContent = '';
+
+    if (rating >= 4) {
+      // Positive review responses - varied based on review content
+      const positiveResponses = [
+        `Thank you so much for your wonderful feedback! We're thrilled to hear about your positive experience with us. Your kind words mean the world to our team, and we're committed to maintaining the high standards you've come to expect.`,
+        `We greatly appreciate you taking the time to share your experience! It's feedback like yours that motivates our team to continue delivering excellent service. We look forward to welcoming you back soon.`,
+        `Your positive review made our day! We're delighted that you had such a great experience with us. Our team works hard to ensure every customer leaves satisfied, and it's wonderful to know we succeeded.`,
+        `Thank you for this fantastic review! We're so glad we could exceed your expectations. Customer satisfaction is our top priority, and your feedback confirms we're on the right track.`
+      ];
+      middleContent = positiveResponses[Math.floor(Math.random() * positiveResponses.length)];
+    } else if (rating <= 2) {
+      // Negative review responses
+      const negativeResponses = [
+        `We sincerely apologize that your experience didn't meet your expectations. This is not the standard we strive for, and we take your feedback very seriously. Please reach out to us directly so we can make things right.`,
+        `Thank you for bringing this to our attention. We're truly sorry to hear about your experience, and we understand your frustration. We'd love the opportunity to address your concerns personally.`,
+        `We're deeply sorry that we fell short of providing the experience you deserved. Your feedback is invaluable in helping us improve. Please contact us so we can resolve this matter.`,
+        `We apologize for any inconvenience you experienced. This feedback is important to us, and we're committed to doing better. We'd appreciate the chance to discuss this with you directly.`
+      ];
+      middleContent = negativeResponses[Math.floor(Math.random() * negativeResponses.length)];
+    } else {
+      // Neutral (3-star) review responses
+      const neutralResponses = [
+        `Thank you for sharing your feedback with us. We appreciate you taking the time to review your experience. We're always looking for ways to improve, and your insights help us do just that.`,
+        `We value your honest feedback and appreciate you sharing your thoughts. We're committed to continuous improvement and hope to exceed your expectations on your next visit.`,
+        `Thank you for your review. We appreciate hearing about your experience and are always working to enhance our service. We hope to have the opportunity to impress you in the future.`
+      ];
+      middleContent = neutralResponses[Math.floor(Math.random() * neutralResponses.length)];
+    }
+
+    // Format the complete reply
+    const completeReply = `Dear ${reviewerName},
+
+${middleContent}
+
+Warm regards,
+Team ${businessName}`;
+
+    console.log(`[AutomationScheduler] ✅ Generated fallback reply for ${reviewerName} (${rating} stars)`);
+    return completeReply;
   }
 
   // Track replied reviews
