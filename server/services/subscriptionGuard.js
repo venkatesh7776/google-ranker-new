@@ -169,7 +169,37 @@ class SubscriptionGuard {
       if (subscription.status === 'trial') {
         const trialEndDate = subscription.trialEndDate ? new Date(subscription.trialEndDate) : null;
 
-        if (trialEndDate && trialEndDate > now) {
+        // If trial_end_date is NULL, this is a new user - set up their trial now
+        if (!trialEndDate) {
+          console.log(`[SubscriptionGuard] User ${userId} has trial status but no end date - setting up 7-day trial`);
+
+          try {
+            const client = await this.getSupabaseClient();
+            if (client) {
+              const newTrialEndDate = new Date();
+              newTrialEndDate.setDate(newTrialEndDate.getDate() + 7);
+
+              await client
+                .from('users')
+                .update({ trial_end_date: newTrialEndDate.toISOString() })
+                .eq('gmail_id', userId);
+
+              console.log(`[SubscriptionGuard] ✅ Set trial_end_date to ${newTrialEndDate.toISOString()} for user ${userId}`);
+            }
+          } catch (updateError) {
+            console.error(`[SubscriptionGuard] Failed to set trial end date:`, updateError.message);
+          }
+
+          return {
+            hasAccess: true,
+            status: 'trial',
+            daysRemaining: 7,
+            subscription,
+            message: 'Free trial - 7 days remaining (just activated)'
+          };
+        }
+
+        if (trialEndDate > now) {
           const daysRemaining = Math.ceil((trialEndDate - now) / (1000 * 60 * 60 * 24));
           return {
             hasAccess: true,

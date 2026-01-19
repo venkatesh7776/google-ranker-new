@@ -62,7 +62,8 @@
       "Bash(copy \"C:\\\\Users\\\\meena\\\\Desktop\\\\google-ranker-new\\\\Untitled video - Made with Clipchamp.mp4\" \"C:\\\\Users\\\\meena\\\\Desktop\\\\google-ranker-new\\\\public\\\\hero-video.mp4\")",
       "Bash(grep:*)",
       "Bash(npx tsc:*)",
-      "Bash(curl.exe:*)"
+      "Bash(curl.exe:*)",
+      "Bash(python3:*)"
     ],
     "deny": [],
     "ask": []
