@@ -50,9 +50,16 @@ const AdminCoupons = () => {
     fetchCoupons();
   }, []);
 
+  const [isCreating, setIsCreating] = useState(false);
+
   const handleCreateCoupon = async () => {
+    if (!formData.code || !formData.discountValue) {
+      return;
+    }
+
+    setIsCreating(true);
     try {
-      await createCoupon({
+      const couponData = {
         code: formData.code.toUpperCase(),
         discountType: formData.discountType,
         discountValue: parseFloat(formData.discountValue),
@@ -61,7 +68,10 @@ const AdminCoupons = () => {
         description: formData.description,
         oneTimePerUser: formData.oneTimePerUser,
         singleUse: formData.singleUse,
-      });
+      };
+      console.log('[AdminCoupons] Creating coupon:', couponData);
+
+      await createCoupon(couponData);
       setDialogOpen(false);
       setFormData({
         code: '',
@@ -74,7 +84,9 @@ const AdminCoupons = () => {
         singleUse: false,
       });
     } catch (error) {
-      console.error('Error creating coupon:', error);
+      console.error('[AdminCoupons] Error creating coupon:', error);
+    } finally {
+      setIsCreating(false);
     }
   };
 
@@ -365,11 +377,11 @@ const AdminCoupons = () => {
           </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setDialogOpen(false)} disabled={isCreating}>
               Cancel
             </Button>
-            <Button onClick={handleCreateCoupon} disabled={!formData.code || !formData.discountValue}>
-              Create Coupon
+            <Button onClick={handleCreateCoupon} disabled={!formData.code || !formData.discountValue || isCreating}>
+              {isCreating ? 'Creating...' : 'Create Coupon'}
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -177,6 +177,8 @@ router.get('/coupons', async (req, res) => {
 
 router.post('/coupons', checkAdminLevel(['super', 'moderator']), async (req, res) => {
   try {
+    console.log('[Admin] Creating coupon, request body:', req.body);
+
     // Transform frontend data to backend format
     const couponData = {
       code: req.body.code,
@@ -190,7 +192,10 @@ router.post('/coupons', checkAdminLevel(['super', 'moderator']), async (req, res
       usedBy: []
     };
 
+    console.log('[Admin] Transformed coupon data:', couponData);
+
     const result = await couponService.createCoupon(couponData);
+    console.log('[Admin] Coupon creation result:', result);
 
     if (result.success) {
       // Log the action (with defensive checks)

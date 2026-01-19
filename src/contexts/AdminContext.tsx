@@ -255,15 +255,20 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
   const createCoupon = async (data: any) => {
     try {
       const headers = await getAuthHeaders();
+      console.log('[AdminContext] Creating coupon with data:', data);
+
       const response = await fetch(`${BACKEND_URL}/api/admin/coupons`, {
         method: 'POST',
         headers,
         body: JSON.stringify(data)
       });
 
-      if (!response.ok) throw new Error('Failed to create coupon');
-
       const result = await response.json();
+      console.log('[AdminContext] Coupon creation response:', result);
+
+      if (!response.ok) {
+        throw new Error(result.error || 'Failed to create coupon');
+      }
 
       if (result.success) {
         toast({
@@ -271,11 +276,13 @@ export const AdminProvider: React.FC<AdminProviderProps> = ({ children }) => {
           description: 'Coupon created successfully'
         });
         await fetchCoupons(); // Refresh coupons list
+      } else {
+        throw new Error(result.error || 'Failed to create coupon');
       }
 
       return result;
     } catch (error: any) {
-      console.error('Error creating coupon:', error);
+      console.error('[AdminContext] Error creating coupon:', error);
       toast({
         title: 'Error',
         description: error.message || 'Failed to create coupon',
