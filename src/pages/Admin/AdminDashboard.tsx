@@ -1,6 +1,7 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useAdmin } from '@/contexts/AdminContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Users,
   CreditCard,
@@ -9,16 +10,30 @@ import {
   CheckCircle,
   Clock,
   AlertCircle,
-  BarChart3
+  BarChart3,
+  RefreshCw
 } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import { LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
   const { dashboardStats, analytics, fetchDashboardStats, fetchAnalytics } = useAdmin();
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      await Promise.all([
+        fetchDashboardStats(),
+        fetchAnalytics('30days')
+      ]);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchDashboardStats();
-    fetchAnalytics('30days');
+    loadData();
   }, []);
 
   const stats = dashboardStats || {};
@@ -32,12 +47,37 @@ const AdminDashboard = () => {
     { name: 'Total', value: stats.totalSubscriptions || 0 }
   ];
 
+  // Loading skeleton for stats cards
+  const StatsCardSkeleton = () => (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+        <Skeleton className="h-4 w-24" />
+        <Skeleton className="h-4 w-4 rounded" />
+      </CardHeader>
+      <CardContent>
+        <Skeleton className="h-8 w-20 mb-2" />
+        <Skeleton className="h-3 w-32" />
+      </CardContent>
+    </Card>
+  );
+
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
-        <p className="text-gray-500 mt-1">Monitor key metrics and application performance</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">Dashboard Overview</h1>
+          <p className="text-gray-500 mt-1">Monitor key metrics and application performance</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={loadData}
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Stats Cards */}

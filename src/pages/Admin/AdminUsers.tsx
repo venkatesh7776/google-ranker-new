@@ -4,6 +4,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -27,7 +28,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog';
-import { Search, UserCog, Ban, CheckCircle, XCircle, Shield } from 'lucide-react';
+import { Search, UserCog, Ban, CheckCircle, XCircle, Shield, RefreshCw } from 'lucide-react';
 import { format } from 'date-fns';
 
 const AdminUsers = () => {
@@ -37,9 +38,19 @@ const AdminUsers = () => {
   const [selectedUser, setSelectedUser] = useState<any>(null);
   const [dialogOpen, setDialogOpen] = useState(false);
   const [dialogType, setDialogType] = useState<'role' | 'status' | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const loadUsers = async () => {
+    setIsLoading(true);
+    try {
+      await fetchUsers({ search: searchQuery, status: statusFilter });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    fetchUsers({ search: searchQuery, status: statusFilter });
+    loadUsers();
   }, [searchQuery, statusFilter]);
 
   const handleSearch = (value: string) => {
@@ -134,9 +145,20 @@ const AdminUsers = () => {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
-        <p className="text-gray-500 mt-1">Manage users, subscriptions, and permissions</p>
+      <div className="flex justify-between items-center">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">User Management</h1>
+          <p className="text-gray-500 mt-1">Manage users, subscriptions, and permissions</p>
+        </div>
+        <Button
+          variant="outline"
+          size="sm"
+          onClick={loadUsers}
+          disabled={isLoading}
+        >
+          <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+          Refresh
+        </Button>
       </div>
 
       {/* Filters */}
@@ -193,7 +215,21 @@ const AdminUsers = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {users.length > 0 ? (
+                {isLoading ? (
+                  // Loading state
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-28" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-12" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : users.length > 0 ? (
                   users.map((user) => (
                     <TableRow key={user.uid}>
                       <TableCell className="font-medium">{user.email}</TableCell>
@@ -227,7 +263,7 @@ const AdminUsers = () => {
                         )}
                       </TableCell>
                       <TableCell className="text-sm text-gray-500">
-                        {format(new Date(user.createdAt), 'MMM dd, yyyy')}
+                        {user.createdAt ? format(new Date(user.createdAt), 'MMM dd, yyyy') : 'N/A'}
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">

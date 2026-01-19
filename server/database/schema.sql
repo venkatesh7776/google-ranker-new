@@ -38,6 +38,8 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   status TEXT NOT NULL DEFAULT 'trial',
   plan_id TEXT,
   profile_count INTEGER DEFAULT 0,
+  paid_slots INTEGER DEFAULT 0, -- Total paid slots (never decreases)
+  paid_location_ids TEXT[] DEFAULT '{}', -- Array of paid location IDs
   trial_start_date TIMESTAMP WITH TIME ZONE,
   trial_end_date TIMESTAMP WITH TIME ZONE,
   subscription_start_date TIMESTAMP WITH TIME ZONE,
@@ -380,4 +382,13 @@ COMMENT ON TABLE qr_codes IS 'Generated QR codes for review links';
 COMMENT ON TABLE coupons IS 'Discount coupons for subscriptions';
 COMMENT ON TABLE coupon_usage IS 'Coupon usage tracking';
 COMMENT ON TABLE token_failures IS 'OAuth token refresh failure logs';
+
+-- ============================================
+-- MIGRATION: Add missing columns to existing tables
+-- Run these if you have an existing database
+-- ============================================
+
+-- Add paid_slots and paid_location_ids columns to subscriptions table
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS paid_slots INTEGER DEFAULT 0;
+ALTER TABLE subscriptions ADD COLUMN IF NOT EXISTS paid_location_ids TEXT[] DEFAULT '{}';
 

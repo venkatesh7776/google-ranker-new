@@ -3,6 +3,7 @@ import { useAdmin } from '@/contexts/AdminContext';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { Skeleton } from '@/components/ui/skeleton';
 import {
   Table,
   TableBody,
@@ -30,7 +31,7 @@ import {
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
-import { Plus, X, AlertCircle } from 'lucide-react';
+import { Plus, X, AlertCircle, RefreshCw } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 
 const AdminSubscriptions = () => {
@@ -39,6 +40,7 @@ const AdminSubscriptions = () => {
   const [createDialogOpen, setCreateDialogOpen] = useState(false);
   const [selectedSubscription, setSelectedSubscription] = useState<any>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Create subscription form state
   const [formData, setFormData] = useState({
@@ -48,8 +50,17 @@ const AdminSubscriptions = () => {
     durationMonths: 1,
   });
 
+  const loadData = async () => {
+    setIsLoading(true);
+    try {
+      await fetchSubscriptions();
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   useEffect(() => {
-    fetchSubscriptions();
+    loadData();
   }, []);
 
   const getStatusBadge = (status: string) => {
@@ -126,7 +137,17 @@ const AdminSubscriptions = () => {
           <h1 className="text-3xl font-bold text-gray-900">Subscription Management</h1>
           <p className="text-gray-500 mt-1">View and manage all user subscriptions</p>
         </div>
-        <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={loadData}
+            disabled={isLoading}
+          >
+            <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          <Dialog open={createDialogOpen} onOpenChange={setCreateDialogOpen}>
           <DialogTrigger asChild>
             <Button>
               <Plus className="mr-2 h-4 w-4" />
@@ -208,6 +229,7 @@ const AdminSubscriptions = () => {
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        </div>
       </div>
 
       <Card>
@@ -231,41 +253,69 @@ const AdminSubscriptions = () => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {subscriptions.map((sub) => (
-                  <TableRow key={sub.id}>
-                    <TableCell className="font-medium">{sub.email}</TableCell>
-                    <TableCell>
-                      <Badge variant="outline">{sub.planId}</Badge>
-                    </TableCell>
-                    <TableCell>{getStatusBadge(sub.status)}</TableCell>
-                    <TableCell>{sub.profileCount || 0}</TableCell>
-                    <TableCell>
-                      {sub.subscriptionStartDate
-                        ? format(new Date(sub.subscriptionStartDate), 'MMM dd, yyyy')
-                        : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {sub.subscriptionEndDate
-                        ? format(new Date(sub.subscriptionEndDate), 'MMM dd, yyyy')
-                        : '-'}
-                    </TableCell>
-                    <TableCell>
-                      {sub.amount} {sub.currency}
-                    </TableCell>
-                    <TableCell>
-                      {sub.status !== 'cancelled' && sub.status !== 'expired' && (
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          onClick={() => handleCancelClick(sub)}
-                        >
-                          <X className="mr-1 h-3 w-3" />
-                          Cancel
-                        </Button>
-                      )}
+                {isLoading ? (
+                  // Loading state
+                  Array.from({ length: 5 }).map((_, i) => (
+                    <TableRow key={i}>
+                      <TableCell><Skeleton className="h-4 w-32" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-20" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-8" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-24" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                      <TableCell><Skeleton className="h-4 w-16" /></TableCell>
+                    </TableRow>
+                  ))
+                ) : subscriptions.length === 0 ? (
+                  // Empty state
+                  <TableRow>
+                    <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
+                      No subscriptions found
                     </TableCell>
                   </TableRow>
-                ))}
+                ) : (
+                  // Data rows
+                  subscriptions.map((sub) => (
+                    <TableRow key={sub.id}>
+                      <TableCell className="font-medium">{sub.email}</TableCell>
+                      <TableCell>
+                        <Badge variant="outline">{sub.planId || 'N/A'}</Badge>
+                      </TableCell>
+                      <TableCell>{getStatusBadge(sub.status)}</TableCell>
+                      <TableCell>{sub.paidSlots || sub.profileCount || 0}</TableCell>
+                      <TableCell>
+                        {sub.subscriptionStartDate
+                          ? format(new Date(sub.subscriptionStartDate), 'MMM dd, yyyy')
+                          : sub.trialStartDate
+                          ? format(new Date(sub.trialStartDate), 'MMM dd, yyyy')
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {sub.subscriptionEndDate
+                          ? format(new Date(sub.subscriptionEndDate), 'MMM dd, yyyy')
+                          : sub.trialEndDate
+                          ? format(new Date(sub.trialEndDate), 'MMM dd, yyyy')
+                          : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {sub.amount ? `${sub.amount} ${sub.currency || 'INR'}` : '-'}
+                      </TableCell>
+                      <TableCell>
+                        {sub.status !== 'cancelled' && sub.status !== 'expired' && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => handleCancelClick(sub)}
+                          >
+                            <X className="mr-1 h-3 w-3" />
+                            Cancel
+                          </Button>
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  ))
+                )}
               </TableBody>
             </Table>
           </div>

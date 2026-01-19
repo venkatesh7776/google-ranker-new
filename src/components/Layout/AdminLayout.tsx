@@ -114,7 +114,6 @@ const AdminLayout = () => {
     { name: 'Subscriptions', href: '/admin/subscriptions', icon: CreditCard },
     { name: 'Payments', href: '/admin/payments', icon: CreditCard },
     { name: 'Coupons', href: '/admin/coupons', icon: Ticket },
-    { name: 'Analytics', href: '/admin/analytics', icon: TrendingUp },
     { name: 'Audit Logs', href: '/admin/audits', icon: FileText },
   ];
 

@@ -54,7 +54,7 @@ import AdminUsers from "./pages/Admin/AdminUsers";
 import AdminSubscriptions from "./pages/Admin/AdminSubscriptions";
 import AdminPayments from "./pages/Admin/AdminPayments";
 import AdminCoupons from "./pages/Admin/AdminCoupons";
-import AdminAnalytics from "./pages/Admin/AdminAnalytics";
+// AdminAnalytics removed - no longer needed
 import AdminAudits from "./pages/Admin/AdminAudits";
 // AdminUserAudits removed - no longer needed
 // SubscriptionGuard is now handled inside DashboardLayout
@@ -162,7 +162,6 @@ const App = () => (
               <Route path="subscriptions" element={<AdminSubscriptions />} />
               <Route path="payments" element={<AdminPayments />} />
               <Route path="coupons" element={<AdminCoupons />} />
-              <Route path="analytics" element={<AdminAnalytics />} />
               <Route path="audits" element={<AdminAudits />} />
             </Route>
 
