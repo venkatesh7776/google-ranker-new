@@ -1583,8 +1583,15 @@ router.post('/subscription/update-profile-count', async (req, res) => {
     }
 
     if (!subscription) {
-      console.error('[Update Profile Count] ❌ Subscription not found with any method');
-      return res.status(404).json({ error: 'Subscription not found' });
+      // No subscription found - this is OK for new users or users without subscriptions
+      // Just return success without updating anything to prevent console errors
+      console.log('[Update Profile Count] ℹ️ No subscription found - user may be new or on trial');
+      return res.json({
+        success: true,
+        profileCount: currentProfileCount,
+        paidSlots: 0,
+        message: 'Profile count noted (no active subscription to update)'
+      });
     }
 
     // Update ONLY the profileCount (current active profiles)

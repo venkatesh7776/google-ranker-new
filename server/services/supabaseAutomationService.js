@@ -195,14 +195,15 @@ class SupabaseAutomationService {
 
       // Log each location's status for debugging
       for (const loc of (data || [])) {
-        const status = (loc.users?.subscription_status || '').trim();
+        const status = (loc.users?.subscription_status || '').trim().toLowerCase();
         const hasToken = loc.users?.has_valid_token;
-        const isValid = ['active', 'trial', 'admin'].includes(status) && hasToken;
+        // 'none' and '' are allowed - subscriptionGuard will auto-grant trial
+        const isValid = ['active', 'trial', 'admin', 'none', ''].includes(status) && hasToken;
 
         console.log(`[SupabaseAutomationService] 📍 Location ${loc.location_id}:`);
         console.log(`   - Business: ${loc.business_name || 'Unknown'}`);
         console.log(`   - User: ${loc.gmail_id}`);
-        console.log(`   - Subscription: ${status || 'NONE'}`);
+        console.log(`   - Subscription: ${status || 'NONE'} ${status === 'none' || status === '' ? '(will get auto-trial)' : ''}`);
         console.log(`   - Has Token: ${hasToken}`);
         console.log(`   - AutoReply Enabled: ${loc.autoreply_enabled}`);
         console.log(`   - Will be monitored: ${isValid ? '✅ YES' : '❌ NO'}`);
@@ -211,16 +212,33 @@ class SupabaseAutomationService {
           if (!hasToken) {
             console.log(`   ⚠️ BLOCKED: User needs to reconnect Google Business Profile`);
           }
-          if (!['active', 'trial', 'admin'].includes(status)) {
+          if (!['active', 'trial', 'admin', 'none', ''].includes(status)) {
             console.log(`   ⚠️ BLOCKED: Invalid subscription status (${status})`);
           }
         }
       }
 
-      // Filter valid subscriptions
+      // Filter valid subscriptions - ALSO allow 'none' or empty status
+      // (subscriptionGuard will auto-grant trial for these users)
       const validData = (data || []).filter(loc => {
-        const status = (loc.users?.subscription_status || '').trim();
-        return ['active', 'trial', 'admin'].includes(status) && loc.users?.has_valid_token;
+        const status = (loc.users?.subscription_status || '').trim().toLowerCase();
+        const hasToken = loc.users?.has_valid_token;
+
+        // Allow: active, trial, admin, OR 'none'/empty (will get auto-trial)
+        const statusAllowed = ['active', 'trial', 'admin', 'none', ''].includes(status);
+
+        if (statusAllowed && hasToken) {
+          return true;
+        }
+
+        // Log why location was excluded
+        if (!hasToken) {
+          console.log(`[SupabaseAutomationService] ⏭️ Skipping ${loc.location_id} - no valid token`);
+        } else if (!statusAllowed) {
+          console.log(`[SupabaseAutomationService] ⏭️ Skipping ${loc.location_id} - status '${status}' not allowed`);
+        }
+
+        return false;
       });
 
       console.log(`[SupabaseAutomationService] ✅ ${validData.length} locations passed validation and will be monitored`);
