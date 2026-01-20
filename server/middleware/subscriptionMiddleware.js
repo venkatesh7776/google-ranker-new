@@ -78,8 +78,13 @@ export const checkSubscription = async (req, res, next) => {
     
   } catch (error) {
     console.error('Subscription middleware error:', error);
-    // Allow the request to proceed on error (fail open)
-    next();
+    // SECURITY: Fail closed - deny access on error to prevent revenue leaks
+    // Previously "fail open" which allowed access on error - dangerous for paid features
+    return res.status(500).json({
+      error: 'Subscription check failed',
+      message: 'Unable to verify subscription status. Please try again.',
+      requiresRetry: true
+    });
   }
 };
 

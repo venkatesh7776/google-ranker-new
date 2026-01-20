@@ -49,20 +49,17 @@ export const SubscriptionGuard: React.FC<SubscriptionGuardProps> = ({ children }
                            (billingOnly === true && status !== 'active') ||
                            (canUsePlatform === false && status !== 'active');
 
-  // For non-billing pages, show the page content with upgrade modal overlay
+  // SECURITY: Block access entirely for expired/unpaid accounts
+  // Do NOT render children - this prevents access to premium features
   if (showUpgradeModal) {
     return (
-      <>
-        {/* Render the actual page content */}
-        {children}
-        
-        {/* Show upgrade modal on top */}
-        <UpgradeModal 
+      <div className="min-h-screen flex items-center justify-center bg-gray-100 p-4">
+        <UpgradeModal
           isOpen={true}
           status={status}
           daysRemaining={daysRemaining || 0}
         />
-      </>
+      </div>
     );
   }
 

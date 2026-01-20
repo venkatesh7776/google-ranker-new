@@ -1543,6 +1543,20 @@ class GoogleBusinessProfileService {
       const operations: Promise<any>[] = [];
       const currentToken = this.accessToken;
 
+      // Disable all automations for this user immediately
+      if (this.currentUserId) {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        operations.push(
+          fetch(`${backendUrl}/api/automation/disable-all-for-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: this.currentUserId, userId: this.currentUserId })
+          }).catch(() => {
+            // Continue with disconnect even if automation disable fails
+          })
+        );
+      }
+
       // Clear localStorage immediately
       localStorage.removeItem('google_business_tokens');
       localStorage.removeItem('google_business_connected');

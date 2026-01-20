@@ -4,12 +4,14 @@ import SubscriptionService from '../services/subscriptionService.js';
 import couponService from '../services/couponService.js';
 import CurrencyService from '../services/currencyService.js';
 import GeolocationService from '../utils/geolocation.js';
+import UserService from '../services/userService.js';
 
 const router = express.Router();
 const paymentService = new PaymentService();
 const subscriptionService = new SubscriptionService();
 const currencyService = new CurrencyService();
 const geolocationService = new GeolocationService();
+const userService = new UserService();
 
 // Health check for payment service
 router.get('/health', async (req, res) => {
@@ -147,9 +149,10 @@ router.get('/plans', async (req, res) => {
 // Check subscription status
 router.get('/subscription/status', async (req, res) => {
   try {
-    const { gbpAccountId, userId } = req.query;
+    const { gbpAccountId, userId, email } = req.query;
 
-    console.log('[Payment Status] Query params:', { gbpAccountId, userId });
+    console.log('[Payment Status] ========================================');
+    console.log('[Payment Status] Query params:', { gbpAccountId, userId, email });
 
     // If neither gbpAccountId nor userId is provided, return error
     if (!gbpAccountId && !userId) {
@@ -166,7 +169,14 @@ router.get('/subscription/status', async (req, res) => {
 
     // If no subscription found by GBP ID or no GBP ID provided, try user ID
     if ((!status || status.status === 'none') && userId) {
+      console.log('[Payment Status] No subscription by GBP, trying userId:', userId);
       const userSubscription = await subscriptionService.getSubscriptionByUserId(userId);
+      console.log('[Payment Status] User subscription result:', userSubscription ? {
+        id: userSubscription.id,
+        status: userSubscription.status,
+        email: userSubscription.email
+      } : 'NOT FOUND');
+
       if (userSubscription) {
         // Convert subscription to status format
         status = await subscriptionService.checkSubscriptionStatusBySubscription(userSubscription);
@@ -177,18 +187,58 @@ router.get('/subscription/status', async (req, res) => {
           status.message = 'Subscription found! Please reconnect your Google Business Profile to access all features.';
         }
       } else {
-        // No subscription found by user ID either
-        status = {
-          isValid: false,
-          status: 'none',
-          subscription: null,
-          canUsePlatform: true,
-          requiresPayment: false,
-          billingOnly: false
-        };
+        // No subscription found by user ID in subscriptions table
+        // FALLBACK: Check users table for subscription_status (new schema)
+        // The users table uses gmail_id (email) as the key, not userId
+        const lookupEmail = email || userId; // Use email if provided, fallback to userId (which might be email)
+        console.log('[Payment Status] No subscription in subscriptions table, checking users table for email:', lookupEmail);
+
+        try {
+          // Try to get subscription status from users table (uses gmail_id = email)
+          const userSubscriptionStatus = await userService.checkSubscriptionStatus(lookupEmail);
+          console.log('[Payment Status] Users table lookup result:', userSubscriptionStatus);
+
+          if (userSubscriptionStatus && userSubscriptionStatus.status && userSubscriptionStatus.status !== 'not_found' && userSubscriptionStatus.status !== 'error') {
+            // Found status in users table - use it
+            status = {
+              isValid: userSubscriptionStatus.isValid,
+              status: userSubscriptionStatus.status === 'trial_expired' ? 'expired' : userSubscriptionStatus.status,
+              subscription: null, // No full subscription record
+              daysRemaining: userSubscriptionStatus.daysRemaining || null,
+              canUsePlatform: userSubscriptionStatus.isValid,
+              requiresPayment: !userSubscriptionStatus.isValid,
+              billingOnly: !userSubscriptionStatus.isValid,
+              message: userSubscriptionStatus.reason
+            };
+            console.log('[Payment Status] Using users table status:', status.status, 'daysRemaining:', status.daysRemaining);
+          } else {
+            // No subscription found anywhere
+            console.log('[Payment Status] No subscription found in any table for:', userId);
+            status = {
+              isValid: false,
+              status: 'none',
+              subscription: null,
+              canUsePlatform: true,
+              requiresPayment: false,
+              billingOnly: false
+            };
+          }
+        } catch (userTableError) {
+          console.error('[Payment Status] Error checking users table:', userTableError);
+          status = {
+            isValid: false,
+            status: 'none',
+            subscription: null,
+            canUsePlatform: true,
+            requiresPayment: false,
+            billingOnly: false
+          };
+        }
       }
     }
 
+    console.log('[Payment Status] Final response status:', status?.status);
+    console.log('[Payment Status] ========================================');
     res.json(status);
   } catch (error) {
     console.error('Error checking subscription status:', error);

@@ -2,6 +2,7 @@ import express from 'express';
 import automationScheduler from '../services/automationScheduler.js';
 import automationHistoryService from '../services/automationHistoryService.js';
 import supabaseAutomationService from '../services/supabaseAutomationService.js';
+import subscriptionGuard from '../services/subscriptionGuard.js';
 
 const router = express.Router();
 
@@ -296,22 +297,69 @@ router.get('/logs', (req, res) => {
 router.post('/stop/:locationId', (req, res) => {
   try {
     const { locationId } = req.params;
-    
-    console.log(`[Automation API] Stopping all automations for location ${locationId}`);
-    
+
     automationScheduler.stopAutoPosting(locationId);
     automationScheduler.stopReviewMonitoring(locationId);
-    
+
     // Update settings to disabled
     automationScheduler.updateAutomationSettings(locationId, {
       autoPosting: { enabled: false },
       autoReply: { enabled: false }
     });
-    
+
     res.json({ success: true, message: 'All automations stopped' });
   } catch (error) {
-    console.error('Error stopping automations:', error);
     res.status(500).json({ error: 'Failed to stop automations' });
+  }
+});
+
+// Stop ALL automations for a user (called on logout/disconnect)
+// This disables automations in BOTH memory and database
+router.post('/disable-all-for-user', async (req, res) => {
+  try {
+    const { userId, email } = req.body;
+
+    if (!userId && !email) {
+      return res.status(400).json({ error: 'userId or email is required' });
+    }
+
+    const userIdentifier = email || userId;
+
+    // Get all locations for this user from database
+    const locations = await supabaseAutomationService.getLocationsForUser(userIdentifier);
+
+    if (!locations || locations.length === 0) {
+      return res.json({ success: true, message: 'No locations found for user', disabledCount: 0 });
+    }
+
+    let disabledCount = 0;
+
+    // Disable automations for each location
+    for (const location of locations) {
+      const locationId = location.location_id;
+
+      // Stop in-memory schedulers
+      automationScheduler.stopAutoPosting(locationId);
+      automationScheduler.stopReviewMonitoring(locationId);
+
+      // Update database to disable
+      await supabaseAutomationService.updateSettings(userIdentifier, locationId, {
+        autopost_enabled: false,
+        autopost_status: 'inactive',
+        autoreply_enabled: false,
+        autoreply_status: 'inactive'
+      });
+
+      disabledCount++;
+    }
+
+    res.json({
+      success: true,
+      message: `Disabled automations for ${disabledCount} locations`,
+      disabledCount
+    });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to disable automations', details: error.message });
   }
 });
 
@@ -319,11 +367,37 @@ router.post('/stop/:locationId', (req, res) => {
 router.post('/test-post-now/:locationId', async (req, res) => {
   try {
     const { locationId } = req.params;
-    const { businessName, category, keywords, websiteUrl, locationName, city, region, country, fullAddress, accessToken, userId, phoneNumber, button } = req.body;
+    const { businessName, category, keywords, websiteUrl, locationName, city, region, country, fullAddress, accessToken, userId, phoneNumber, button, gbpAccountId } = req.body;
 
     // Get userId from header or body
     const userIdFromHeader = req.headers['x-user-id'];
     const finalUserId = userId || userIdFromHeader;
+
+    // 🔒 SUBSCRIPTION CHECK - Premium feature requires valid subscription
+    if (finalUserId) {
+      console.log(`[Automation API] 🔒 Validating subscription for auto-post - user: ${finalUserId}`);
+      const accessCheck = await subscriptionGuard.hasValidAccess(finalUserId, gbpAccountId || null);
+
+      if (!accessCheck.hasAccess) {
+        console.error(`[Automation API] ❌ SUBSCRIPTION CHECK FAILED for auto-post`);
+        console.error(`[Automation API] Reason: ${accessCheck.reason}`);
+        return res.status(403).json({
+          success: false,
+          error: 'Subscription required',
+          reason: accessCheck.reason,
+          requiresPayment: accessCheck.requiresPayment,
+          message: 'Your trial/subscription has expired. Please upgrade to use auto-posting.'
+        });
+      }
+      console.log(`[Automation API] ✅ Subscription valid for auto-post - ${accessCheck.status}`);
+    } else {
+      console.error(`[Automation API] ❌ No userId provided for auto-post - BLOCKING`);
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        message: 'Please sign in to use auto-posting feature.'
+      });
+    }
 
     // Get token from Authorization header or body (fallback only)
     let frontendToken = accessToken;
@@ -486,8 +560,34 @@ router.post('/test-post-now/:locationId', async (req, res) => {
 router.post('/test-review-check/:locationId', async (req, res) => {
   try {
     const { locationId } = req.params;
-    const { businessName, category, keywords } = req.body;
-    
+    const { businessName, category, keywords, userId, gbpAccountId } = req.body;
+
+    // 🔒 SUBSCRIPTION CHECK - Premium feature requires valid subscription
+    if (userId) {
+      console.log(`[Automation API] 🔒 Validating subscription for auto-reply - user: ${userId}`);
+      const accessCheck = await subscriptionGuard.hasValidAccess(userId, gbpAccountId || null);
+
+      if (!accessCheck.hasAccess) {
+        console.error(`[Automation API] ❌ SUBSCRIPTION CHECK FAILED for auto-reply`);
+        console.error(`[Automation API] Reason: ${accessCheck.reason}`);
+        return res.status(403).json({
+          success: false,
+          error: 'Subscription required',
+          reason: accessCheck.reason,
+          requiresPayment: accessCheck.requiresPayment,
+          message: 'Your trial/subscription has expired. Please upgrade to use auto-reply.'
+        });
+      }
+      console.log(`[Automation API] ✅ Subscription valid for auto-reply - ${accessCheck.status}`);
+    } else {
+      console.error(`[Automation API] ❌ No userId provided for auto-reply - BLOCKING`);
+      return res.status(401).json({
+        success: false,
+        error: 'Authentication required',
+        message: 'Please sign in to use auto-reply feature.'
+      });
+    }
+
     console.log(`[Automation API] TEST MODE - Checking reviews NOW for location ${locationId}`);
     
     // Get existing automation settings OR create default
@@ -832,8 +932,39 @@ router.post('/check-reviews-now/:locationId', async (req, res) => {
 });
 
 // Enable auto-reply for ALL existing locations (one-time migration)
+// 🔒 ADMIN ONLY - This is a dangerous endpoint that affects all users
 router.post('/enable-autoreply-all', async (req, res) => {
   try {
+    // Admin whitelist check - must match AdminContext.tsx whitelist
+    const adminEmails = [
+      'digibusy01shakti@gmail.com',
+      'meenakarjale73@gmail.com'
+    ];
+
+    const adminEmail = req.body.adminEmail || req.headers['x-admin-email'];
+    const adminSecret = req.body.adminSecret || req.headers['x-admin-secret'];
+
+    // Require admin email from whitelist AND a secret key from environment
+    const expectedSecret = process.env.ADMIN_SECRET || 'googleranker-admin-2024';
+
+    if (!adminEmail || !adminEmails.includes(adminEmail)) {
+      console.error(`[Automation API] ❌ ADMIN AUTH FAILED - Email not in whitelist: ${adminEmail}`);
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'This endpoint requires admin privileges.'
+      });
+    }
+
+    if (adminSecret !== expectedSecret) {
+      console.error(`[Automation API] ❌ ADMIN AUTH FAILED - Invalid secret for: ${adminEmail}`);
+      return res.status(403).json({
+        error: 'Unauthorized',
+        message: 'Invalid admin credentials.'
+      });
+    }
+
+    console.log(`[Automation API] ✅ Admin authenticated: ${adminEmail}`);
+
     const { createClient } = await import('@supabase/supabase-js');
 
     const supabaseUrl = process.env.SUPABASE_URL;

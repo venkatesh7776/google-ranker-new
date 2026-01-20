@@ -107,8 +107,7 @@ router.post('/', async (req, res) => {
     }
 
     // 🔒 SUBSCRIPTION CHECK - Verify user has valid trial or active subscription
-    // TEMPORARILY DISABLED FOR DEBUGGING - TODO: Re-enable after fixing subscription status
-    if (false && userId && gbpAccountId) {
+    if (userId && gbpAccountId) {
       console.log(`[QR Codes] 🔒 Validating subscription for user ${userId}, GBP Account: ${gbpAccountId}`);
 
       const accessCheck = await subscriptionGuard.hasValidAccess(userId, gbpAccountId);
@@ -128,7 +127,12 @@ router.post('/', async (req, res) => {
 
       console.log(`[QR Codes] ✅ Subscription validated - ${accessCheck.status} (${accessCheck.daysRemaining} days remaining)`);
     } else {
-      console.warn(`[QR Codes] ⚠️ No userId/gbpAccountId provided - skipping subscription check`);
+      // SECURITY: Require userId and gbpAccountId for QR code creation
+      console.error(`[QR Codes] ❌ Missing userId or gbpAccountId - BLOCKING request`);
+      return res.status(400).json({
+        error: 'Authentication required',
+        message: 'Please sign in and connect your Google Business Profile to create QR codes.'
+      });
     }
 
     // 🔍 Check if QR code already exists (unless forceRefresh is true)

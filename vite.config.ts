@@ -29,6 +29,10 @@ export default defineConfig(({ mode }) => ({
       },
     },
   },
+  // Strip console statements in production build
+  esbuild: {
+    drop: mode === 'production' ? ['console', 'debugger'] : [],
+  },
   // Ensure public files (including _redirects) are copied to dist
   publicDir: 'public',
 }));

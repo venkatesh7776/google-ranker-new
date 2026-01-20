@@ -227,8 +227,16 @@ class SupabaseSubscriptionService {
         return null;
       }
 
-      // Get the most recent active subscription
-      const activeSubscription = subscriptions.find(s => s.status === 'active') || subscriptions[0];
+      // Get the most recent active OR trial subscription (prioritize active, then trial)
+      const activeSubscription = subscriptions.find(s => s.status === 'active')
+        || subscriptions.find(s => s.status === 'trial')
+        || subscriptions[0];
+
+      console.log(`[SupabaseSubscriptionService] Found subscription for userId ${userId}:`, {
+        id: activeSubscription.id,
+        status: activeSubscription.status,
+        email: activeSubscription.email
+      });
 
       // Fetch payment history
       const { data: payments } = await this.client

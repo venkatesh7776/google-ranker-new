@@ -83,17 +83,32 @@ class UserService {
         // Check if trial has expired
         if (user.trial_end_date) {
           const trialEnd = new Date(user.trial_end_date);
-          if (trialEnd < new Date()) {
+          const now = new Date();
+          if (trialEnd < now) {
             return {
               isValid: false,
               status: 'trial_expired',
+              daysRemaining: 0,
+              trialEndDate: user.trial_end_date,
               reason: `Trial expired on ${trialEnd.toLocaleDateString()}`
             };
           }
+          // Calculate days remaining
+          const daysRemaining = Math.ceil((trialEnd - now) / (1000 * 60 * 60 * 24));
+          return {
+            isValid: true,
+            status: 'trial',
+            daysRemaining: daysRemaining,
+            trialEndDate: user.trial_end_date,
+            reason: `Trial subscription active - ${daysRemaining} days remaining`
+          };
         }
+        // Trial with no end date - default to 7 days
         return {
           isValid: true,
           status: 'trial',
+          daysRemaining: 7,
+          trialEndDate: null,
           reason: 'Trial subscription active'
         };
       }

@@ -165,20 +165,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const logout = async () => {
     try {
-      console.log('👋 Logging out user...');
+      // Disable all automations for this user before logging out
+      if (currentUser?.email) {
+        const backendUrl = import.meta.env.VITE_BACKEND_URL || 'http://localhost:5000';
+        try {
+          await fetch(`${backendUrl}/api/automation/disable-all-for-user`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: currentUser.email, userId: currentUser.id })
+          });
+        } catch (automationError) {
+          // Continue with logout even if automation disable fails
+        }
+      }
 
       const { error } = await supabase.auth.signOut();
 
       if (error) throw error;
-
-      console.log('✅ Logout successful');
 
       toast({
         title: "Logged out",
         description: "You have been successfully logged out.",
       });
     } catch (error: any) {
-      console.error('❌ Logout error:', error);
       toast({
         title: "Logout failed",
         description: "Failed to log out. Please try again.",

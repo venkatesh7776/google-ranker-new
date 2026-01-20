@@ -528,11 +528,30 @@ class SupabaseAutomationService {
         return false;
       }
 
-      console.log('[SupabaseAutomationService] ✅ next_post_date updated successfully');
       return true;
     } catch (error) {
-      console.error('[SupabaseAutomationService] Error in updateNextPostDate:', error);
       return false;
+    }
+  }
+
+  /**
+   * Get all locations for a user (by gmail_id)
+   * Used to disable all automations on logout/disconnect
+   */
+  async getLocationsForUser(gmailId) {
+    try {
+      const { data, error } = await this.client
+        .from('user_locations')
+        .select('location_id, business_name, autoposting_enabled, autoreply_enabled')
+        .eq('gmail_id', gmailId);
+
+      if (error) {
+        return [];
+      }
+
+      return data || [];
+    } catch (error) {
+      return [];
     }
   }
 }
