@@ -29,6 +29,7 @@ import { useProfileLimitations } from '@/hooks/useProfileLimitations';
 import { PaymentModal } from '@/components/PaymentModal';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/contexts/AuthContext';
+import { useAdmin } from '@/contexts/AdminContext';
 import { format } from 'date-fns';
 
 const Billing = () => {
@@ -36,7 +37,6 @@ const Billing = () => {
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
   const [showUpgradeSuccess, setShowUpgradeSuccess] = useState(false);
-  const [isAdmin, setIsAdmin] = useState(false);
 
   const {
     subscription,
@@ -48,6 +48,7 @@ const Billing = () => {
   } = useSubscription();
 
   const { currentUser } = useAuth();
+  const { isAdmin } = useAdmin(); // Use AdminContext for proper admin check
   const { toast } = useToast();
   const backendUrl = import.meta.env.VITE_BACKEND_URL || 'https://googleranker-backend.onrender.com';
 
@@ -74,24 +75,6 @@ const Billing = () => {
       accounts: accessibleAccounts
     };
   }, [accounts, subscription?.paidSlots, getAccessibleAccounts]);
-
-  // Check if user is admin
-  useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (currentUser) {
-        try {
-          const token = await currentUser.getIdTokenResult();
-          const adminStatus = token.claims.role === 'admin' || token.claims.adminLevel;
-          setIsAdmin(adminStatus);
-        } catch (error) {
-          console.error('Error checking admin status:', error);
-          setIsAdmin(false);
-        }
-      }
-    };
-
-    checkAdminStatus();
-  }, [currentUser]);
 
   // Fetch payment history and check for recent upgrade
   useEffect(() => {
@@ -196,89 +179,141 @@ const Billing = () => {
         </Alert>
       )}
 
-      {/* Profile Subscription Summary Card - Shows actual vs paid profiles */}
+      {/* Profile Subscription Summary Card - Shows trial info or subscription status */}
       {!isAdmin && isConnected && profileStats.totalConnected > 0 && (
-        <Card className={profileStats.needSubscription > 0 ? 'border-orange-400 bg-orange-50' : 'border-green-400 bg-green-50'}>
+        <Card className={status === 'trial' ? 'border-blue-400 bg-blue-50' : profileStats.needSubscription > 0 ? 'border-orange-400 bg-orange-50' : 'border-green-400 bg-green-50'}>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Building2 className="h-5 w-5" />
-              Profile Subscription Summary
+              {status === 'trial' ? 'Free Trial Status' : 'Profile Subscription Summary'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-              {/* Total Connected Profiles */}
-              <div className="bg-white rounded-lg p-4 border shadow-sm">
-                <p className="text-sm text-gray-600 mb-1">Connected Profiles</p>
-                <p className="text-3xl font-bold text-blue-600">{profileStats.totalConnected}</p>
-                <p className="text-xs text-gray-500">From Google Business</p>
-              </div>
+            {/* Trial User View */}
+            {status === 'trial' ? (
+              <>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                  {/* Connected Profiles */}
+                  <div className="bg-white rounded-lg p-4 border shadow-sm">
+                    <p className="text-sm text-gray-600 mb-1">Connected Profiles</p>
+                    <p className="text-3xl font-bold text-blue-600">{profileStats.totalConnected}</p>
+                    <p className="text-xs text-gray-500">From Google Business</p>
+                  </div>
 
-              {/* Paid Slots */}
-              <div className="bg-white rounded-lg p-4 border shadow-sm">
-                <p className="text-sm text-gray-600 mb-1">Paid Subscriptions</p>
-                <p className="text-3xl font-bold text-green-600">{profileStats.paidSlots}</p>
-                <p className="text-xs text-gray-500">Active slots</p>
-              </div>
+                  {/* Trial Days Remaining */}
+                  <div className="bg-white rounded-lg p-4 border border-blue-300 shadow-sm">
+                    <p className="text-sm text-gray-600 mb-1">Trial Days Left</p>
+                    <p className="text-3xl font-bold text-blue-600">{daysRemaining || 0}</p>
+                    <p className="text-xs text-gray-500">Days remaining</p>
+                  </div>
 
-              {/* Need Subscription */}
-              <div className={`bg-white rounded-lg p-4 border shadow-sm ${profileStats.needSubscription > 0 ? 'border-orange-300' : ''}`}>
-                <p className="text-sm text-gray-600 mb-1">Need Subscription</p>
-                <p className={`text-3xl font-bold ${profileStats.needSubscription > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
-                  {profileStats.needSubscription}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {profileStats.needSubscription > 0 ? 'Profiles unpaid' : 'All covered'}
-                </p>
-              </div>
-
-              {/* Unused Slots */}
-              <div className="bg-white rounded-lg p-4 border shadow-sm">
-                <p className="text-sm text-gray-600 mb-1">Available Slots</p>
-                <p className={`text-3xl font-bold ${profileStats.unusedSlots > 0 ? 'text-purple-600' : 'text-gray-400'}`}>
-                  {profileStats.unusedSlots}
-                </p>
-                <p className="text-xs text-gray-500">
-                  {profileStats.unusedSlots > 0 ? 'Can add more' : 'Fully used'}
-                </p>
-              </div>
-            </div>
-
-            {/* Warning if profiles need subscription */}
-            {profileStats.needSubscription > 0 && (
-              <div className="mt-4 p-4 bg-orange-100 border border-orange-300 rounded-lg flex items-start gap-3">
-                <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-semibold text-orange-800">
-                    {profileStats.needSubscription} profile{profileStats.needSubscription > 1 ? 's' : ''} need{profileStats.needSubscription === 1 ? 's' : ''} subscription
-                  </p>
-                  <p className="text-sm text-orange-700 mt-1">
-                    You have {profileStats.totalConnected} connected profile{profileStats.totalConnected > 1 ? 's' : ''} but only {profileStats.paidSlots} paid slot{profileStats.paidSlots !== 1 ? 's' : ''}.
-                    Subscribe to {profileStats.needSubscription} more profile{profileStats.needSubscription > 1 ? 's' : ''} to unlock all features.
-                  </p>
-                  <Button
-                    className="mt-3 bg-orange-600 hover:bg-orange-700"
-                    onClick={() => setIsPaymentModalOpen(true)}
-                  >
-                    <CreditCard className="mr-2 h-4 w-4" />
-                    Subscribe to {profileStats.needSubscription} Profile{profileStats.needSubscription > 1 ? 's' : ''}
-                  </Button>
+                  {/* Status */}
+                  <div className="bg-white rounded-lg p-4 border shadow-sm">
+                    <p className="text-sm text-gray-600 mb-1">Status</p>
+                    <Badge className="bg-blue-100 text-blue-800 text-lg px-3 py-1">Free Trial</Badge>
+                    <p className="text-xs text-gray-500 mt-2">All features unlocked</p>
+                  </div>
                 </div>
-              </div>
-            )}
 
-            {/* Success message if all profiles are covered */}
-            {profileStats.needSubscription === 0 && profileStats.paidSlots > 0 && (
-              <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded-lg flex items-start gap-3">
-                <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
-                <div>
-                  <p className="font-semibold text-green-800">All profiles are subscribed!</p>
-                  <p className="text-sm text-green-700 mt-1">
-                    All {profileStats.totalConnected} connected profile{profileStats.totalConnected > 1 ? 's' : ''} {profileStats.totalConnected > 1 ? 'have' : 'has'} active subscription{profileStats.totalConnected > 1 ? 's' : ''}.
-                    {profileStats.unusedSlots > 0 && ` You can add ${profileStats.unusedSlots} more profile${profileStats.unusedSlots > 1 ? 's' : ''} without additional payment.`}
-                  </p>
+                {/* Trial info message */}
+                <div className="mt-4 p-4 bg-blue-100 border border-blue-300 rounded-lg flex items-start gap-3">
+                  <Clock className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                  <div className="flex-1">
+                    <p className="font-semibold text-blue-800">
+                      You're on a free trial - {daysRemaining || 0} days remaining
+                    </p>
+                    <p className="text-sm text-blue-700 mt-1">
+                      Enjoy full access to all features during your trial period.
+                      Subscribe before your trial ends to continue using all features.
+                    </p>
+                    <Button
+                      className="mt-3 bg-blue-600 hover:bg-blue-700"
+                      onClick={() => setIsPaymentModalOpen(true)}
+                    >
+                      <CreditCard className="mr-2 h-4 w-4" />
+                      Subscribe Now
+                    </Button>
+                  </div>
                 </div>
-              </div>
+              </>
+            ) : (
+              <>
+                {/* Paid/Expired User View */}
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                  {/* Total Connected Profiles */}
+                  <div className="bg-white rounded-lg p-4 border shadow-sm">
+                    <p className="text-sm text-gray-600 mb-1">Connected Profiles</p>
+                    <p className="text-3xl font-bold text-blue-600">{profileStats.totalConnected}</p>
+                    <p className="text-xs text-gray-500">From Google Business</p>
+                  </div>
+
+                  {/* Paid Slots */}
+                  <div className="bg-white rounded-lg p-4 border shadow-sm">
+                    <p className="text-sm text-gray-600 mb-1">Paid Subscriptions</p>
+                    <p className="text-3xl font-bold text-green-600">{profileStats.paidSlots}</p>
+                    <p className="text-xs text-gray-500">Active slots</p>
+                  </div>
+
+                  {/* Need Subscription */}
+                  <div className={`bg-white rounded-lg p-4 border shadow-sm ${profileStats.needSubscription > 0 ? 'border-orange-300' : ''}`}>
+                    <p className="text-sm text-gray-600 mb-1">Need Subscription</p>
+                    <p className={`text-3xl font-bold ${profileStats.needSubscription > 0 ? 'text-orange-600' : 'text-gray-400'}`}>
+                      {profileStats.needSubscription}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {profileStats.needSubscription > 0 ? 'Profiles unpaid' : 'All covered'}
+                    </p>
+                  </div>
+
+                  {/* Unused Slots */}
+                  <div className="bg-white rounded-lg p-4 border shadow-sm">
+                    <p className="text-sm text-gray-600 mb-1">Available Slots</p>
+                    <p className={`text-3xl font-bold ${profileStats.unusedSlots > 0 ? 'text-purple-600' : 'text-gray-400'}`}>
+                      {profileStats.unusedSlots}
+                    </p>
+                    <p className="text-xs text-gray-500">
+                      {profileStats.unusedSlots > 0 ? 'Can add more' : 'Fully used'}
+                    </p>
+                  </div>
+                </div>
+
+                {/* Warning if profiles need subscription */}
+                {profileStats.needSubscription > 0 && (
+                  <div className="mt-4 p-4 bg-orange-100 border border-orange-300 rounded-lg flex items-start gap-3">
+                    <AlertTriangle className="h-5 w-5 text-orange-600 flex-shrink-0 mt-0.5" />
+                    <div className="flex-1">
+                      <p className="font-semibold text-orange-800">
+                        {profileStats.needSubscription} profile{profileStats.needSubscription > 1 ? 's' : ''} need{profileStats.needSubscription === 1 ? 's' : ''} subscription
+                      </p>
+                      <p className="text-sm text-orange-700 mt-1">
+                        You have {profileStats.totalConnected} connected profile{profileStats.totalConnected > 1 ? 's' : ''} but only {profileStats.paidSlots} paid slot{profileStats.paidSlots !== 1 ? 's' : ''}.
+                        Subscribe to {profileStats.needSubscription} more profile{profileStats.needSubscription > 1 ? 's' : ''} to unlock all features.
+                      </p>
+                      <Button
+                        className="mt-3 bg-orange-600 hover:bg-orange-700"
+                        onClick={() => setIsPaymentModalOpen(true)}
+                      >
+                        <CreditCard className="mr-2 h-4 w-4" />
+                        Subscribe to {profileStats.needSubscription} Profile{profileStats.needSubscription > 1 ? 's' : ''}
+                      </Button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Success message if all profiles are covered */}
+                {profileStats.needSubscription === 0 && profileStats.paidSlots > 0 && (
+                  <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded-lg flex items-start gap-3">
+                    <CheckCircle className="h-5 w-5 text-green-600 flex-shrink-0 mt-0.5" />
+                    <div>
+                      <p className="font-semibold text-green-800">All profiles are subscribed!</p>
+                      <p className="text-sm text-green-700 mt-1">
+                        All {profileStats.totalConnected} connected profile{profileStats.totalConnected > 1 ? 's' : ''} {profileStats.totalConnected > 1 ? 'have' : 'has'} active subscription{profileStats.totalConnected > 1 ? 's' : ''}.
+                        {profileStats.unusedSlots > 0 && ` You can add ${profileStats.unusedSlots} more profile${profileStats.unusedSlots > 1 ? 's' : ''} without additional payment.`}
+                      </p>
+                    </div>
+                  </div>
+                )}
+              </>
             )}
           </CardContent>
         </Card>
