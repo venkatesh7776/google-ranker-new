@@ -12,9 +12,9 @@ import { NextPostCountdown } from "@/components/Automation/NextPostCountdown";
 import { useGoogleBusinessProfile } from "@/hooks/useGoogleBusinessProfile";
 import { useProfileLimitations } from "@/hooks/useProfileLimitations";
 import { useAuth } from "@/contexts/AuthContext";
-import activityHistoryService from "@/lib/activityHistoryService";
 import { automationStorage } from "@/lib/automationStorage";
 import { serverAutomationService } from "@/lib/serverAutomationService";
+import { googleBusinessProfile } from "@/lib/googleBusinessProfile";
 
 const AutoPosting = () => {
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
@@ -128,40 +128,41 @@ const AutoPosting = () => {
     }
   };
 
-  // Fetch activity data
+  // Fetch posts directly from Google Business Profile API
   const fetchActivityData = async () => {
     if (!selectedLocationId || !currentUser) return;
 
     setLoading(true);
     try {
-      const { history, stats } = await activityHistoryService.fetchAutoPostActivity(
-        selectedLocationId,
-        currentUser.email,
-        20,
-        0
-      );
+      // Fetch actual posts from Google Business Profile
+      const posts = await googleBusinessProfile.getPosts(selectedLocationId);
 
-      // If history is empty but we have lastPostDate from settings, create an entry
-      let finalHistory = history;
-      if (history.length === 0 && dbSettings?.lastPostDate) {
-        finalHistory = [{
-          id: 'last-post-' + selectedLocationId,
-          created_at: dbSettings.lastPostDate,
-          status: dbSettings.lastPostSuccess === true ? 'success' : dbSettings.lastPostSuccess === false ? 'failed' : 'success',
-          post_content: dbSettings.lastPostError || 'Auto-generated post',
-          post_summary: dbSettings.lastPostSuccess === false ? dbSettings.lastPostError : 'Last auto-posted content',
-          error_message: dbSettings.lastPostSuccess === false ? dbSettings.lastPostError : undefined
-        }];
-      }
+      // Convert posts to activity format for display
+      const postsAsActivity = (posts || []).slice(0, 10).map((post: any) => ({
+        id: post.id || post.name,
+        created_at: post.createTime || post.updateTime || new Date().toISOString(),
+        status: 'success' as const,
+        post_content: post.summary || 'No content',
+        post_summary: post.summary ? post.summary.substring(0, 150) : 'No content',
+      }));
 
-      setActivityHistory(finalHistory);
-      // Stats from dbSettings take priority (set in fetchDbSettings)
-      if (!dbSettings?.stats) {
-        setActivityStats(stats);
-      }
-      setHasMore(history.length >= 20);
+      setActivityHistory(postsAsActivity);
+
+      // Set stats based on actual posts count
+      const stats = {
+        total: posts?.length || 0,
+        successful: posts?.length || 0,
+        failed: 0,
+        pending: 0
+      };
+      setActivityStats(stats);
+      setHasMore(false); // GBP API doesn't support pagination easily
+
+      console.log(`[AutoPosting] ✅ Loaded ${postsAsActivity.length} posts from GBP`);
     } catch (error) {
-      console.error('Error fetching activity data:', error);
+      console.error('Error fetching posts from GBP:', error);
+      setActivityHistory([]);
+      setActivityStats({ total: 0, successful: 0, failed: 0, pending: 0 });
     } finally {
       setLoading(false);
     }
@@ -173,26 +174,9 @@ const AutoPosting = () => {
     localStorage.setItem('auto_posting_selected_location', locationId);
   };
 
-  // Load more activity
-  const handleLoadMore = async () => {
-    if (!selectedLocationId || !currentUser || loading) return;
-
-    setLoading(true);
-    try {
-      const { history } = await activityHistoryService.fetchAutoPostActivity(
-        selectedLocationId,
-        currentUser.email,
-        20,
-        activityHistory.length
-      );
-
-      setActivityHistory(prev => [...prev, ...history]);
-      setHasMore(history.length >= 20);
-    } catch (error) {
-      console.error('Error loading more activity:', error);
-    } finally {
-      setLoading(false);
-    }
+  // Refresh posts data
+  const handleRefresh = async () => {
+    await fetchActivityData();
   };
 
   // Get config for selected location
@@ -357,9 +341,8 @@ const AutoPosting = () => {
         <ActivityLog
           activities={activityHistory}
           type="post"
-          title="Recent Auto-Posts"
-          onLoadMore={handleLoadMore}
-          hasMore={hasMore}
+          title="Recent Posts from Google Business Profile"
+          hasMore={false}
           loading={loading}
         />
       )}
