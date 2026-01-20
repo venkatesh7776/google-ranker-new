@@ -1129,6 +1129,7 @@ router.post('/verify-payment', async (req, res) => {
       if (localSubscription) {
         // Update existing subscription
         console.log('[Payment Verify] Updating existing subscription:', localSubscription.id);
+        console.log('[Payment Verify] Using gbpAccountId:', localSubscription.gbpAccountId || gbpAccountId);
 
         // Calculate new paid slots (add to existing if any)
         const existingPaidSlots = localSubscription.paidSlots || 0;
@@ -1140,17 +1141,25 @@ router.post('/verify-payment', async (req, res) => {
           newTotal: newPaidSlots
         });
 
-        await subscriptionService.updateSubscription(localSubscription.id, {
-          status: 'active',
-          planId: planId,
-          profileCount: newPaidSlots,
-          paidSlots: newPaidSlots,
-          subscriptionStartDate: now.toISOString(),
-          subscriptionEndDate: endDate.toISOString(),
-          razorpayPaymentId: razorpay_payment_id,
-          lastPaymentDate: now.toISOString(),
-          paidAt: now.toISOString()
-        });
+        // Use supabaseSubscriptionService directly with gbpAccountId to avoid lookup issues
+        const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
+
+        const updateResult = await supabaseSubscriptionService.updateSubscription(
+          localSubscription.gbpAccountId || gbpAccountId,
+          {
+            status: 'active',
+            planId: planId,
+            profileCount: newPaidSlots,
+            paidSlots: newPaidSlots,
+            subscriptionStartDate: now.toISOString(),
+            subscriptionEndDate: endDate.toISOString(),
+            razorpayPaymentId: razorpay_payment_id,
+            lastPaymentDate: now.toISOString(),
+            paidAt: now.toISOString()
+          }
+        );
+
+        console.log('[Payment Verify] Supabase update result:', updateResult ? 'SUCCESS' : 'FAILED');
 
         // Add payment record
         await subscriptionService.addPaymentRecord(localSubscription.id, {
