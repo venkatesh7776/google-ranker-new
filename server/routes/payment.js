@@ -4,14 +4,13 @@ import SubscriptionService from '../services/subscriptionService.js';
 import couponService from '../services/couponService.js';
 import CurrencyService from '../services/currencyService.js';
 import GeolocationService from '../utils/geolocation.js';
-import UserService from '../services/userService.js';
+import userService from '../services/userService.js';
 
 const router = express.Router();
 const paymentService = new PaymentService();
 const subscriptionService = new SubscriptionService();
 const currencyService = new CurrencyService();
 const geolocationService = new GeolocationService();
-const userService = new UserService();
 
 // Health check for payment service
 router.get('/health', async (req, res) => {
