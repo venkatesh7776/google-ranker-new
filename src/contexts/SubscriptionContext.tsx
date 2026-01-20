@@ -112,9 +112,13 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
 
     // First, try to find subscription by user ID even if GBP is not connected
     if (currentUser?.id && !gbpAccountId) {
-      console.log('No GBP connected, checking by user ID:', currentUser.id);
+      console.log('No GBP connected, checking by user ID:', currentUser.id, 'email:', currentUser.email);
       try {
-        const response = await fetch(`${backendUrl}/api/payment/subscription/status?userId=${currentUser.id}`, {
+        const params = new URLSearchParams();
+        params.append('userId', currentUser.id);
+        if (currentUser.email) params.append('email', currentUser.email);
+
+        const response = await fetch(`${backendUrl}/api/payment/subscription/status?${params.toString()}`, {
           headers: {
             'Content-Type': 'application/json'
           }
@@ -154,10 +158,11 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     try {
       setIsLoading(true);
 
-      // Check subscription status from backend using both userId and gbpAccountId
+      // Check subscription status from backend using both userId, email, and gbpAccountId
       const params = new URLSearchParams();
       if (gbpAccountId) params.append('gbpAccountId', gbpAccountId);
       if (currentUser?.id) params.append('userId', currentUser.id);
+      if (currentUser?.email) params.append('email', currentUser.email);
 
       const response = await fetch(`${backendUrl}/api/payment/subscription/status?${params.toString()}`, {
         headers: {
