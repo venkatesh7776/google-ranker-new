@@ -327,6 +327,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 gbpAccountId: subscription?.gbpAccountId,
                 planId: selectedPlan.id,
                 amount: amount,
+                profileCount: profileCount,
                 couponCode: couponCode || null
               })
             });
@@ -353,7 +354,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               // Small delay to ensure state updates, then navigate
               setTimeout(() => {
                 console.log('[Payment] ✅ Navigating to payment success page');
-                navigate('/payment-success');
+                navigate(`/payment-success?profiles=${profileCount}`);
               }, 500);
             } else {
               // Get the actual error from the backend

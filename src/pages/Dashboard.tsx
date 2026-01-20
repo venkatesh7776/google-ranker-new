@@ -7,7 +7,6 @@ import { Link, useNavigate } from "react-router-dom";
 import { useGoogleBusinessProfile } from "@/hooks/useGoogleBusinessProfile";
 import { useProfileLimitations } from "@/hooks/useProfileLimitations";
 import { LoadingSpinner } from "@/components/ui/loading-spinner";
-import { TrialBanner } from "@/components/TrialBanner";
 import { PaymentModal } from "@/components/PaymentModal";
 import { useSubscription } from "@/contexts/SubscriptionContext";
 import { useAuth } from "@/contexts/AuthContext";
@@ -156,13 +155,6 @@ const Dashboard = () => {
 
   return (
     <>
-      {/* Trial Banner */}
-      {(subscriptionStatus === 'trial' || subscriptionStatus === 'expired') && (
-        <div className="-mx-6 mb-6">
-          <TrialBanner />
-        </div>
-      )}
-
       <div className="space-y-6">
 
       {/* Business Profiles */}

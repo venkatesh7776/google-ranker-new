@@ -1050,6 +1050,7 @@ router.post('/verify-payment', async (req, res) => {
       gbpAccountId,
       planId,
       amount,
+      profileCount,
       couponCode
     } = req.body;
 
@@ -1061,6 +1062,7 @@ router.post('/verify-payment', async (req, res) => {
     console.log('[Payment Verify] - userId:', userId);
     console.log('[Payment Verify] - gbpAccountId:', gbpAccountId);
     console.log('[Payment Verify] - amount:', amount);
+    console.log('[Payment Verify] - profileCount:', profileCount);
     console.log('[Payment Verify] ========================================');
 
     if (!razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
@@ -1128,11 +1130,26 @@ router.post('/verify-payment', async (req, res) => {
         // Update existing subscription
         console.log('[Payment Verify] Updating existing subscription:', localSubscription.id);
 
+        // Calculate new paid slots (add to existing if any)
+        const existingPaidSlots = localSubscription.paidSlots || 0;
+        const newPaidSlots = existingPaidSlots + (profileCount || 1);
+
+        console.log('[Payment Verify] Paid slots update:', {
+          existing: existingPaidSlots,
+          adding: profileCount || 1,
+          newTotal: newPaidSlots
+        });
+
         await subscriptionService.updateSubscription(localSubscription.id, {
           status: 'active',
           planId: planId,
+          profileCount: newPaidSlots,
+          paidSlots: newPaidSlots,
+          subscriptionStartDate: now.toISOString(),
           subscriptionEndDate: endDate.toISOString(),
-          razorpayPaymentId: razorpay_payment_id
+          razorpayPaymentId: razorpay_payment_id,
+          lastPaymentDate: now.toISOString(),
+          paidAt: now.toISOString()
         });
 
         // Add payment record
@@ -1142,10 +1159,10 @@ router.post('/verify-payment', async (req, res) => {
           status: 'success',
           razorpayPaymentId: razorpay_payment_id,
           razorpayOrderId: razorpay_order_id,
-          description: `One-time payment for 1 year access`
+          description: `Payment for ${profileCount || 1} profile(s) - 1 year access`
         });
 
-        console.log('[Payment Verify] Step 4 PASSED: Subscription updated');
+        console.log('[Payment Verify] Step 4 PASSED: Subscription updated with', newPaidSlots, 'paid slots');
       } else {
         console.warn('[Payment Verify] ⚠️ Local subscription not found for gbpAccountId:', gbpAccountId);
       }

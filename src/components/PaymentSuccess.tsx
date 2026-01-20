@@ -1,56 +1,63 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { CheckCircle } from 'lucide-react';
 import { useSubscription } from '@/contexts/SubscriptionContext';
 import { MandateSetup } from './MandateSetup';
 
 export const PaymentSuccess: React.FC = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { checkSubscriptionStatus, subscription } = useSubscription();
   const [showMandateSetup, setShowMandateSetup] = useState(false);
-  const [redirectTimer, setRedirectTimer] = useState<NodeJS.Timeout | null>(null);
+  const [countdown, setCountdown] = useState(3);
+  const [profileCount, setProfileCount] = useState<number | null>(null);
+
+  // Get profile count from URL params (passed from payment flow)
+  useEffect(() => {
+    const profiles = searchParams.get('profiles');
+    if (profiles) {
+      setProfileCount(parseInt(profiles, 10));
+      console.log('[Payment Success] Profile count from URL:', profiles);
+    }
+  }, [searchParams]);
 
   useEffect(() => {
     // Aggressively refresh subscription status to ensure paid slots are loaded
     console.log('[Payment Success] 🔄 Force refreshing subscription status...');
-    
+
     const refreshSubscription = async () => {
       // Refresh multiple times to ensure data is loaded
       await checkSubscriptionStatus();
-      
+
       // Second refresh after 1 second to ensure backend has updated
       setTimeout(async () => {
         console.log('[Payment Success] 🔄 Second refresh...');
         await checkSubscriptionStatus();
       }, 1000);
-      
-      // Third refresh after 2 seconds for good measure
-      setTimeout(async () => {
-        console.log('[Payment Success] 🔄 Third refresh...');
-        await checkSubscriptionStatus();
-      }, 2000);
     };
-    
+
     refreshSubscription();
 
-    // Show mandate setup modal after 3 seconds for yearly plan users
-    const mandateTimer = setTimeout(() => {
-      // Check if user purchased a yearly plan (₹99)
-      if (subscription?.planId?.includes('yearly')) {
-        console.log('[Payment Success] Showing mandate setup for yearly plan user');
-        setShowMandateSetup(true);
-      } else {
-        // If not yearly plan, redirect to dashboard after 3 seconds
-        const timer = setTimeout(() => {
-          navigate('/dashboard');
-        }, 1000);
-        setRedirectTimer(timer);
-      }
+    // Countdown timer
+    const countdownInterval = setInterval(() => {
+      setCountdown(prev => {
+        if (prev <= 1) {
+          clearInterval(countdownInterval);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+
+    // Redirect after 3 seconds
+    const redirectTimer = setTimeout(() => {
+      console.log('[Payment Success] Redirecting to dashboard...');
+      navigate('/dashboard');
     }, 3000);
 
     return () => {
-      clearTimeout(mandateTimer);
-      if (redirectTimer) clearTimeout(redirectTimer);
+      clearInterval(countdownInterval);
+      clearTimeout(redirectTimer);
     };
   }, [navigate, checkSubscriptionStatus]);
 
@@ -73,10 +80,10 @@ export const PaymentSuccess: React.FC = () => {
           <p className="text-green-800 font-medium">
             ✨ All premium features are now unlocked
           </p>
-          {subscription?.paidSlots && subscription.paidSlots > 0 && (
+          {(profileCount || subscription?.paidSlots) && (
             <div className="mt-3 pt-3 border-t border-green-200">
               <p className="text-2xl font-bold text-green-700">
-                {subscription.paidSlots} Profile{subscription.paidSlots > 1 ? 's' : ''}
+                {profileCount || subscription?.paidSlots || 1} Profile{(profileCount || subscription?.paidSlots || 1) > 1 ? 's' : ''}
               </p>
               <p className="text-sm text-green-600 mt-1">
                 Ready to manage
@@ -84,9 +91,9 @@ export const PaymentSuccess: React.FC = () => {
             </div>
           )}
         </div>
-        
+
         <p className="text-sm text-gray-500">
-          Redirecting to dashboard in 3 seconds...
+          Redirecting to dashboard in {countdown} second{countdown !== 1 ? 's' : ''}...
         </p>
         
         <button
