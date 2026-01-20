@@ -1047,6 +1047,7 @@ router.post('/verify-payment', async (req, res) => {
       razorpay_payment_id,
       razorpay_signature,
       userId,
+      email,
       gbpAccountId,
       planId,
       amount,
@@ -1060,6 +1061,7 @@ router.post('/verify-payment', async (req, res) => {
     console.log('[Payment Verify] - payment_id:', razorpay_payment_id);
     console.log('[Payment Verify] - signature:', razorpay_signature ? razorpay_signature.substring(0, 20) + '...' : 'MISSING');
     console.log('[Payment Verify] - userId:', userId);
+    console.log('[Payment Verify] - email:', email);
     console.log('[Payment Verify] - gbpAccountId:', gbpAccountId);
     console.log('[Payment Verify] - amount:', amount);
     console.log('[Payment Verify] - profileCount:', profileCount);
@@ -1118,62 +1120,98 @@ router.post('/verify-payment', async (req, res) => {
 
     console.log('[Payment Verify] Step 4: Updating subscription in database...');
 
-    // Update or create subscription
-    if (gbpAccountId) {
-      let localSubscription = await subscriptionService.getSubscriptionByGBPAccount(gbpAccountId);
+    // Import Supabase service for direct database access
+    const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
 
+    // Find the subscription - try multiple methods
+    let localSubscription = null;
+
+    // Method 1: Try by gbpAccountId
+    if (gbpAccountId) {
+      console.log('[Payment Verify] Looking up subscription by gbpAccountId:', gbpAccountId);
+      localSubscription = await subscriptionService.getSubscriptionByGBPAccount(gbpAccountId);
+    }
+
+    // Method 2: Fallback to userId
+    if (!localSubscription && userId) {
+      console.log('[Payment Verify] gbpAccountId lookup failed, trying userId:', userId);
+      localSubscription = await supabaseSubscriptionService.getSubscriptionByUserId(userId);
+    }
+
+    // Method 3: Fallback to email from request body
+    if (!localSubscription && email) {
+      console.log('[Payment Verify] userId lookup failed, trying email from request:', email);
+      localSubscription = await supabaseSubscriptionService.getSubscriptionByEmail(email);
+    }
+
+    // Method 4: Fallback to email from payment details
+    if (!localSubscription && payment.email) {
+      console.log('[Payment Verify] Trying email from payment details:', payment.email);
+      localSubscription = await supabaseSubscriptionService.getSubscriptionByEmail(payment.email);
+    }
+
+    if (!localSubscription) {
+      console.error('[Payment Verify] ❌ CRITICAL: No subscription found!');
+      console.error('[Payment Verify] Tried: gbpAccountId:', gbpAccountId, 'userId:', userId);
+      // Still return success to user since payment was processed
+      // But log the error for debugging
+    }
+
+    if (localSubscription) {
       const now = new Date();
       const endDate = new Date();
       endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
 
-      if (localSubscription) {
-        // Update existing subscription
-        console.log('[Payment Verify] Updating existing subscription:', localSubscription.id);
-        console.log('[Payment Verify] Using gbpAccountId:', localSubscription.gbpAccountId || gbpAccountId);
+      // Update existing subscription
+      console.log('[Payment Verify] Found subscription:', localSubscription.id);
+      console.log('[Payment Verify] Using gbpAccountId:', localSubscription.gbpAccountId);
 
-        // Calculate new paid slots (add to existing if any)
-        const existingPaidSlots = localSubscription.paidSlots || 0;
-        const newPaidSlots = existingPaidSlots + (profileCount || 1);
+      // Calculate new paid slots (add to existing if any)
+      const existingPaidSlots = localSubscription.paidSlots || 0;
+      const newPaidSlots = existingPaidSlots + (profileCount || 1);
 
-        console.log('[Payment Verify] Paid slots update:', {
-          existing: existingPaidSlots,
-          adding: profileCount || 1,
-          newTotal: newPaidSlots
-        });
+      console.log('[Payment Verify] Paid slots update:', {
+        existing: existingPaidSlots,
+        adding: profileCount || 1,
+        newTotal: newPaidSlots
+      });
 
-        // Use supabaseSubscriptionService directly with gbpAccountId to avoid lookup issues
-        const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
-
-        const updateResult = await supabaseSubscriptionService.updateSubscription(
-          localSubscription.gbpAccountId || gbpAccountId,
-          {
-            status: 'active',
-            planId: planId,
-            profileCount: newPaidSlots,
-            paidSlots: newPaidSlots,
-            subscriptionStartDate: now.toISOString(),
-            subscriptionEndDate: endDate.toISOString(),
-            razorpayPaymentId: razorpay_payment_id,
-            lastPaymentDate: now.toISOString(),
-            paidAt: now.toISOString()
-          }
-        );
-
-        console.log('[Payment Verify] Supabase update result:', updateResult ? 'SUCCESS' : 'FAILED');
-
-        // Add payment record
-        await subscriptionService.addPaymentRecord(localSubscription.id, {
-          amount: payment.amount / 100,
-          currency: payment.currency,
-          status: 'success',
+      const updateResult = await supabaseSubscriptionService.updateSubscription(
+        localSubscription.gbpAccountId,
+        {
+          status: 'active',
+          planId: planId,
+          profileCount: newPaidSlots,
+          paidSlots: newPaidSlots,
+          subscriptionStartDate: now.toISOString(),
+          subscriptionEndDate: endDate.toISOString(),
           razorpayPaymentId: razorpay_payment_id,
-          razorpayOrderId: razorpay_order_id,
-          description: `Payment for ${profileCount || 1} profile(s) - 1 year access`
-        });
+          lastPaymentDate: now.toISOString(),
+          paidAt: now.toISOString()
+        }
+      );
+
+      console.log('[Payment Verify] Supabase update result:', updateResult ? 'SUCCESS' : 'FAILED');
+
+      if (updateResult) {
+        // Add payment record
+        try {
+          await subscriptionService.addPaymentRecord(localSubscription.id, {
+            amount: payment.amount / 100,
+            currency: payment.currency,
+            status: 'success',
+            razorpayPaymentId: razorpay_payment_id,
+            razorpayOrderId: razorpay_order_id,
+            description: `Payment for ${profileCount || 1} profile(s) - 1 year access`
+          });
+        } catch (paymentRecordError) {
+          console.error('[Payment Verify] Failed to add payment record:', paymentRecordError);
+          // Don't fail the entire operation
+        }
 
         console.log('[Payment Verify] Step 4 PASSED: Subscription updated with', newPaidSlots, 'paid slots');
       } else {
-        console.warn('[Payment Verify] ⚠️ Local subscription not found for gbpAccountId:', gbpAccountId);
+        console.error('[Payment Verify] ❌ Supabase update returned null/undefined');
       }
     }
 
