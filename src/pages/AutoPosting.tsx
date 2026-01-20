@@ -14,7 +14,7 @@ import { useProfileLimitations } from "@/hooks/useProfileLimitations";
 import { useAuth } from "@/contexts/AuthContext";
 import { automationStorage } from "@/lib/automationStorage";
 import { serverAutomationService } from "@/lib/serverAutomationService";
-import { googleBusinessProfile } from "@/lib/googleBusinessProfile";
+import { googleBusinessProfileService } from "@/lib/googleBusinessProfile";
 
 const AutoPosting = () => {
   const [selectedLocationId, setSelectedLocationId] = useState<string>('');
@@ -135,7 +135,7 @@ const AutoPosting = () => {
     setLoading(true);
     try {
       // Fetch actual posts from Google Business Profile
-      const posts = await googleBusinessProfile.getPosts(selectedLocationId);
+      const posts = await googleBusinessProfileService.getLocationPosts(selectedLocationId);
 
       // Convert posts to activity format for display
       const postsAsActivity = (posts || []).slice(0, 10).map((post: any) => ({
