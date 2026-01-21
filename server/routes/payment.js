@@ -166,10 +166,26 @@ router.get('/subscription/status', async (req, res) => {
         console.log('[Payment Status] Users table result:', userStatus);
 
         if (userStatus && userStatus.status && userStatus.status !== 'not_found' && userStatus.status !== 'error') {
+          // Also get the full user data to include profile_count
+          const userData = await userService.getUser(lookupEmail);
+          console.log('[Payment Status] User data:', userData ? {
+            profile_count: userData.profile_count,
+            subscription_status: userData.subscription_status,
+            subscription_end_date: userData.subscription_end_date
+          } : 'NOT FOUND');
+
           status = {
             isValid: userStatus.isValid,
             status: userStatus.status,
-            subscription: null,
+            // CRITICAL: Include subscription object with paidSlots for frontend
+            subscription: userData ? {
+              paidSlots: userData.profile_count || 0,
+              profileCount: userData.profile_count || 0,
+              status: userData.subscription_status,
+              subscriptionStartDate: userData.subscription_start_date,
+              subscriptionEndDate: userData.subscription_end_date,
+              email: userData.gmail_id
+            } : null,
             daysRemaining: userStatus.daysRemaining || null,
             canUsePlatform: userStatus.isValid,
             requiresPayment: !userStatus.isValid,
@@ -177,7 +193,7 @@ router.get('/subscription/status', async (req, res) => {
             message: userStatus.reason,
             source: 'users_table'
           };
-          console.log('[Payment Status] ✅ Found in USERS table:', status.status);
+          console.log('[Payment Status] ✅ Found in USERS table:', status.status, 'paidSlots:', status.subscription?.paidSlots);
         }
       } catch (userError) {
         console.error('[Payment Status] Error checking users table:', userError.message);
