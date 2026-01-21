@@ -9,7 +9,7 @@ export const PaymentSuccess: React.FC = () => {
   const [searchParams] = useSearchParams();
   const { checkSubscriptionStatus, subscription } = useSubscription();
   const [showMandateSetup, setShowMandateSetup] = useState(false);
-  const [countdown, setCountdown] = useState(3);
+  const [countdown, setCountdown] = useState(5);
   const [profileCount, setProfileCount] = useState<number | null>(null);
 
   // Get profile count from URL params (passed from payment flow)
@@ -26,19 +26,30 @@ export const PaymentSuccess: React.FC = () => {
     console.log('[Payment Success] 🔄 Force refreshing subscription status...');
 
     const refreshSubscription = async () => {
-      // Refresh multiple times to ensure data is loaded
+      // Wait a bit for the database update to propagate
+      console.log('[Payment Success] Waiting 1.5s for database update...');
+      await new Promise(resolve => setTimeout(resolve, 1500));
+
+      // First refresh
+      console.log('[Payment Success] 🔄 First refresh...');
       await checkSubscriptionStatus();
 
-      // Second refresh after 1 second to ensure backend has updated
+      // Second refresh after 1.5 seconds to ensure backend has updated
       setTimeout(async () => {
         console.log('[Payment Success] 🔄 Second refresh...');
         await checkSubscriptionStatus();
-      }, 1000);
+      }, 1500);
+
+      // Third refresh after 3 seconds for good measure
+      setTimeout(async () => {
+        console.log('[Payment Success] 🔄 Third refresh...');
+        await checkSubscriptionStatus();
+      }, 3000);
     };
 
     refreshSubscription();
 
-    // Countdown timer
+    // Countdown timer (5 seconds to allow for refreshes)
     const countdownInterval = setInterval(() => {
       setCountdown(prev => {
         if (prev <= 1) {
@@ -49,11 +60,11 @@ export const PaymentSuccess: React.FC = () => {
       });
     }, 1000);
 
-    // Redirect after 3 seconds
+    // Redirect after 5 seconds to allow status to fully refresh
     const redirectTimer = setTimeout(() => {
       console.log('[Payment Success] Redirecting to dashboard...');
       navigate('/dashboard');
-    }, 3000);
+    }, 5000);
 
     return () => {
       clearInterval(countdownInterval);

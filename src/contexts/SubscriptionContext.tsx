@@ -117,10 +117,14 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
         const params = new URLSearchParams();
         params.append('userId', currentUser.id);
         if (currentUser.email) params.append('email', currentUser.email);
+        // Add cache-busting parameter to ensure fresh data
+        params.append('_t', Date.now().toString());
 
         const response = await fetch(`${backendUrl}/api/payment/subscription/status?${params.toString()}`, {
           headers: {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache'
           }
         });
 
@@ -163,10 +167,14 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
       if (gbpAccountId) params.append('gbpAccountId', gbpAccountId);
       if (currentUser?.id) params.append('userId', currentUser.id);
       if (currentUser?.email) params.append('email', currentUser.email);
+      // Add cache-busting parameter to ensure fresh data
+      params.append('_t', Date.now().toString());
 
       const response = await fetch(`${backendUrl}/api/payment/subscription/status?${params.toString()}`, {
         headers: {
-          'Content-Type': 'application/json'
+          'Content-Type': 'application/json',
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache'
         }
       });
 
@@ -363,6 +371,12 @@ export const SubscriptionProvider: React.FC<SubscriptionProviderProps> = ({ chil
     // Delay subscription check if we just completed payment
     const justReloaded = sessionStorage.getItem('post_payment_reload') === 'true';
     const delay = justReloaded ? 3000 : 0;
+
+    // Clear the flag after reading it to prevent future delays
+    if (justReloaded) {
+      console.log('SubscriptionContext - Clearing post_payment_reload flag');
+      sessionStorage.removeItem('post_payment_reload');
+    }
 
     const timeoutId = setTimeout(() => {
       if (gbpAccountId && currentUser) {
