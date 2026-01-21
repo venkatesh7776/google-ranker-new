@@ -1213,7 +1213,37 @@ router.post('/verify-payment', async (req, res) => {
       }
     }
 
-    console.log('[Payment Verify] Step 4: Updating subscription in database...');
+    // ========================================
+    // CRITICAL: UPDATE THE USERS TABLE FIRST
+    // This is the PRIMARY table for subscription data
+    // ========================================
+    console.log('[Payment Verify] Step 4: Updating USERS table (PRIMARY)...');
+
+    const userEmail = email || payment.email;
+    if (userEmail) {
+      try {
+        const userUpdateResult = await userService.updateSubscriptionAfterPayment(userEmail, {
+          profileCount: profileCount || 1,
+          razorpayPaymentId: razorpay_payment_id,
+          razorpayOrderId: razorpay_order_id,
+          amount: payment.amount
+        });
+
+        if (userUpdateResult) {
+          console.log('[Payment Verify] ✅ USERS TABLE UPDATED SUCCESSFULLY!');
+          console.log('[Payment Verify] User:', userEmail);
+          console.log('[Payment Verify] Status:', userUpdateResult.subscription_status);
+          console.log('[Payment Verify] Profile Count:', userUpdateResult.profile_count);
+        }
+      } catch (userUpdateError) {
+        console.error('[Payment Verify] ❌ Failed to update users table:', userUpdateError);
+        // Continue with legacy subscriptions table update as fallback
+      }
+    } else {
+      console.warn('[Payment Verify] ⚠️ No email available to update users table');
+    }
+
+    console.log('[Payment Verify] Step 5: Updating subscriptions table (LEGACY fallback)...');
 
     // Import Supabase service for direct database access
     const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;

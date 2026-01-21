@@ -460,6 +460,56 @@ class UserService {
   }
 
   /**
+   * Update subscription after successful payment
+   * THIS IS THE CORRECT METHOD - updates the users table directly
+   */
+  async updateSubscriptionAfterPayment(gmailId, paymentData) {
+    try {
+      console.log('[UserService] 🔄 Updating subscription for:', gmailId);
+      console.log('[UserService] Payment data:', JSON.stringify(paymentData, null, 2));
+
+      const now = new Date();
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
+
+      const updateData = {
+        subscription_status: 'active',
+        subscription_start_date: now.toISOString(),
+        subscription_end_date: endDate.toISOString(),
+        profile_count: paymentData.profileCount || 1,
+        razorpay_payment_id: paymentData.razorpayPaymentId,
+        razorpay_order_id: paymentData.razorpayOrderId,
+        amount_paid: paymentData.amount || 0,
+        updated_at: now.toISOString()
+      };
+
+      console.log('[UserService] 📝 Update data:', JSON.stringify(updateData, null, 2));
+
+      const { data, error } = await supabase
+        .from('users')
+        .update(updateData)
+        .eq('gmail_id', gmailId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[UserService] ❌ Update failed:', error);
+        throw error;
+      }
+
+      console.log('[UserService] ✅ Subscription updated successfully!');
+      console.log('[UserService] New status:', data.subscription_status);
+      console.log('[UserService] Profile count:', data.profile_count);
+      console.log('[UserService] End date:', data.subscription_end_date);
+
+      return data;
+    } catch (error) {
+      console.error('[UserService] Error updating subscription:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Delete user and all related data
    */
   async deleteUser(gmailId) {
