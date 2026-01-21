@@ -1245,14 +1245,64 @@ router.post('/verify-payment', async (req, res) => {
       localSubscription = await supabaseSubscriptionService.getSubscriptionByEmail(payment.email);
     }
 
+    // CRITICAL FIX: If no subscription exists, CREATE one
     if (!localSubscription) {
-      console.error('[Payment Verify] ❌ CRITICAL: No subscription found!');
-      console.error('[Payment Verify] Tried: gbpAccountId:', gbpAccountId, 'userId:', userId);
-      // Still return success to user since payment was processed
-      // But log the error for debugging
+      console.log('[Payment Verify] ⚠️ No subscription found - CREATING NEW SUBSCRIPTION');
+      console.log('[Payment Verify] Creating with: gbpAccountId:', gbpAccountId, 'userId:', userId, 'email:', email || payment.email);
+
+      // Generate a unique subscription ID
+      const newSubscriptionId = `sub_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const now = new Date();
+      const endDate = new Date();
+      endDate.setFullYear(endDate.getFullYear() + 1);
+
+      // We need at least userId and email to create a subscription
+      const subEmail = email || payment.email;
+      const subGbpAccountId = gbpAccountId || `gbp_${userId || Date.now()}`; // Generate a placeholder if not provided
+
+      if (!userId && !subEmail) {
+        console.error('[Payment Verify] ❌ Cannot create subscription - no userId or email');
+      } else {
+        try {
+          // Create new subscription directly in Supabase
+          const newSubscription = {
+            id: newSubscriptionId,
+            user_id: userId,
+            gbp_account_id: subGbpAccountId,
+            email: subEmail,
+            status: 'active',
+            plan_id: planId,
+            profile_count: profileCount || 1,
+            paid_slots: profileCount || 1,
+            subscription_start_date: now.toISOString(),
+            subscription_end_date: endDate.toISOString(),
+            razorpay_payment_id: razorpay_payment_id,
+            last_payment_date: now.toISOString(),
+            paid_at: now.toISOString(),
+            created_at: now.toISOString(),
+            updated_at: now.toISOString()
+          };
+
+          const { data, error } = await supabaseSubscriptionService.client
+            .from('subscriptions')
+            .insert(newSubscription)
+            .select()
+            .single();
+
+          if (error) {
+            console.error('[Payment Verify] ❌ Failed to create subscription:', error);
+          } else {
+            console.log('[Payment Verify] ✅ NEW SUBSCRIPTION CREATED:', data.id);
+            localSubscription = supabaseSubscriptionService.formatSubscription ?
+              supabaseSubscriptionService.formatSubscription(data, []) : data;
+          }
+        } catch (createError) {
+          console.error('[Payment Verify] ❌ Error creating subscription:', createError);
+        }
+      }
     }
 
-    if (localSubscription) {
+    if (localSubscription && localSubscription.id) {
       const now = new Date();
       const endDate = new Date();
       endDate.setFullYear(endDate.getFullYear() + 1); // 1 year subscription
