@@ -210,6 +210,58 @@ class SupabaseSubscriptionService {
   }
 
   /**
+   * Update subscription directly by email (most reliable method)
+   * Use this when user_id and gbp_account_id might be NULL
+   */
+  async updateSubscriptionByEmail(email, updates) {
+    try {
+      await this.initialize();
+
+      console.log('[SupabaseSubscriptionService] 🔄 UPDATE BY EMAIL:', email);
+      console.log('[SupabaseSubscriptionService] Updates:', JSON.stringify(updates, null, 2));
+
+      // Map camelCase to snake_case
+      const mappedUpdates = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updates.userId) mappedUpdates.user_id = updates.userId;
+      if (updates.gbpAccountId) mappedUpdates.gbp_account_id = updates.gbpAccountId;
+      if (updates.status) mappedUpdates.status = updates.status;
+      if (updates.planId) mappedUpdates.plan_id = updates.planId;
+      if (updates.profileCount !== undefined) mappedUpdates.profile_count = updates.profileCount;
+      if (updates.paidSlots !== undefined) mappedUpdates.paid_slots = updates.paidSlots;
+      if (updates.subscriptionStartDate) mappedUpdates.subscription_start_date = updates.subscriptionStartDate;
+      if (updates.subscriptionEndDate) mappedUpdates.subscription_end_date = updates.subscriptionEndDate;
+      if (updates.lastPaymentDate) mappedUpdates.last_payment_date = updates.lastPaymentDate;
+      if (updates.razorpayPaymentId) mappedUpdates.razorpay_payment_id = updates.razorpayPaymentId;
+      if (updates.paidAt) mappedUpdates.paid_at = updates.paidAt;
+
+      console.log('[SupabaseSubscriptionService] 📝 Mapped updates:', JSON.stringify(mappedUpdates, null, 2));
+
+      // Update directly by email
+      const { data, error } = await this.client
+        .from('subscriptions')
+        .update(mappedUpdates)
+        .eq('email', email)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[SupabaseSubscriptionService] ❌ UPDATE BY EMAIL FAILED:', error);
+        throw error;
+      }
+
+      console.log('[SupabaseSubscriptionService] ✅ Updated by email. New status:', data.status, 'paid_slots:', data.paid_slots);
+
+      return this.formatSubscription(data, []);
+    } catch (error) {
+      console.error('[SupabaseSubscriptionService] Error updating by email:', error);
+      return null;
+    }
+  }
+
+  /**
    * Get subscription by User ID
    */
   async getSubscriptionByUserId(userId) {

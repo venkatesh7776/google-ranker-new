@@ -1356,15 +1356,67 @@ router.post('/verify-payment', async (req, res) => {
         updateData.email = email;
       }
 
-      const updateResult = await supabaseSubscriptionService.updateSubscriptionById(
-        localSubscription.id,
-        updateData
-      );
+      // CRITICAL FIX: Try multiple update methods to ensure data is saved
+      let updateResult = null;
+      const subEmail = localSubscription.email || email || payment.email;
 
-      console.log('[Payment Verify] Supabase update result:', updateResult ? 'SUCCESS' : 'FAILED');
-      if (updateResult) {
-        console.log('[Payment Verify] ✅ Subscription status updated to:', updateResult.status);
+      // Method 1: Try update by email (most reliable since email exists in DB)
+      if (subEmail) {
+        console.log('[Payment Verify] Attempting update by EMAIL:', subEmail);
+        try {
+          updateResult = await supabaseSubscriptionService.updateSubscriptionByEmail(subEmail, updateData);
+          if (updateResult) {
+            console.log('[Payment Verify] ✅ Update by EMAIL SUCCESS! Status:', updateResult.status);
+          }
+        } catch (emailUpdateError) {
+          console.error('[Payment Verify] ❌ Update by email failed:', emailUpdateError.message);
+        }
       }
+
+      // Method 2: Fallback to update by ID
+      if (!updateResult && localSubscription.id) {
+        console.log('[Payment Verify] Fallback: Attempting update by ID:', localSubscription.id);
+        try {
+          updateResult = await supabaseSubscriptionService.updateSubscriptionById(localSubscription.id, updateData);
+          if (updateResult) {
+            console.log('[Payment Verify] ✅ Update by ID SUCCESS! Status:', updateResult.status);
+          }
+        } catch (idUpdateError) {
+          console.error('[Payment Verify] ❌ Update by ID failed:', idUpdateError.message);
+        }
+      }
+
+      // Method 3: Direct SQL update as last resort
+      if (!updateResult && subEmail) {
+        console.log('[Payment Verify] Last resort: Direct SQL update by email');
+        try {
+          const { data: directUpdate, error: directError } = await supabaseSubscriptionService.client
+            .from('subscriptions')
+            .update({
+              status: 'active',
+              paid_slots: updateData.paidSlots,
+              profile_count: updateData.profileCount,
+              subscription_start_date: updateData.subscriptionStartDate,
+              subscription_end_date: updateData.subscriptionEndDate,
+              razorpay_payment_id: updateData.razorpayPaymentId,
+              paid_at: updateData.paidAt,
+              updated_at: new Date().toISOString()
+            })
+            .eq('email', subEmail)
+            .select();
+
+          if (directError) {
+            console.error('[Payment Verify] ❌ Direct update failed:', directError);
+          } else {
+            console.log('[Payment Verify] ✅ Direct SQL update SUCCESS:', directUpdate);
+            updateResult = directUpdate?.[0];
+          }
+        } catch (directUpdateError) {
+          console.error('[Payment Verify] ❌ Direct update exception:', directUpdateError);
+        }
+      }
+
+      console.log('[Payment Verify] Final update result:', updateResult ? 'SUCCESS' : 'FAILED');
 
       if (updateResult) {
         // Add payment record
