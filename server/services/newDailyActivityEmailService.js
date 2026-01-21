@@ -442,8 +442,8 @@ Upgrade: ${this.appUrl}/dashboard/billing
 
       // Read banner images and convert to base64
       const publicPath = path.join(__dirname, '../../public');
-      const bannerDesktopPath = path.join(publicPath, 'banner_desktop.png');
-      const bannerMobilePath = path.join(publicPath, 'banner_mobile.png');
+      const bannerDesktopPath = path.join(publicPath, 'desktop banner.png');
+      const bannerMobilePath = path.join(publicPath, 'mobile banner.png');
 
       console.log('[NewDailyActivityEmailService] Banner paths:', {
         publicPath,
