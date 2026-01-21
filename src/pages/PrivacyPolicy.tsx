@@ -266,7 +266,7 @@ const PrivacyPolicy = () => {
                 If you have questions or concerns about this Privacy Policy or our data practices, please contact us:
               </p>
               <div className="space-y-2 text-slate-700">
-                <p><strong>Email:</strong> privacy@googleranker.com</p>
+                <p><strong>Email:</strong> privacy@googleranker.io</p>
                 <p><strong>Address:</strong> Google Ranker, Privacy Department, [Your Business Address]</p>
                 <p><strong>Response Time:</strong> We aim to respond to all privacy inquiries within 48 hours.</p>
               </div>
@@ -283,7 +283,7 @@ const PrivacyPolicy = () => {
                 For EU users, you may contact our Data Protection Officer (DPO) regarding any privacy-related matters:
               </p>
               <div className="space-y-2 text-slate-700">
-                <p><strong>DPO Email:</strong> dpo@googleranker.com</p>
+                <p><strong>DPO Email:</strong> dpo@googleranker.io</p>
                 <p><strong>Supervisory Authority:</strong> You have the right to lodge a complaint with your local data protection authority.</p>
               </div>
             </CardContent>

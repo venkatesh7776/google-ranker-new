@@ -7,10 +7,10 @@ class DailyActivityEmailService {
     this.gmailService = gmailService;
     this.disabled = gmailService.disabled;
 
-    this.fromEmail = process.env.GMAIL_USER || 'hello.lobaiseo@gmail.com';
-    this.fromName = 'LOBAISEO Daily Report';
-    this.websiteUrl = 'https://www.lobaiseo.com';
-    this.appUrl = 'https://www.app.lobaiseo.com';
+    this.fromEmail = process.env.GMAIL_USER || 'rankerupdates@gmail.com';
+    this.fromName = 'GoogleRanker Daily Report';
+    this.websiteUrl = 'https://www.googleranker.io';
+    this.appUrl = 'https://www.googleranker.io';
 
     if (!this.disabled) {
       console.log('[DailyActivityEmailService] ✅ Initialized with Gmail SMTP');
@@ -85,7 +85,7 @@ class DailyActivityEmailService {
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1 class="logo">LOBAISEO</h1>
+      <h1 class="logo">GoogleRanker</h1>
       <p class="date">Daily Activity Report • ${today}</p>
     </div>
 
@@ -192,11 +192,11 @@ class DailyActivityEmailService {
       </div>
 
       <p style="margin: 20px 0; font-size: 13px;">
-        © ${new Date().getFullYear()} LOBAISEO. All rights reserved.
+        © ${new Date().getFullYear()} GoogleRanker. All rights reserved.
       </p>
 
       <p style="margin: 10px 0; font-size: 12px; color: #9CA3AF;">
-        You're receiving this daily report because you have an active LOBAISEO account.<br>
+        You're receiving this daily report because you have an active GoogleRanker account.<br>
         <a href="${this.appUrl}/settings" style="color: #9CA3AF; text-decoration: underline;">Manage email preferences</a>
       </p>
     </div>
@@ -206,7 +206,7 @@ class DailyActivityEmailService {
     `;
 
     const text = `
-LOBAISEO Daily Activity Report - ${today}
+GoogleRanker Daily Activity Report - ${today}
 
 Hi ${userName || userEmail}!
 
@@ -226,7 +226,7 @@ ${reviewsReplied.map(review => `- ${review.reviewer} (${review.starRating}⭐) a
 
 View your dashboard: ${this.appUrl}/dashboard
 
-© ${new Date().getFullYear()} LOBAISEO. All rights reserved.
+© ${new Date().getFullYear()} GoogleRanker. All rights reserved.
     `;
 
     return { subject, html, text };
@@ -236,7 +236,7 @@ View your dashboard: ${this.appUrl}/dashboard
    * Generate welcome email template
    */
   generateWelcomeEmail(userName, userEmail) {
-    const subject = '🎉 Welcome to LOBAISEO - Let\'s Get Started!';
+    const subject = '🎉 Welcome to GoogleRanker - Let\'s Get Started!';
 
     const html = `
 <!DOCTYPE html>
@@ -275,7 +275,7 @@ View your dashboard: ${this.appUrl}/dashboard
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1 class="logo">LOBAISEO</h1>
+      <h1 class="logo">GoogleRanker</h1>
       <p class="welcome-text">Welcome Aboard! 🚀</p>
     </div>
 
@@ -284,7 +284,7 @@ View your dashboard: ${this.appUrl}/dashboard
       <h2 class="greeting">Hi ${userName || 'there'}! 👋</h2>
 
       <p class="intro-text">
-        Welcome to LOBAISEO! We're excited to help you automate and optimize your Google Business Profile management.
+        Welcome to GoogleRanker! We're excited to help you automate and optimize your Google Business Profile management.
         Let's get you started on the right foot!
       </p>
 
@@ -333,7 +333,7 @@ View your dashboard: ${this.appUrl}/dashboard
 
       <!-- Features Grid -->
       <h3 style="color: #111827; font-size: 18px; margin: 30px 0 20px 0; text-align: center;">
-        What You Can Do With LOBAISEO
+        What You Can Do With GoogleRanker
       </h3>
 
       <div class="features-grid">
@@ -373,11 +373,11 @@ View your dashboard: ${this.appUrl}/dashboard
       </div>
 
       <p style="margin: 20px 0; font-size: 13px;">
-        © ${new Date().getFullYear()} LOBAISEO. All rights reserved.
+        © ${new Date().getFullYear()} GoogleRanker. All rights reserved.
       </p>
 
       <p style="margin: 10px 0; font-size: 12px; color: #9CA3AF;">
-        You're receiving this email because you just signed up for LOBAISEO.
+        You're receiving this email because you just signed up for GoogleRanker.
       </p>
     </div>
   </div>
@@ -386,11 +386,11 @@ View your dashboard: ${this.appUrl}/dashboard
     `;
 
     const text = `
-Welcome to LOBAISEO! 🎉
+Welcome to GoogleRanker! 🎉
 
 Hi ${userName || 'there'}!
 
-Welcome to LOBAISEO! We're excited to help you automate and optimize your Google Business Profile management.
+Welcome to GoogleRanker! We're excited to help you automate and optimize your Google Business Profile management.
 
 Your Free Trial Has Started!
 Enjoy full access to all premium features for the next 7 days.
@@ -410,7 +410,7 @@ Get started now: ${this.appUrl}/dashboard
 
 Need Help? Reply to this email or visit ${this.websiteUrl}
 
-© ${new Date().getFullYear()} LOBAISEO. All rights reserved.
+© ${new Date().getFullYear()} GoogleRanker. All rights reserved.
     `;
 
     return { subject, html, text };

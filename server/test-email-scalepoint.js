@@ -25,13 +25,13 @@ const emailAddress = 'scalepointstrategy@gmail.com';
 const msg = {
   to: emailAddress,
   from: {
-    email: 'support@lobaiseo.com',
-    name: 'LOBAISEO Support'
+    email: 'rankerupdates@gmail.com',
+    name: 'GoogleRanker Support'
   },
   subject: '🎉 Auto-Posting Test Email - Scale Point Strategy',
   text: `Hi Scale Point Team,
 
-This is a test email from LOBAISEO's automated posting system.
+This is a test email from GoogleRanker's automated posting system.
 
 Your Location Details:
 - Business Name: ${businessName}
@@ -49,7 +49,7 @@ Features Active:
 This email confirms that all email notifications are working correctly for your location.
 
 Best regards,
-LOBAISEO Team`,
+GoogleRanker Team`,
   html: `
 <!DOCTYPE html>
 <html>
@@ -84,7 +84,7 @@ LOBAISEO Team`,
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1 class="logo">LOBAISEO</h1>
+      <h1 class="logo">GoogleRanker</h1>
       <p class="subtitle">Google Business Profile Automation</p>
     </div>
 
@@ -145,22 +145,22 @@ LOBAISEO Team`,
       </p>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="https://www.app.lobaiseo.com/dashboard" class="cta-button">View Dashboard</a>
+        <a href="https://www.googleranker.io/dashboard" class="cta-button">View Dashboard</a>
       </div>
 
       <p class="message" style="font-size: 14px; color: #6B7280;">
         Questions or need support? Reply to this email or visit our
-        <a href="https://www.lobaiseo.com" style="color: #2563EB; text-decoration: none;">website</a>.
+        <a href="https://www.googleranker.io" style="color: #2563EB; text-decoration: none;">website</a>.
       </p>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-      <p style="margin: 10px 0; font-weight: 600; color: #111827;">LOBAISEO - Google Business Profile Automation</p>
-      <p style="margin: 15px 0; font-size: 13px;">© 2025 LOBAISEO. All rights reserved.</p>
+      <p style="margin: 10px 0; font-weight: 600; color: #111827;">GoogleRanker - Google Business Profile Automation</p>
+      <p style="margin: 15px 0; font-size: 13px;">© 2025 GoogleRanker. All rights reserved.</p>
       <p style="font-size: 12px; color: #9CA3AF; margin-top: 15px;">
-        You're receiving this because your business is using LOBAISEO automation.<br>
-        <a href="https://www.app.lobaiseo.com/settings" style="color: #9CA3AF; text-decoration: underline;">Manage preferences</a>
+        You're receiving this because your business is using GoogleRanker automation.<br>
+        <a href="https://www.googleranker.io/settings" style="color: #9CA3AF; text-decoration: underline;">Manage preferences</a>
       </p>
     </div>
   </div>

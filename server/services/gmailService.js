@@ -13,7 +13,7 @@ class GmailService {
   constructor() {
     const gmailUser = process.env.GMAIL_USER;
     const gmailPassword = process.env.GMAIL_APP_PASSWORD;
-    const gmailFromName = process.env.GMAIL_FROM_NAME || 'LOBAISEO';
+    const gmailFromName = process.env.GMAIL_FROM_NAME || 'GoogleRanker';
 
     if (!gmailUser || !gmailPassword) {
       console.warn('[GmailService] ⚠️ Gmail credentials not set - email notifications disabled');
@@ -160,7 +160,7 @@ class GmailService {
               <h2>🎉 Success!</h2>
               <p>Your Gmail SMTP email service is working perfectly!</p>
             </div>
-            <p>This is a test email from LOBAISEO.</p>
+            <p>This is a test email from GoogleRanker.</p>
             <p><strong>Configuration:</strong></p>
             <ul>
               <li>Service: Gmail SMTP</li>

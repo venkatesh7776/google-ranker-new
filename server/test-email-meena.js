@@ -22,13 +22,13 @@ const emailAddress = 'meenakarjale73@gmail.com';
 const msg = {
   to: emailAddress,
   from: {
-    email: 'support@lobaiseo.com',
-    name: 'LOBAISEO Support'
+    email: 'rankerupdates@gmail.com',
+    name: 'GoogleRanker Support'
   },
-  subject: '✅ LOBAISEO Email System Test - All Systems Working',
+  subject: '✅ GoogleRanker Email System Test - All Systems Working',
   text: `Hi Meena,
 
-This is a test email from the LOBAISEO automated posting system.
+This is a test email from the GoogleRanker automated posting system.
 
 Email System Status: ✅ WORKING PERFECTLY
 
@@ -41,7 +41,7 @@ All email notifications are now functioning correctly:
 Your SendGrid integration is active and ready!
 
 Best regards,
-LOBAISEO Team`,
+GoogleRanker Team`,
   html: `
 <!DOCTYPE html>
 <html>
@@ -72,7 +72,7 @@ LOBAISEO Team`,
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1 class="logo">LOBAISEO</h1>
+      <h1 class="logo">GoogleRanker</h1>
       <p class="subtitle">Email System Test</p>
     </div>
 
@@ -89,7 +89,7 @@ LOBAISEO Team`,
       <p class="message">Hi Meena,</p>
 
       <p class="message">
-        Great news! The LOBAISEO email system is now <strong>fully operational</strong> and ready to send automated notifications.
+        Great news! The GoogleRanker email system is now <strong>fully operational</strong> and ready to send automated notifications.
       </p>
 
       <!-- Status Box -->
@@ -136,8 +136,8 @@ LOBAISEO Team`,
 
     <!-- Footer -->
     <div class="footer">
-      <p style="margin: 10px 0; font-weight: 600; color: #111827;">LOBAISEO - Google Business Profile Automation</p>
-      <p style="margin: 15px 0; font-size: 13px;">© 2025 LOBAISEO. All rights reserved.</p>
+      <p style="margin: 10px 0; font-weight: 600; color: #111827;">GoogleRanker - Google Business Profile Automation</p>
+      <p style="margin: 15px 0; font-size: 13px;">© 2025 GoogleRanker. All rights reserved.</p>
       <p style="font-size: 12px; color: #9CA3AF; margin-top: 15px;">
         This is a test email to verify email functionality.<br>
         Sent at: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })} IST
@@ -151,7 +151,7 @@ LOBAISEO Team`,
 
 console.log('📤 Sending test email...');
 console.log(`   To: ${emailAddress}`);
-console.log('   Subject: ✅ LOBAISEO Email System Test - All Systems Working');
+console.log('   Subject: ✅ GoogleRanker Email System Test - All Systems Working');
 console.log('');
 
 try {

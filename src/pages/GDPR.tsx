@@ -200,7 +200,7 @@ const GDPR = () => {
                 To exercise any of your GDPR rights, you can:
               </p>
               <ul className="list-disc list-inside space-y-2 text-slate-700">
-                <li>Email our Data Protection Officer at dpo@googleranker.com</li>
+                <li>Email our Data Protection Officer at dpo@googleranker.io</li>
                 <li>Use the privacy settings in your account dashboard</li>
                 <li>Contact us via our support channels</li>
               </ul>
@@ -226,7 +226,7 @@ const GDPR = () => {
                   </div>
                   <div>
                     <p className="font-bold text-slate-800">Data Protection Officer</p>
-                    <p className="text-violet-600">dpo@googleranker.com</p>
+                    <p className="text-violet-600">dpo@googleranker.io</p>
                   </div>
                 </div>
                 <p className="text-slate-600 text-sm">

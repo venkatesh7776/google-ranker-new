@@ -11,8 +11,8 @@ console.log('========================================\n');
 const apiKey = process.env.SENDGRID_API_KEY;
 
 console.log('SendGrid API Key:', apiKey ? `${apiKey.substring(0, 15)}...` : 'NOT FOUND');
-console.log('From Email:', process.env.SENDGRID_FROM_EMAIL || 'support@lobaiseo.com');
-console.log('From Name:', process.env.SENDGRID_FROM_NAME || 'LOBAISEO Support');
+console.log('From Email:', process.env.SENDGRID_FROM_EMAIL || 'rankerupdates@gmail.com');
+console.log('From Name:', process.env.SENDGRID_FROM_NAME || 'GoogleRanker Support');
 console.log('');
 
 if (!apiKey) {
@@ -27,13 +27,13 @@ sgMail.setApiKey(apiKey);
 const msg = {
   to: 'rajpaulgupta5@gmail.com',
   from: {
-    email: process.env.SENDGRID_FROM_EMAIL || 'support@lobaiseo.com',
-    name: process.env.SENDGRID_FROM_NAME || 'LOBAISEO Support'
+    email: process.env.SENDGRID_FROM_EMAIL || 'rankerupdates@gmail.com',
+    name: process.env.SENDGRID_FROM_NAME || 'GoogleRanker Support'
   },
   subject: '🧪 Test Email - 14 Days Trial Reminder for Scale Point',
   text: `Hi Raja,
 
-This is a test trial reminder email from LOBAISEO for your location:
+This is a test trial reminder email from GoogleRanker for your location:
 Scale Point Strategy & Business Growth Solutions
 
 You have 14 days remaining in your trial.
@@ -41,7 +41,7 @@ You have 14 days remaining in your trial.
 This email confirms that the autoposting system email functionality is working correctly.
 
 Best regards,
-LOBAISEO Team`,
+GoogleRanker Team`,
   html: `
 <!DOCTYPE html>
 <html>
@@ -72,7 +72,7 @@ LOBAISEO Team`,
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1 class="logo">LOBAISEO</h1>
+      <h1 class="logo">GoogleRanker</h1>
       <p class="subtitle">Google Business Profile Automation</p>
     </div>
 
@@ -94,7 +94,7 @@ LOBAISEO Team`,
       </p>
 
       <p class="message">
-        Make the most of your LOBAISEO automation features including:
+        Make the most of your GoogleRanker automation features including:
       </p>
 
       <!-- Features -->
@@ -121,17 +121,17 @@ LOBAISEO Team`,
       </div>
 
       <div style="text-align: center; margin: 30px 0;">
-        <a href="https://www.app.lobaiseo.com/billing" class="cta-button">View Upgrade Options</a>
+        <a href="https://www.googleranker.io/billing" class="cta-button">View Upgrade Options</a>
       </div>
 
       <p class="message" style="font-size: 14px; color: #6B7280;">
-        Questions? Reply to this email or visit our <a href="https://www.lobaiseo.com" style="color: #2563EB;">website</a> for more information.
+        Questions? Reply to this email or visit our <a href="https://www.googleranker.io" style="color: #2563EB;">website</a> for more information.
       </p>
     </div>
 
     <!-- Footer -->
     <div class="footer">
-      <p style="margin: 10px 0;">© 2025 LOBAISEO. All rights reserved.</p>
+      <p style="margin: 10px 0;">© 2025 GoogleRanker. All rights reserved.</p>
       <p style="font-size: 12px; color: #9CA3AF; margin-top: 15px;">
         This is a test email confirming email functionality is working.<br>
         Location ID: 14977377147025961194

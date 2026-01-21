@@ -64,10 +64,10 @@ const Careers = () => {
                   <p className="text-slate-600 mb-4">
                     Want to be notified when positions open up? Drop us an email with your resume.
                   </p>
-                  <a href="mailto:careers@googleranker.com">
+                  <a href="mailto:careers@googleranker.io">
                     <Button className="bg-gradient-to-r from-violet-600 to-fuchsia-600 hover:from-violet-700 hover:to-fuchsia-700">
                       <Mail className="h-4 w-4 mr-2" />
-                      careers@googleranker.com
+                      careers@googleranker.io
                     </Button>
                   </a>
                 </div>

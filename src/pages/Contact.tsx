@@ -38,7 +38,7 @@ const Contact = () => {
     {
       icon: Mail,
       title: 'Email Us',
-      value: 'support@googleranker.com',
+      value: 'support@googleranker.io',
       description: 'We reply within 24 hours'
     },
     {

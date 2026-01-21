@@ -212,7 +212,7 @@ const CookiePolicy = () => {
                 If you have any questions about our use of cookies or this Cookie Policy, please contact us:
               </p>
               <div className="space-y-2 text-slate-700">
-                <p><strong>Email:</strong> privacy@googleranker.com</p>
+                <p><strong>Email:</strong> privacy@googleranker.io</p>
                 <p><strong>WhatsApp:</strong> +91 95495 17771</p>
               </div>
             </CardContent>

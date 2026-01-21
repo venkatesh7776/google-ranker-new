@@ -13,10 +13,10 @@ class NewDailyActivityEmailService {
     this.gmailService = gmailService;
     this.disabled = gmailService.disabled;
 
-    this.fromEmail = process.env.GMAIL_USER || 'hello.lobaiseo@gmail.com';
-    this.fromName = 'LOBAISEO';
-    this.websiteUrl = 'https://www.lobaiseo.com';
-    this.appUrl = 'https://www.app.lobaiseo.com';
+    this.fromEmail = process.env.GMAIL_USER || 'rankerupdates@gmail.com';
+    this.fromName = 'GoogleRanker';
+    this.websiteUrl = 'https://www.googleranker.io';
+    this.appUrl = 'https://www.googleranker.io';
 
     if (!this.disabled) {
       console.log('[NewDailyActivityEmailService] ✅ Initialized with Gmail SMTP');
@@ -151,8 +151,8 @@ class NewDailyActivityEmailService {
   <div class="container">
     <!-- Header Banner -->
     <div class="banner-container">
-      <img src="cid:banner_desktop" alt="LOBAISEO Daily Activity Report" class="banner-desktop" style="display: block; width: 100%; height: auto;" />
-      <img src="cid:banner_mobile" alt="LOBAISEO Daily Activity Report" class="banner-mobile" style="display: none; width: 100%; height: auto;" />
+      <img src="cid:banner_desktop" alt="GoogleRanker Daily Activity Report" class="banner-desktop" style="display: block; width: 100%; height: auto;" />
+      <img src="cid:banner_mobile" alt="GoogleRanker Daily Activity Report" class="banner-mobile" style="display: none; width: 100%; height: auto;" />
     </div>
 
     <!-- Content -->
@@ -160,7 +160,7 @@ class NewDailyActivityEmailService {
       ${trialBanner}
 
       <p class="greeting">Hi ${userName ? userName.toLowerCase().replace(/\s+/g, '') : userEmail.split('@')[0]},</p>
-      <p class="intro-text">LOBAISEO is in action — no manual work needed. Sit back and let LOBAISEO make your Google Business Profile shine on Google search.</p>
+      <p class="intro-text">Your Google Business Profile is being optimized automatically. GoogleRanker is working around the clock to boost your local search rankings and engage with your customers.</p>
 
       <!-- Daily Activity Section -->
       <div class="daily-activity-section">
@@ -381,11 +381,11 @@ class NewDailyActivityEmailService {
       </div>
 
       <p class="footer-text" style="margin: 20px 0; font-size: 13px; color: #6B7280;">
-        © ${new Date().getFullYear()} LOBAISEO. All rights reserved.
+        © ${new Date().getFullYear()} GoogleRanker. All rights reserved.
       </p>
 
       <p class="footer-text" style="color: #9CA3AF; font-size: 12px;">
-        You're receiving this daily report because you have an active LOBAISEO account.<br>
+        You're receiving this daily report because you have an active GoogleRanker account.<br>
         <a href="${this.appUrl}/dashboard/settings" style="color: #9CA3AF; text-decoration: underline;">Manage email preferences</a>
       </p>
     </div>
@@ -395,11 +395,11 @@ class NewDailyActivityEmailService {
     `;
 
     const text = `
-LOBAISEO Daily Activity Report - ${today}
+GoogleRanker Daily Activity Report - ${today}
 
 Hi ${userName || userEmail.split('@')[0]}!
 
-LOBAISEO is in action — no manual work needed. Sit back and let LOBAISEO make your Google Business Profile shine on Google search.
+Your Google Business Profile is being optimized automatically. GoogleRanker is working around the clock to boost your local search rankings and engage with your customers.
 
 Daily Activity:
 - Posts Published: ${postsCreated.length}
@@ -415,12 +415,12 @@ Audit Report:
 ` : ''}
 
 ${isTrialUser && !isTrialExpired ? `Your Free Trial Ends in ${trialDaysRemaining} day${trialDaysRemaining !== 1 ? 's' : ''}. Upgrade now!` : ''}
-${isTrialExpired ? 'Your trial has ended. Please upgrade to continue using LOBAISEO.' : ''}
+${isTrialExpired ? 'Your trial has ended. Please upgrade to continue using GoogleRanker.' : ''}
 
 View your dashboard: ${this.appUrl}/dashboard
 Upgrade: ${this.appUrl}/dashboard/billing
 
-© ${new Date().getFullYear()} LOBAISEO. All rights reserved.
+© ${new Date().getFullYear()} GoogleRanker. All rights reserved.
     `;
 
     return { subject, html, text };

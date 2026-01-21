@@ -180,7 +180,7 @@ export const MandateSetup: React.FC<MandateSetupProps> = ({
         key: razorpayKeyId,
         amount: order.amount,
         currency: order.currency,
-        name: 'LOBAISEO',
+        name: 'GoogleRanker',
         description: 'Auto-payment setup - You will be charged ₹2 for authorization',
         order_id: order.id,
         recurring: '1', // Enable recurring payments

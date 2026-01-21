@@ -371,7 +371,7 @@ const TermsOfService = () => {
                 If you have questions about these Terms of Service, please contact us:
               </p>
               <div className="space-y-2 text-slate-700">
-                <p><strong>Email:</strong> legal@googleranker.com</p>
+                <p><strong>Email:</strong> legal@googleranker.io</p>
                 <p><strong>Support:</strong> Support@googleranker.io</p>
                 <p><strong>Address:</strong> Google Ranker, Legal Department, [Your Business Address]</p>
               </div>

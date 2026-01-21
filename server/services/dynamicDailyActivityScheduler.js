@@ -2,6 +2,7 @@ import cron from 'node-cron';
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { createClient } from '@supabase/supabase-js';
 import newDailyActivityEmailService from './newDailyActivityEmailService.js';
 import supabaseSubscriptionService from './supabaseSubscriptionService.js';
 import supabaseAuditService from './supabaseAuditService.js';
@@ -9,6 +10,11 @@ import supabaseTokenStorage from './supabaseTokenStorage.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
+
+// Initialize Supabase client directly for reliable data access
+const supabaseUrl = process.env.SUPABASE_URL;
+const supabaseKey = process.env.SUPABASE_SERVICE_KEY;
+const supabase = supabaseUrl && supabaseKey ? createClient(supabaseUrl, supabaseKey) : null;
 
 /**
  * Dynamic Daily Activity Scheduler
@@ -64,7 +70,8 @@ class DynamicDailyActivityScheduler {
   }
 
   /**
-   * Get user activity data from Supabase automation_logs table
+   * Get user activity data from Supabase
+   * Checks both automation_logs AND automation_post_history/automation_reply_history tables
    */
   async getUserActivityData(userId, timeframe = 'today') {
     try {
@@ -79,7 +86,10 @@ class DynamicDailyActivityScheduler {
         startDate = new Date(now.setDate(now.getDate() - 7));
       }
 
-      // Fetch posts created from automation_logs table
+      let postsCreated = [];
+      let reviewsReplied = [];
+
+      // Try automation_logs table first
       const { data: postsData, error: postsError } = await supabaseAuditService.client
         .from('automation_logs')
         .select('*')
@@ -88,11 +98,35 @@ class DynamicDailyActivityScheduler {
         .eq('status', 'success')
         .gte('created_at', startDate.toISOString());
 
-      if (postsError) {
-        console.error('[DynamicDailyActivityScheduler] Error fetching posts:', postsError);
+      if (!postsError && postsData && postsData.length > 0) {
+        postsCreated = postsData.map(log => ({
+          postId: log.details?.postId || '',
+          content: log.details?.content || '',
+          timestamp: log.created_at,
+          locationId: log.location_id
+        }));
       }
 
-      // Fetch reviews replied from automation_logs table
+      // If no posts in automation_logs, try automation_post_history table
+      if (postsCreated.length === 0) {
+        const { data: postHistoryData, error: postHistoryError } = await supabaseAuditService.client
+          .from('automation_post_history')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'success')
+          .gte('created_at', startDate.toISOString());
+
+        if (!postHistoryError && postHistoryData) {
+          postsCreated = postHistoryData.map(log => ({
+            postId: log.id || '',
+            content: log.post_content || log.post_summary || '',
+            timestamp: log.created_at,
+            locationId: log.location_id
+          }));
+        }
+      }
+
+      // Try automation_logs for reviews
       const { data: reviewsData, error: reviewsError } = await supabaseAuditService.client
         .from('automation_logs')
         .select('*')
@@ -101,25 +135,35 @@ class DynamicDailyActivityScheduler {
         .eq('status', 'success')
         .gte('created_at', startDate.toISOString());
 
-      if (reviewsError) {
-        console.error('[DynamicDailyActivityScheduler] Error fetching reviews:', reviewsError);
+      if (!reviewsError && reviewsData && reviewsData.length > 0) {
+        reviewsReplied = reviewsData.map(log => ({
+          reviewId: log.review_id || log.details?.reviewId || '',
+          replyText: log.details?.replyText || '',
+          rating: log.details?.rating || 0,
+          timestamp: log.created_at,
+          locationId: log.location_id
+        }));
       }
 
-      // Format the data to match expected structure
-      const postsCreated = (postsData || []).map(log => ({
-        postId: log.details?.postId || '',
-        content: log.details?.content || '',
-        timestamp: log.created_at,
-        locationId: log.location_id
-      }));
+      // If no reviews in automation_logs, try automation_reply_history table
+      if (reviewsReplied.length === 0) {
+        const { data: replyHistoryData, error: replyHistoryError } = await supabaseAuditService.client
+          .from('automation_reply_history')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('status', 'success')
+          .gte('created_at', startDate.toISOString());
 
-      const reviewsReplied = (reviewsData || []).map(log => ({
-        reviewId: log.review_id || log.details?.reviewId || '',
-        replyText: log.details?.replyText || '',
-        rating: log.details?.rating || 0,
-        timestamp: log.created_at,
-        locationId: log.location_id
-      }));
+        if (!replyHistoryError && replyHistoryData) {
+          reviewsReplied = replyHistoryData.map(log => ({
+            reviewId: log.review_id || '',
+            replyText: log.reply_content || '',
+            rating: log.review_rating || 0,
+            timestamp: log.created_at,
+            locationId: log.location_id
+          }));
+        }
+      }
 
       console.log(`[DynamicDailyActivityScheduler] 📊 Fetched activity for ${userId}:`, {
         postsCreated: postsCreated.length,
@@ -231,91 +275,186 @@ class DynamicDailyActivityScheduler {
 
   /**
    * Send daily activity email for a single user
+   * Updated to use user_locations table for real data
    */
   async sendUserDailyReport(subscription) {
     try {
       const userId = subscription.user_id || subscription.userId;
       const email = subscription.email;
-      const gbpAccountId = subscription.gbp_account_id || subscription.gbpAccountId;
+      const status = (subscription.status || 'trial').trim();
 
-      console.log(`[DynamicDailyActivityScheduler] 📧 Sending daily email to ${email} (Status: ${subscription.status})`);
+      console.log(`[DynamicDailyActivityScheduler] 📧 Processing ${email} (Status: ${status})`);
 
-      // 🔧 REMOVED shouldSendEmail() check - Cron ONLY runs at 6 PM daily
-      // No timing issues - guaranteed to send at EXACTLY 6 PM every day
-      console.log(`[DynamicDailyActivityScheduler] ✅ Email will be sent - no blocking checks`);
+      // Get real activity data from user_locations table
+      const activityData = await this.getUserActivityFromLocations(email);
 
-      // Determine if user is in trial
-      const isTrialUser = this.isUserInTrial(subscription);
-      const isTrialExpired = this.isTrialExpired(subscription);
-      const trialDaysRemaining = this.calculateTrialDaysRemaining(
-        subscription.trial_end_date || subscription.trialEndDate
-      );
+      // Determine subscription status
+      let isTrialUser = false;
+      let isExpiredTrial = false;
+      let isSubscribed = false;
+      let daysRemaining = 0;
 
-      // 🔍 DEBUG: Log trial status determination
-      console.log(`[DynamicDailyActivityScheduler] 🔍 Trial status for ${email}:`, {
-        subscriptionStatus: subscription.status,
-        isTrialUser: isTrialUser,
-        isTrialExpired: isTrialExpired,
-        trialDaysRemaining: trialDaysRemaining,
-        willShowUpgradeButton: isTrialUser && !isTrialExpired
+      if (status === 'trial' && subscription.trial_end_date) {
+        const endDate = new Date(subscription.trial_end_date);
+        daysRemaining = Math.ceil((endDate - new Date()) / (1000 * 60 * 60 * 24));
+
+        if (daysRemaining > 0) {
+          isTrialUser = true;
+        } else {
+          isExpiredTrial = true;
+          daysRemaining = 0;
+        }
+      } else if (status === 'expired') {
+        isExpiredTrial = true;
+      } else if (status === 'active' || status === 'admin') {
+        isSubscribed = true;
+      }
+
+      // Get user name (from display_name or business name or email)
+      const userName = subscription.display_name || activityData.businessName || email.split('@')[0];
+
+      console.log(`[DynamicDailyActivityScheduler] 📊 ${email}:`, {
+        status,
+        isTrialUser,
+        isExpiredTrial,
+        isSubscribed,
+        daysRemaining,
+        postsCount: activityData.postsCount,
+        locationsCount: activityData.locationsCount,
+        banner: isExpiredTrial ? '🔴 EXPIRED' : isTrialUser ? '🟡 TRIAL' : '✅ SUBSCRIBED'
       });
 
-      // Get user name from email (you could also store this in subscriptions table)
-      const userName = email.split('@')[0];
-
-      // Fetch real activity data
-      const timeframe = subscription.status === 'trial' ? 'today' : 'week';
-      const activityData = await this.getUserActivityData(userId, timeframe);
-
-      // Add locations count
-      const locationsCount = await this.getUserLocationsCount(gbpAccountId);
-      activityData.locations = Array(locationsCount).fill({ id: 'location', name: 'Location' });
-
-      // Fetch real audit data
-      const auditData = await this.getUserAuditData(userId);
-
-      // Prepare user data
+      // Prepare user data for email template
       const userData = {
         userName: userName,
         userEmail: email,
         isTrialUser: isTrialUser,
-        trialDaysRemaining: trialDaysRemaining,
-        isTrialExpired: isTrialExpired
+        trialDaysRemaining: daysRemaining,
+        isTrialExpired: isExpiredTrial
       };
 
-      console.log(`[DynamicDailyActivityScheduler] 📊 Sending email to ${email}:`, {
-        status: subscription.status,
-        isTrialUser,
-        trialDaysRemaining,
-        postsCreated: activityData.postsCreated.length,
-        reviewsReplied: activityData.reviewsReplied.length,
-        locations: activityData.locations.length,
-        hasAuditData: !!auditData
-      });
+      // Format activity data for email service
+      const formattedActivityData = {
+        postsCreated: Array(activityData.postsCount).fill({ postId: '', content: '', timestamp: new Date() }),
+        reviewsReplied: Array(activityData.reviewsCount).fill({ reviewId: '', replyText: '', rating: 5 }),
+        locations: Array(activityData.locationsCount).fill({ id: 'location', name: 'Location' })
+      };
 
-      // Send email
+      // Send email using the email service
       const result = await newDailyActivityEmailService.sendDailyReport(
         email,
         userData,
-        activityData,
-        auditData
+        formattedActivityData,
+        null // No audit data for now
       );
 
       if (result.success) {
-        // Update email tracking (for logging only, not for blocking)
         this.emailTracking.set(userId, new Date());
-        console.log(`[DynamicDailyActivityScheduler] ✅ Email successfully sent to ${email} at ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })}`);
+        console.log(`[DynamicDailyActivityScheduler] ✅ Email sent to ${email}`);
       } else {
-        console.error(`[DynamicDailyActivityScheduler] ❌ Failed to send email to ${email}:`, result.error);
+        console.error(`[DynamicDailyActivityScheduler] ❌ Failed: ${email} - ${result.error}`);
       }
 
       return result;
     } catch (error) {
-      console.error('[DynamicDailyActivityScheduler] ❌ Error sending email:', error);
+      console.error(`[DynamicDailyActivityScheduler] ❌ Exception for ${subscription.email}:`, error.message);
       return {
         success: false,
         error: error.message
       };
+    }
+  }
+
+  /**
+   * Get all users from the users table (PRIMARY SOURCE)
+   * This is more reliable than subscriptions table
+   */
+  async getAllUsersFromDatabase() {
+    try {
+      if (!supabase) {
+        console.error('[DynamicDailyActivityScheduler] ❌ Supabase not initialized');
+        return [];
+      }
+
+      // Get all users from users table
+      const { data: users, error } = await supabase
+        .from('users')
+        .select('gmail_id, display_name, subscription_status, trial_start_date, trial_end_date')
+        .not('gmail_id', 'is', null);
+
+      if (error) {
+        console.error('[DynamicDailyActivityScheduler] ❌ Error fetching users:', error);
+        return [];
+      }
+
+      console.log(`[DynamicDailyActivityScheduler] 📋 Found ${users?.length || 0} users in database`);
+
+      // Format users to match subscription format
+      return (users || []).map(user => ({
+        user_id: user.gmail_id,
+        email: user.gmail_id,
+        status: (user.subscription_status || 'trial').trim(),
+        trial_start_date: user.trial_start_date,
+        trial_end_date: user.trial_end_date,
+        display_name: user.display_name
+      }));
+    } catch (error) {
+      console.error('[DynamicDailyActivityScheduler] ❌ Exception fetching users:', error);
+      return [];
+    }
+  }
+
+  /**
+   * Get user activity data from user_locations table (PRIMARY SOURCE)
+   * This is more reliable than automation_logs
+   */
+  async getUserActivityFromLocations(userEmail) {
+    try {
+      if (!supabase) return { postsCount: 0, reviewsCount: 0, locationsCount: 1, businessName: userEmail.split('@')[0] };
+
+      const today = new Date();
+      today.setUTCHours(0, 0, 0, 0);
+
+      const { data: userLocations, error } = await supabase
+        .from('user_locations')
+        .select('*')
+        .eq('gmail_id', userEmail);
+
+      if (error) {
+        console.log(`[DynamicDailyActivityScheduler] ⚠️ Error fetching locations: ${error.message}`);
+        return { postsCount: 0, reviewsCount: 0, locationsCount: 1, businessName: userEmail.split('@')[0] };
+      }
+
+      let postsCount = 0;
+      let reviewsCount = 0;
+      let locationsCount = userLocations?.length || 1;
+      let totalPostsAllTime = 0;
+      let businessName = userEmail.split('@')[0];
+
+      if (userLocations && userLocations.length > 0) {
+        for (const loc of userLocations) {
+          totalPostsAllTime += loc.total_posts_created || 0;
+
+          // Check if post was made today
+          if (loc.last_post_date && loc.last_post_success) {
+            const lastPost = new Date(loc.last_post_date);
+            lastPost.setUTCHours(0, 0, 0, 0);
+            if (lastPost.getTime() === today.getTime()) {
+              postsCount++;
+            }
+          }
+
+          // Get business name
+          if (loc.business_name && loc.business_name !== 'Business') {
+            businessName = loc.business_name;
+          }
+        }
+      }
+
+      return { postsCount, reviewsCount, locationsCount, totalPostsAllTime, businessName };
+    } catch (error) {
+      console.error('[DynamicDailyActivityScheduler] ❌ Exception fetching locations:', error);
+      return { postsCount: 0, reviewsCount: 0, locationsCount: 1, businessName: userEmail.split('@')[0] };
     }
   }
 
@@ -325,10 +464,19 @@ class DynamicDailyActivityScheduler {
   async sendAllDailyReports() {
     try {
       console.log('[DynamicDailyActivityScheduler] 🚀 Starting daily email batch...');
+      console.log(`[DynamicDailyActivityScheduler] ⏰ Current time: ${new Date().toLocaleString('en-US', { timeZone: 'Asia/Kolkata' })} IST`);
 
-      // Load all subscriptions from Supabase
-      const subscriptions = await supabaseSubscriptionService.getAllSubscriptions();
-      console.log(`[DynamicDailyActivityScheduler] Found ${subscriptions.length} subscriptions`);
+      // Load all users from users table (PRIMARY SOURCE)
+      const users = await this.getAllUsersFromDatabase();
+
+      // Fallback to subscriptions if users table is empty
+      let subscriptions = users;
+      if (!users || users.length === 0) {
+        console.log('[DynamicDailyActivityScheduler] ⚠️ No users in users table, trying subscriptions...');
+        subscriptions = await supabaseSubscriptionService.getAllSubscriptions();
+      }
+
+      console.log(`[DynamicDailyActivityScheduler] Found ${subscriptions.length} users to email`);
 
       const results = {
         total: subscriptions.length,

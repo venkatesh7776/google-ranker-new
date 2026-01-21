@@ -77,7 +77,7 @@ class Config {
       GEMINI_API_KEY: process.env.GEMINI_API_KEY || '',
       GEMINI_MODEL: 'gemini-2.0-flash',  // Using 2.0-flash (1.5 is deprecated)
       FIREBASE_PROJECT_ID: 'gmb-automation-474209-549ee',
-      RAZORPAY_WEBHOOK_SECRET: 'gmb_boost_pro_webhook_secret_2024'
+      RAZORPAY_WEBHOOK_SECRET: 'googleranker_webhook_secret_2024'
     };
 
     let defaultsApplied = 0;

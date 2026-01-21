@@ -6,10 +6,10 @@ class TrialEmailService {
     this.gmailService = gmailService;
     this.disabled = gmailService.disabled;
 
-    this.fromEmail = process.env.GMAIL_USER || 'hello.lobaiseo@gmail.com';
-    this.fromName = 'LOBAISEO Support';
-    this.websiteUrl = 'https://www.lobaiseo.com';
-    this.appUrl = 'https://www.app.lobaiseo.com';
+    this.fromEmail = process.env.GMAIL_USER || 'rankerupdates@gmail.com';
+    this.fromName = 'GoogleRanker Support';
+    this.websiteUrl = 'https://www.googleranker.io';
+    this.appUrl = 'https://www.googleranker.io';
 
     if (!this.disabled) {
       console.log('[TrialEmailService] ✅ Initialized with Gmail SMTP');
@@ -25,25 +25,25 @@ class TrialEmailService {
     let subject, heading, message, ctaText, urgencyColor;
 
     if (emailType === 'expired') {
-      subject = '⏰ Your LOBAISEO Trial Has Expired - Upgrade Now!';
+      subject = '⏰ Your GoogleRanker Trial Has Expired - Upgrade Now!';
       heading = 'Your Trial Has Ended';
       message = `Your free trial expired on ${trialEndDate}. Don't lose access to your Google Business Profile automation! Upgrade now to continue managing your reviews, posts, and insights seamlessly.`;
       ctaText = 'Upgrade Now';
       urgencyColor = '#DC2626'; // Red
     } else if (daysRemaining === 1) {
-      subject = '⚠️ Last Day of Your LOBAISEO Trial!';
+      subject = '⚠️ Last Day of Your GoogleRanker Trial!';
       heading = 'Your Trial Ends Today!';
       message = `This is your last day to enjoy all premium features! Your trial expires in less than 24 hours. Upgrade now to keep your Google Business Profile automation running smoothly.`;
       ctaText = 'Upgrade Before It\'s Too Late';
       urgencyColor = '#DC2626'; // Red
     } else if (daysRemaining <= 3) {
-      subject = `⏰ Only ${daysRemaining} Days Left on Your LOBAISEO Trial`;
+      subject = `⏰ Only ${daysRemaining} Days Left on Your GoogleRanker Trial`;
       heading = `${daysRemaining} Days Remaining`;
       message = `Your trial ends on ${trialEndDate}. Time is running out! Upgrade now to continue automating your Google Business Profile reviews, posts, and more without interruption.`;
       ctaText = 'Upgrade Now';
       urgencyColor = '#EA580C'; // Orange
     } else {
-      subject = `🚀 ${daysRemaining} Days Left in Your LOBAISEO Trial`;
+      subject = `🚀 ${daysRemaining} Days Left in Your GoogleRanker Trial`;
       heading = `${daysRemaining} Days to Go`;
       message = `Your trial ends on ${trialEndDate}. Make the most of your remaining time and upgrade to unlock unlimited automation for your Google Business Profile!`;
       ctaText = 'View Upgrade Options';
@@ -85,7 +85,7 @@ class TrialEmailService {
   <div class="container">
     <!-- Header -->
     <div class="header">
-      <h1 class="logo">LOBAISEO</h1>
+      <h1 class="logo">GoogleRanker</h1>
       <p style="color: rgba(255,255,255,0.9); margin: 10px 0 0 0; font-size: 16px;">Google Business Profile Automation</p>
     </div>
 
@@ -148,11 +148,11 @@ class TrialEmailService {
       </div>
 
       <p style="margin: 20px 0; font-size: 13px;">
-        © ${new Date().getFullYear()} LOBAISEO. All rights reserved.
+        © ${new Date().getFullYear()} GoogleRanker. All rights reserved.
       </p>
 
       <p style="margin: 10px 0; font-size: 12px; color: #9CA3AF;">
-        You're receiving this email because you have an active trial with LOBAISEO.<br>
+        You're receiving this email because you have an active trial with GoogleRanker.<br>
         <a href="${this.appUrl}/settings" style="color: #9CA3AF; text-decoration: underline;">Manage email preferences</a>
       </p>
     </div>
@@ -160,7 +160,7 @@ class TrialEmailService {
 </body>
 </html>
       `,
-      text: `${heading}\n\nHi ${userName || 'there'},\n\n${message}\n\nUpgrade now: ${this.appUrl}/billing\n\nQuestions? Reply to this email or visit ${this.websiteUrl}\n\n© ${new Date().getFullYear()} LOBAISEO. All rights reserved.`
+      text: `${heading}\n\nHi ${userName || 'there'},\n\n${message}\n\nUpgrade now: ${this.appUrl}/billing\n\nQuestions? Reply to this email or visit ${this.websiteUrl}\n\n© ${new Date().getFullYear()} GoogleRanker. All rights reserved.`
     };
   }
 
@@ -209,8 +209,8 @@ class TrialEmailService {
       // Use Gmail SMTP to send test email
       const response = await this.gmailService.sendEmail({
         to: userEmail,
-        subject: '✅ LOBAISEO Email System Test',
-        text: 'This is a test email from LOBAISEO trial reminder system. If you received this, the email system is working correctly!',
+        subject: '✅ GoogleRanker Email System Test',
+        text: 'This is a test email from GoogleRanker trial reminder system. If you received this, the email system is working correctly!',
         html: `
 <!DOCTYPE html>
 <html>
@@ -226,13 +226,13 @@ class TrialEmailService {
 </head>
 <body>
   <div class="header">
-    <h1 style="margin: 0;">LOBAISEO</h1>
+    <h1 style="margin: 0;">GoogleRanker</h1>
     <p style="margin: 10px 0 0 0;">Email System Test</p>
   </div>
   <div class="content">
     <div class="success-badge">✅ Test Successful</div>
     <h2>Email System is Working!</h2>
-    <p>This is a test email from LOBAISEO trial reminder system.</p>
+    <p>This is a test email from GoogleRanker trial reminder system.</p>
     <p>If you received this email, it means:</p>
     <ul>
       <li>✅ Gmail SMTP is configured correctly</li>

@@ -554,6 +554,51 @@ class SupabaseAutomationService {
       return [];
     }
   }
+
+  /**
+   * Log automation activity to automation_logs table
+   * Used for tracking posts created, reviews replied, etc.
+   * @param {string} userId - User's Gmail ID or user ID
+   * @param {string} locationId - GBP Location ID
+   * @param {string} actionType - Type of action: 'post_created', 'post_failed', 'review_replied', 'reply_failed'
+   * @param {string|null} reviewId - Review ID (for review-related actions)
+   * @param {string} status - 'success' or 'failed'
+   * @param {object} details - Additional details as JSON
+   * @param {string|null} errorMessage - Error message if failed
+   */
+  async logActivity(userId, locationId, actionType, reviewId = null, status = 'success', details = {}, errorMessage = null) {
+    try {
+      console.log(`[SupabaseAutomationService] 📝 Logging activity: ${actionType} for ${userId}, location: ${locationId}`);
+
+      const logEntry = {
+        user_id: userId,
+        location_id: locationId,
+        action_type: actionType,
+        review_id: reviewId,
+        status: status,
+        details: details,
+        error_message: errorMessage,
+        created_at: new Date().toISOString()
+      };
+
+      const { data, error } = await this.client
+        .from('automation_logs')
+        .insert(logEntry)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[SupabaseAutomationService] ❌ Error logging activity:', error);
+        return false;
+      }
+
+      console.log(`[SupabaseAutomationService] ✅ Activity logged: ${actionType} (ID: ${data?.id})`);
+      return true;
+    } catch (error) {
+      console.error('[SupabaseAutomationService] ❌ Exception logging activity:', error);
+      return false;
+    }
+  }
 }
 
 const supabaseAutomationService = new SupabaseAutomationService();

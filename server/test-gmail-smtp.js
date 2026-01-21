@@ -11,7 +11,7 @@ async function testGmailSMTP() {
   try {
     console.log('Configuration:');
     console.log(`   Gmail User: ${process.env.GMAIL_USER}`);
-    console.log(`   Gmail From Name: ${process.env.GMAIL_FROM_NAME || 'LOBAISEO'}`);
+    console.log(`   Gmail From Name: ${process.env.GMAIL_FROM_NAME || 'GoogleRanker'}`);
     console.log(`   App Password: ${process.env.GMAIL_APP_PASSWORD ? '✅ Set' : '❌ Not set'}`);
     console.log('');
 
