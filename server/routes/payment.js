@@ -1164,7 +1164,9 @@ router.post('/verify-payment', async (req, res) => {
 
       // Update existing subscription
       console.log('[Payment Verify] Found subscription:', localSubscription.id);
-      console.log('[Payment Verify] Using gbpAccountId:', localSubscription.gbpAccountId);
+      console.log('[Payment Verify] gbpAccountId:', localSubscription.gbpAccountId);
+      console.log('[Payment Verify] userId:', localSubscription.userId);
+      console.log('[Payment Verify] email:', localSubscription.email);
 
       // Calculate new paid slots (add to existing if any)
       const existingPaidSlots = localSubscription.paidSlots || 0;
@@ -1176,8 +1178,10 @@ router.post('/verify-payment', async (req, res) => {
         newTotal: newPaidSlots
       });
 
-      const updateResult = await supabaseSubscriptionService.updateSubscription(
-        localSubscription.gbpAccountId,
+      // CRITICAL FIX: Update by subscription ID directly instead of gbpAccountId
+      // This ensures we update the exact subscription we found, even if gbpAccountId is null
+      const updateResult = await supabaseSubscriptionService.updateSubscriptionById(
+        localSubscription.id,
         {
           status: 'active',
           planId: planId,
@@ -1192,6 +1196,9 @@ router.post('/verify-payment', async (req, res) => {
       );
 
       console.log('[Payment Verify] Supabase update result:', updateResult ? 'SUCCESS' : 'FAILED');
+      if (updateResult) {
+        console.log('[Payment Verify] ✅ Subscription status updated to:', updateResult.status);
+      }
 
       if (updateResult) {
         // Add payment record

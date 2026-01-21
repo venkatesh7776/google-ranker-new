@@ -591,6 +591,82 @@ class SupabaseSubscriptionService {
   }
 
   /**
+   * Update subscription by ID directly (more reliable than by gbpAccountId)
+   * Use this when you have the exact subscription ID you want to update
+   */
+  async updateSubscriptionById(subscriptionId, updates) {
+    try {
+      await this.initialize();
+
+      console.log('[SupabaseSubscriptionService] 🔄 UPDATE BY ID REQUEST:', {
+        subscriptionId,
+        updates: {
+          status: updates.status,
+          paidSlots: updates.paidSlots,
+          profileCount: updates.profileCount,
+          planId: updates.planId
+        }
+      });
+
+      // Map camelCase to snake_case
+      const mappedUpdates = {
+        updated_at: new Date().toISOString()
+      };
+
+      if (updates.status) mappedUpdates.status = updates.status;
+      if (updates.planId) mappedUpdates.plan_id = updates.planId;
+      if (updates.profileCount !== undefined) mappedUpdates.profile_count = updates.profileCount;
+      if (updates.paidSlots !== undefined) mappedUpdates.paid_slots = updates.paidSlots;
+      if (updates.paidLocationIds !== undefined) mappedUpdates.paid_location_ids = updates.paidLocationIds;
+      if (updates.trialStartDate) mappedUpdates.trial_start_date = updates.trialStartDate;
+      if (updates.trialEndDate) mappedUpdates.trial_end_date = updates.trialEndDate;
+      if (updates.subscriptionStartDate) mappedUpdates.subscription_start_date = updates.subscriptionStartDate;
+      if (updates.subscriptionEndDate) mappedUpdates.subscription_end_date = updates.subscriptionEndDate;
+      if (updates.lastPaymentDate) mappedUpdates.last_payment_date = updates.lastPaymentDate;
+      if (updates.razorpayPaymentId) mappedUpdates.razorpay_payment_id = updates.razorpayPaymentId;
+      if (updates.razorpayOrderId) mappedUpdates.razorpay_order_id = updates.razorpayOrderId;
+      if (updates.amount) mappedUpdates.amount = updates.amount;
+      if (updates.currency) mappedUpdates.currency = updates.currency;
+      if (updates.paidAt) mappedUpdates.paid_at = updates.paidAt;
+
+      console.log('[SupabaseSubscriptionService] 📝 Mapped updates:', mappedUpdates);
+
+      // Update directly by subscription ID
+      const { data, error } = await this.client
+        .from('subscriptions')
+        .update(mappedUpdates)
+        .eq('id', subscriptionId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('[SupabaseSubscriptionService] ❌ UPDATE BY ID FAILED:', error);
+        throw error;
+      }
+
+      console.log(`[SupabaseSubscriptionService] ✅ Updated subscription by ID: ${subscriptionId}`);
+      console.log('[SupabaseSubscriptionService] 📊 Updated data:', {
+        id: data.id,
+        status: data.status,
+        paid_slots: data.paid_slots,
+        profile_count: data.profile_count
+      });
+
+      // Fetch payment history
+      const { data: payments } = await this.client
+        .from('payment_history')
+        .select('*')
+        .eq('subscription_id', data.id)
+        .order('created_at', { ascending: false });
+
+      return this.formatSubscription(data, payments || []);
+    } catch (error) {
+      console.error('[SupabaseSubscriptionService] Error updating subscription by ID:', error);
+      throw error;
+    }
+  }
+
+  /**
    * Check subscription status
    */
   async checkStatus(gbpAccountId) {
