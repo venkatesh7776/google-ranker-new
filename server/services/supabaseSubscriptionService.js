@@ -613,6 +613,11 @@ class SupabaseSubscriptionService {
         updated_at: new Date().toISOString()
       };
 
+      // CRITICAL: Allow updating identifiers to ensure status lookups find the right subscription
+      if (updates.gbpAccountId) mappedUpdates.gbp_account_id = updates.gbpAccountId;
+      if (updates.userId) mappedUpdates.user_id = updates.userId;
+      if (updates.email) mappedUpdates.email = updates.email;
+
       if (updates.status) mappedUpdates.status = updates.status;
       if (updates.planId) mappedUpdates.plan_id = updates.planId;
       if (updates.profileCount !== undefined) mappedUpdates.profile_count = updates.profileCount;

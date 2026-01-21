@@ -159,16 +159,18 @@ router.get('/subscription/status', async (req, res) => {
     }
 
     let status;
+    let statusByGbp = null;
+    let statusByUserId = null;
 
-    // Try to get subscription by GBP account ID first (most specific)
+    // Try to get subscription by GBP account ID
     if (gbpAccountId) {
-      status = await subscriptionService.checkSubscriptionStatus(gbpAccountId);
-      console.log('[Payment Status] Status by GBP ID:', status);
+      statusByGbp = await subscriptionService.checkSubscriptionStatus(gbpAccountId);
+      console.log('[Payment Status] Status by GBP ID:', statusByGbp?.status);
     }
 
-    // If no subscription found by GBP ID or no GBP ID provided, try user ID
-    if ((!status || status.status === 'none') && userId) {
-      console.log('[Payment Status] No subscription by GBP, trying userId:', userId);
+    // Also check by userId to find any active subscription
+    if (userId) {
+      console.log('[Payment Status] Also checking by userId:', userId);
       const userSubscription = await subscriptionService.getSubscriptionByUserId(userId);
       console.log('[Payment Status] User subscription result:', userSubscription ? {
         id: userSubscription.id,
@@ -177,53 +179,56 @@ router.get('/subscription/status', async (req, res) => {
       } : 'NOT FOUND');
 
       if (userSubscription) {
-        // Convert subscription to status format
-        status = await subscriptionService.checkSubscriptionStatusBySubscription(userSubscription);
-        console.log('[Payment Status] Status by User ID:', status);
+        statusByUserId = await subscriptionService.checkSubscriptionStatusBySubscription(userSubscription);
+        console.log('[Payment Status] Status by User ID:', statusByUserId?.status);
+      }
+    }
 
-        // Add message to reconnect GBP if found by user ID but no GBP connected
-        if (!gbpAccountId && status.status !== 'none') {
-          status.message = 'Subscription found! Please reconnect your Google Business Profile to access all features.';
-        }
-      } else {
-        // No subscription found by user ID in subscriptions table
-        // FALLBACK: Check users table for subscription_status (new schema)
-        // The users table uses gmail_id (email) as the key, not userId
-        const lookupEmail = email || userId; // Use email if provided, fallback to userId (which might be email)
-        console.log('[Payment Status] No subscription in subscriptions table, checking users table for email:', lookupEmail);
+    // CRITICAL: Prioritize 'active' status from ANY lookup method
+    // This ensures paid users see 'active' even if there are multiple subscriptions
+    if (statusByGbp?.status === 'active') {
+      status = statusByGbp;
+      console.log('[Payment Status] Using GBP lookup - active');
+    } else if (statusByUserId?.status === 'active') {
+      status = statusByUserId;
+      console.log('[Payment Status] Using userId lookup - active');
+      // Add message if no GBP connected
+      if (!gbpAccountId) {
+        status.message = 'Subscription active! Please reconnect your Google Business Profile to access all features.';
+      }
+    } else if (statusByGbp && statusByGbp.status !== 'none') {
+      status = statusByGbp;
+      console.log('[Payment Status] Using GBP lookup - ', statusByGbp.status);
+    } else if (statusByUserId && statusByUserId.status !== 'none') {
+      status = statusByUserId;
+      console.log('[Payment Status] Using userId lookup - ', statusByUserId.status);
+      if (!gbpAccountId) {
+        status.message = 'Subscription found! Please reconnect your Google Business Profile to access all features.';
+      }
+    } else {
+      // No subscription found in subscriptions table
+      // FALLBACK: Check users table for subscription_status (legacy schema)
+      const lookupEmail = email || userId;
+      console.log('[Payment Status] No subscription in subscriptions table, checking users table for email:', lookupEmail);
 
-        try {
-          // Try to get subscription status from users table (uses gmail_id = email)
-          const userSubscriptionStatus = await userService.checkSubscriptionStatus(lookupEmail);
-          console.log('[Payment Status] Users table lookup result:', userSubscriptionStatus);
+      try {
+        const userSubscriptionStatus = await userService.checkSubscriptionStatus(lookupEmail);
+        console.log('[Payment Status] Users table lookup result:', userSubscriptionStatus);
 
-          if (userSubscriptionStatus && userSubscriptionStatus.status && userSubscriptionStatus.status !== 'not_found' && userSubscriptionStatus.status !== 'error') {
-            // Found status in users table - use it
-            status = {
-              isValid: userSubscriptionStatus.isValid,
-              status: userSubscriptionStatus.status === 'trial_expired' ? 'expired' : userSubscriptionStatus.status,
-              subscription: null, // No full subscription record
-              daysRemaining: userSubscriptionStatus.daysRemaining || null,
-              canUsePlatform: userSubscriptionStatus.isValid,
-              requiresPayment: !userSubscriptionStatus.isValid,
-              billingOnly: !userSubscriptionStatus.isValid,
-              message: userSubscriptionStatus.reason
-            };
-            console.log('[Payment Status] Using users table status:', status.status, 'daysRemaining:', status.daysRemaining);
-          } else {
-            // No subscription found anywhere
-            console.log('[Payment Status] No subscription found in any table for:', userId);
-            status = {
-              isValid: false,
-              status: 'none',
-              subscription: null,
-              canUsePlatform: true,
-              requiresPayment: false,
-              billingOnly: false
-            };
-          }
-        } catch (userTableError) {
-          console.error('[Payment Status] Error checking users table:', userTableError);
+        if (userSubscriptionStatus && userSubscriptionStatus.status && userSubscriptionStatus.status !== 'not_found' && userSubscriptionStatus.status !== 'error') {
+          status = {
+            isValid: userSubscriptionStatus.isValid,
+            status: userSubscriptionStatus.status === 'trial_expired' ? 'expired' : userSubscriptionStatus.status,
+            subscription: null,
+            daysRemaining: userSubscriptionStatus.daysRemaining || null,
+            canUsePlatform: userSubscriptionStatus.isValid,
+            requiresPayment: !userSubscriptionStatus.isValid,
+            billingOnly: !userSubscriptionStatus.isValid,
+            message: userSubscriptionStatus.reason
+          };
+          console.log('[Payment Status] Using users table status:', status.status);
+        } else {
+          console.log('[Payment Status] No subscription found anywhere for:', userId);
           status = {
             isValid: false,
             status: 'none',
@@ -233,6 +238,16 @@ router.get('/subscription/status', async (req, res) => {
             billingOnly: false
           };
         }
+      } catch (userTableError) {
+        console.error('[Payment Status] Error checking users table:', userTableError);
+        status = {
+          isValid: false,
+          status: 'none',
+          subscription: null,
+          canUsePlatform: true,
+          requiresPayment: false,
+          billingOnly: false
+        };
       }
     }
 
@@ -1180,19 +1195,40 @@ router.post('/verify-payment', async (req, res) => {
 
       // CRITICAL FIX: Update by subscription ID directly instead of gbpAccountId
       // This ensures we update the exact subscription we found, even if gbpAccountId is null
+      // Also update gbpAccountId and userId from request to ensure future lookups find this subscription
+      const updateData = {
+        status: 'active',
+        planId: planId,
+        profileCount: newPaidSlots,
+        paidSlots: newPaidSlots,
+        subscriptionStartDate: now.toISOString(),
+        subscriptionEndDate: endDate.toISOString(),
+        razorpayPaymentId: razorpay_payment_id,
+        lastPaymentDate: now.toISOString(),
+        paidAt: now.toISOString()
+      };
+
+      // CRITICAL: Also update gbpAccountId if provided - this ensures status check by gbpAccountId finds this subscription
+      if (gbpAccountId && gbpAccountId !== localSubscription.gbpAccountId) {
+        console.log('[Payment Verify] Updating gbpAccountId from', localSubscription.gbpAccountId, 'to', gbpAccountId);
+        updateData.gbpAccountId = gbpAccountId;
+      }
+
+      // Also update userId if provided and different
+      if (userId && userId !== localSubscription.userId) {
+        console.log('[Payment Verify] Updating userId from', localSubscription.userId, 'to', userId);
+        updateData.userId = userId;
+      }
+
+      // Also update email if provided and different
+      if (email && email !== localSubscription.email) {
+        console.log('[Payment Verify] Updating email from', localSubscription.email, 'to', email);
+        updateData.email = email;
+      }
+
       const updateResult = await supabaseSubscriptionService.updateSubscriptionById(
         localSubscription.id,
-        {
-          status: 'active',
-          planId: planId,
-          profileCount: newPaidSlots,
-          paidSlots: newPaidSlots,
-          subscriptionStartDate: now.toISOString(),
-          subscriptionEndDate: endDate.toISOString(),
-          razorpayPaymentId: razorpay_payment_id,
-          lastPaymentDate: now.toISOString(),
-          paidAt: now.toISOString()
-        }
+        updateData
       );
 
       console.log('[Payment Verify] Supabase update result:', updateResult ? 'SUCCESS' : 'FAILED');
