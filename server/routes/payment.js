@@ -263,15 +263,17 @@ router.get('/subscription/status', async (req, res) => {
 // DEBUG: Get raw subscription data from database
 router.get('/subscription/debug', async (req, res) => {
   try {
-    const { gbpAccountId, userId, email } = req.query;
-    console.log('[DEBUG] Checking raw subscription data:', { gbpAccountId, userId, email });
+    const { gbpAccountId, userId, email, listAll } = req.query;
+    console.log('[DEBUG] Checking raw subscription data:', { gbpAccountId, userId, email, listAll });
 
     const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
+    await supabaseSubscriptionService.initialize();
 
     let results = {
       byGbpAccountId: null,
       byUserId: null,
       byEmail: null,
+      allSubscriptions: null,
       timestamp: new Date().toISOString()
     };
 
@@ -283,6 +285,16 @@ router.get('/subscription/debug', async (req, res) => {
     }
     if (email) {
       results.byEmail = await supabaseSubscriptionService.getSubscriptionByEmail(email);
+    }
+
+    // List all subscriptions for debugging (limited to 20)
+    if (listAll === 'true') {
+      const { data: allSubs } = await supabaseSubscriptionService.client
+        .from('subscriptions')
+        .select('id, user_id, gbp_account_id, email, status, paid_slots, profile_count, subscription_start_date, subscription_end_date, updated_at')
+        .order('updated_at', { ascending: false })
+        .limit(20);
+      results.allSubscriptions = allSubs;
     }
 
     console.log('[DEBUG] Results:', JSON.stringify(results, null, 2));
