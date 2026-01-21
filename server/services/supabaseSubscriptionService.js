@@ -614,7 +614,23 @@ class SupabaseSubscriptionService {
       };
 
       // CRITICAL: Allow updating identifiers to ensure status lookups find the right subscription
-      if (updates.gbpAccountId) mappedUpdates.gbp_account_id = updates.gbpAccountId;
+      // Note: gbp_account_id has UNIQUE constraint, so we handle it carefully
+      if (updates.gbpAccountId) {
+        // Check if this gbpAccountId already exists in another subscription
+        const { data: existing } = await this.client
+          .from('subscriptions')
+          .select('id')
+          .eq('gbp_account_id', updates.gbpAccountId)
+          .neq('id', subscriptionId)
+          .single();
+
+        if (!existing) {
+          // Safe to update - no other subscription has this gbpAccountId
+          mappedUpdates.gbp_account_id = updates.gbpAccountId;
+        } else {
+          console.warn('[SupabaseSubscriptionService] ⚠️ Cannot update gbp_account_id - already exists in subscription:', existing.id);
+        }
+      }
       if (updates.userId) mappedUpdates.user_id = updates.userId;
       if (updates.email) mappedUpdates.email = updates.email;
 

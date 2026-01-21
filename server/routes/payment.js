@@ -260,17 +260,85 @@ router.get('/subscription/status', async (req, res) => {
   }
 });
 
+// DEBUG: Get raw subscription data from database
+router.get('/subscription/debug', async (req, res) => {
+  try {
+    const { gbpAccountId, userId, email } = req.query;
+    console.log('[DEBUG] Checking raw subscription data:', { gbpAccountId, userId, email });
+
+    const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
+
+    let results = {
+      byGbpAccountId: null,
+      byUserId: null,
+      byEmail: null,
+      timestamp: new Date().toISOString()
+    };
+
+    if (gbpAccountId) {
+      results.byGbpAccountId = await supabaseSubscriptionService.getSubscriptionByGbpId(gbpAccountId);
+    }
+    if (userId) {
+      results.byUserId = await supabaseSubscriptionService.getSubscriptionByUserId(userId);
+    }
+    if (email) {
+      results.byEmail = await supabaseSubscriptionService.getSubscriptionByEmail(email);
+    }
+
+    console.log('[DEBUG] Results:', JSON.stringify(results, null, 2));
+    res.json(results);
+  } catch (error) {
+    console.error('[DEBUG] Error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
+// DEBUG: Force update subscription status (for testing)
+router.post('/subscription/force-update', async (req, res) => {
+  try {
+    const { subscriptionId, status, paidSlots, profileCount } = req.body;
+    console.log('[DEBUG] Force updating subscription:', { subscriptionId, status, paidSlots, profileCount });
+
+    if (!subscriptionId) {
+      return res.status(400).json({ error: 'subscriptionId is required' });
+    }
+
+    const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
+
+    const now = new Date();
+    const endDate = new Date();
+    endDate.setFullYear(endDate.getFullYear() + 1);
+
+    const updateData = {
+      status: status || 'active',
+      paidSlots: paidSlots || 1,
+      profileCount: profileCount || 1,
+      subscriptionStartDate: now.toISOString(),
+      subscriptionEndDate: endDate.toISOString(),
+      paidAt: now.toISOString()
+    };
+
+    const result = await supabaseSubscriptionService.updateSubscriptionById(subscriptionId, updateData);
+
+    console.log('[DEBUG] Force update result:', result);
+    res.json({ success: true, subscription: result });
+  } catch (error) {
+    console.error('[DEBUG] Force update error:', error);
+    res.status(500).json({ error: error.message });
+  }
+});
+
 // Create trial subscription
 router.post('/subscription/trial', async (req, res) => {
   try {
     const { userId, gbpAccountId, email } = req.body;
-    
+
     console.log('[Payment Route] Creating trial - userId:', userId, 'gbpAccountId:', gbpAccountId, 'email:', email);
-    
+
     if (!userId || !gbpAccountId || !email) {
       return res.status(400).json({ error: 'userId, gbpAccountId, and email are required' });
     }
-    
+
     const subscription = await subscriptionService.createTrialSubscription(userId, gbpAccountId, email);
     console.log('[Payment Route] Trial created successfully:', subscription);
     res.json({ subscription });
