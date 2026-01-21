@@ -260,41 +260,60 @@ router.get('/subscription/status', async (req, res) => {
   }
 });
 
-// DEBUG: Get raw subscription data from database
+// DEBUG: Get raw data from BOTH users and subscriptions tables
 router.get('/subscription/debug', async (req, res) => {
   try {
-    const { gbpAccountId, userId, email, listAll } = req.query;
-    console.log('[DEBUG] Checking raw subscription data:', { gbpAccountId, userId, email, listAll });
+    const { email, listAll } = req.query;
+    console.log('[DEBUG] Checking data for email:', email);
 
     const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
     await supabaseSubscriptionService.initialize();
 
     let results = {
-      byGbpAccountId: null,
-      byUserId: null,
-      byEmail: null,
-      allSubscriptions: null,
+      // PRIMARY: users table (new schema)
+      usersTable: null,
+      // LEGACY: subscriptions table (old schema)
+      subscriptionsTable: null,
       timestamp: new Date().toISOString()
     };
 
-    if (gbpAccountId) {
-      results.byGbpAccountId = await supabaseSubscriptionService.getSubscriptionByGbpId(gbpAccountId);
-    }
-    if (userId) {
-      results.byUserId = await supabaseSubscriptionService.getSubscriptionByUserId(userId);
-    }
+    // Check USERS table (PRIMARY - this is what matters)
     if (email) {
-      results.byEmail = await supabaseSubscriptionService.getSubscriptionByEmail(email);
+      const { data: userData, error: userError } = await supabaseSubscriptionService.client
+        .from('users')
+        .select('gmail_id, display_name, subscription_status, trial_start_date, trial_end_date, subscription_start_date, subscription_end_date, profile_count, is_admin, razorpay_payment_id, amount_paid, updated_at')
+        .eq('gmail_id', email)
+        .single();
+
+      if (userError && userError.code !== 'PGRST116') {
+        results.usersTableError = userError.message;
+      } else {
+        results.usersTable = userData;
+      }
     }
 
-    // List all subscriptions for debugging (limited to 20)
-    if (listAll === 'true') {
-      const { data: allSubs } = await supabaseSubscriptionService.client
+    // Check SUBSCRIPTIONS table (LEGACY - for reference)
+    if (email) {
+      const { data: subData, error: subError } = await supabaseSubscriptionService.client
         .from('subscriptions')
-        .select('id, user_id, gbp_account_id, email, status, paid_slots, profile_count, subscription_start_date, subscription_end_date, updated_at')
+        .select('*')
+        .eq('email', email);
+
+      if (subError && subError.code !== 'PGRST116') {
+        results.subscriptionsTableError = subError.message;
+      } else {
+        results.subscriptionsTable = subData;
+      }
+    }
+
+    // List all users if requested
+    if (listAll === 'true') {
+      const { data: allUsers } = await supabaseSubscriptionService.client
+        .from('users')
+        .select('gmail_id, subscription_status, profile_count, subscription_end_date, updated_at')
         .order('updated_at', { ascending: false })
         .limit(20);
-      results.allSubscriptions = allSubs;
+      results.allUsers = allUsers;
     }
 
     console.log('[DEBUG] Results:', JSON.stringify(results, null, 2));
@@ -306,34 +325,35 @@ router.get('/subscription/debug', async (req, res) => {
 });
 
 // DEBUG: Force update subscription status (for testing)
+// Updates the USERS table (primary) by email
 router.post('/subscription/force-update', async (req, res) => {
   try {
-    const { subscriptionId, status, paidSlots, profileCount } = req.body;
-    console.log('[DEBUG] Force updating subscription:', { subscriptionId, status, paidSlots, profileCount });
+    const { email, status, profileCount } = req.body;
+    console.log('[DEBUG] Force updating user:', { email, status, profileCount });
 
-    if (!subscriptionId) {
-      return res.status(400).json({ error: 'subscriptionId is required' });
+    if (!email) {
+      return res.status(400).json({ error: 'email is required' });
     }
 
-    const supabaseSubscriptionService = (await import('../services/supabaseSubscriptionService.js')).default;
-
-    const now = new Date();
-    const endDate = new Date();
-    endDate.setFullYear(endDate.getFullYear() + 1);
-
-    const updateData = {
-      status: status || 'active',
-      paidSlots: paidSlots || 1,
+    // Update USERS table (PRIMARY)
+    const result = await userService.updateSubscriptionAfterPayment(email, {
       profileCount: profileCount || 1,
-      subscriptionStartDate: now.toISOString(),
-      subscriptionEndDate: endDate.toISOString(),
-      paidAt: now.toISOString()
-    };
-
-    const result = await supabaseSubscriptionService.updateSubscriptionById(subscriptionId, updateData);
+      razorpayPaymentId: 'FORCE_UPDATE_' + Date.now(),
+      razorpayOrderId: 'FORCE_ORDER_' + Date.now(),
+      amount: 0
+    });
 
     console.log('[DEBUG] Force update result:', result);
-    res.json({ success: true, subscription: result });
+    res.json({
+      success: true,
+      user: {
+        gmail_id: result.gmail_id,
+        subscription_status: result.subscription_status,
+        profile_count: result.profile_count,
+        subscription_start_date: result.subscription_start_date,
+        subscription_end_date: result.subscription_end_date
+      }
+    });
   } catch (error) {
     console.error('[DEBUG] Force update error:', error);
     res.status(500).json({ error: error.message });
