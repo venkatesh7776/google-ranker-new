@@ -509,6 +509,167 @@ const LandingPage = () => {
         </div>
       </section>
 
+      {/* YouTube Video Section */}
+      <section className="py-16 md:py-24 bg-gradient-to-b from-slate-900 via-slate-800 to-slate-900 relative overflow-hidden">
+        {/* Animated background elements */}
+        <div className="absolute inset-0 overflow-hidden">
+          <motion.div
+            className="absolute top-10 left-10 w-72 h-72 bg-violet-500/20 rounded-full blur-3xl"
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3]
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          <motion.div
+            className="absolute bottom-10 right-10 w-72 h-72 bg-fuchsia-500/20 rounded-full blur-3xl"
+            animate={{
+              scale: [1.2, 1, 1.2],
+              opacity: [0.5, 0.3, 0.5]
+            }}
+            transition={{
+              duration: 4,
+              repeat: Infinity,
+              ease: "easeInOut"
+            }}
+          />
+          <motion.div
+            className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-pink-500/10 rounded-full blur-3xl"
+            animate={{
+              scale: [1, 1.3, 1],
+              rotate: [0, 180, 360]
+            }}
+            transition={{
+              duration: 8,
+              repeat: Infinity,
+              ease: "linear"
+            }}
+          />
+        </div>
+
+        <div className="container mx-auto px-4 relative z-10">
+          <AnimatedCard delay={0.1}>
+            <div className="text-center mb-10 md:mb-14">
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                whileInView={{ opacity: 1, scale: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+              >
+                <Badge className="mb-4 px-5 py-2.5 bg-gradient-to-r from-red-500/20 to-pink-500/20 text-white border-red-400/30 backdrop-blur-sm">
+                  <PlayCircle className="h-4 w-4 mr-2 inline animate-pulse" />
+                  Watch How It Works
+                </Badge>
+              </motion.div>
+
+              <motion.h2
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.1 }}
+                className="text-3xl sm:text-4xl md:text-5xl font-black mb-4"
+              >
+                <span className="text-white">See Google Ranker </span>
+                <span className="bg-gradient-to-r from-red-400 via-pink-400 to-violet-400 bg-clip-text text-transparent">
+                  In Action
+                </span>
+              </motion.h2>
+
+              <motion.p
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.6, delay: 0.2 }}
+                className="text-lg md:text-xl text-slate-300 max-w-2xl mx-auto"
+              >
+                Watch this quick demo to see how businesses are dominating local search with AI
+              </motion.p>
+            </div>
+          </AnimatedCard>
+
+          {/* Video Container with glow effect */}
+          <motion.div
+            initial={{ opacity: 0, y: 40, scale: 0.95 }}
+            whileInView={{ opacity: 1, y: 0, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.8, delay: 0.3 }}
+            className="max-w-4xl mx-auto"
+          >
+            <div className="relative group">
+              {/* Animated glow border */}
+              <div className="absolute -inset-1 bg-gradient-to-r from-violet-600 via-fuchsia-600 to-pink-600 rounded-2xl blur-lg opacity-50 group-hover:opacity-75 transition-opacity duration-500 animate-pulse"></div>
+
+              {/* Video wrapper */}
+              <div className="relative bg-slate-900 rounded-2xl overflow-hidden shadow-2xl border border-white/10">
+                {/* Play button overlay effect on hover */}
+                <div className="aspect-video relative">
+                  <iframe
+                    src="https://www.youtube.com/embed/Pvqn3t9-tEQ?rel=0&modestbranding=1"
+                    title="Google Ranker Demo"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowFullScreen
+                    className="w-full h-full"
+                  ></iframe>
+                </div>
+              </div>
+
+              {/* Decorative elements */}
+              <motion.div
+                className="absolute -top-6 -left-6 w-12 h-12 bg-gradient-to-br from-violet-500 to-fuchsia-500 rounded-full opacity-60"
+                animate={{
+                  y: [0, -10, 0],
+                  scale: [1, 1.1, 1]
+                }}
+                transition={{
+                  duration: 3,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+              <motion.div
+                className="absolute -bottom-4 -right-4 w-8 h-8 bg-gradient-to-br from-pink-500 to-red-500 rounded-full opacity-60"
+                animate={{
+                  y: [0, 10, 0],
+                  scale: [1.1, 1, 1.1]
+                }}
+                transition={{
+                  duration: 2.5,
+                  repeat: Infinity,
+                  ease: "easeInOut"
+                }}
+              />
+            </div>
+          </motion.div>
+
+          {/* Call to action below video */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.6, delay: 0.5 }}
+            className="text-center mt-10 md:mt-14"
+          >
+            <Link to="/signup">
+              <Button
+                size="lg"
+                className="text-lg px-8 py-6 bg-gradient-to-r from-red-500 via-pink-500 to-violet-500 hover:from-red-600 hover:via-pink-600 hover:to-violet-600 text-white font-bold shadow-2xl shadow-pink-500/30 hover:shadow-pink-500/50 hover:scale-105 transition-all"
+              >
+                <Rocket className="mr-2 h-5 w-5" />
+                Try It Free For 7 Days
+                <ArrowRight className="ml-2 h-5 w-5" />
+              </Button>
+            </Link>
+            <p className="text-slate-400 text-sm mt-4">
+              No credit card required • Setup in 2 minutes
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Features Section */}
       <section id="features" className="py-20 md:py-32">
         <div className="container mx-auto px-4">
