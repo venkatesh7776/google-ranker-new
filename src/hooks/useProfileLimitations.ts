@@ -102,7 +102,7 @@ export const useProfileLimitations = (): ProfileLimitations => {
     if (isFreeTrial) {
       return `You have ${totalAccounts} Google Business accounts. Your Free Trial allows access to 1 account only. Upgrade to access more profiles.`;
     } else if (isPerProfilePlan) {
-      return `You have ${totalAccounts} accounts but your plan covers ${maxAllowedProfiles} profile${maxAllowedProfiles > 1 ? 's' : ''}. Upgrade your plan to access more profiles at $99/profile/year.`;
+      return `You have ${totalAccounts} accounts but your plan covers ${maxAllowedProfiles} profile${maxAllowedProfiles > 1 ? 's' : ''}. Upgrade your plan to access more profiles at ₹8,399/profile/year.`;
     } else if (isProPlan) {
       return `You have ${totalAccounts} Google Business accounts. Your current plan allows access to 1 account only. Upgrade to access more profiles.`;
     }
@@ -116,7 +116,7 @@ export const useProfileLimitations = (): ProfileLimitations => {
     if (isFreeTrial) {
       return `This account has ${totalLocations} locations. Your Free Trial allows access to 1 location only. Upgrade to access more profiles.`;
     } else if (isPerProfilePlan) {
-      return `You have ${totalLocations} locations but your plan covers ${maxAllowedProfiles} profile${maxAllowedProfiles > 1 ? 's' : ''}. Upgrade your plan to access more profiles at $99/profile/year.`;
+      return `You have ${totalLocations} locations but your plan covers ${maxAllowedProfiles} profile${maxAllowedProfiles > 1 ? 's' : ''}. Upgrade your plan to access more profiles at ₹8,399/profile/year.`;
     } else if (isProPlan) {
       return `This account has ${totalLocations} locations. Your current plan allows access to 1 location only. Upgrade to access more profiles.`;
     }

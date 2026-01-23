@@ -117,7 +117,7 @@ export const SUBSCRIPTION_PLANS: SubscriptionPlan[] = [
 export class SubscriptionService {
   private static COLLECTION_NAME = 'subscriptions';
   private static TRIAL_DAYS = 7;
-  private static BASE_PRICE_PER_PROFILE = 9900; // $99 in cents
+  private static BASE_PRICE_PER_PROFILE = 839900; // ₹8399 in paise
 
   static calculateTotalPrice(profileCount: number): number {
     return profileCount * this.BASE_PRICE_PER_PROFILE;
@@ -125,7 +125,7 @@ export class SubscriptionService {
 
   static formatPriceDisplay(profileCount: number): string {
     const total = this.calculateTotalPrice(profileCount);
-    return `$${(total / 100).toFixed(0)}`;
+    return `₹${(total / 100).toLocaleString('en-IN')}`;
   }
 
   static getPricingBreakdown(profileCount: number): {

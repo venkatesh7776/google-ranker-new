@@ -390,7 +390,7 @@ const Billing = () => {
                     </p>
                   </div>
                   <div className="bg-white/20 backdrop-blur-sm rounded-lg px-4 py-3 text-center">
-                    <p className="text-2xl font-bold">${((subscription.paidSlots * 99) / 1).toFixed(0)}</p>
+                    <p className="text-2xl font-bold">₹{((subscription.paidSlots * 8399)).toFixed(0)}</p>
                     <p className="text-xs opacity-90">per year</p>
                   </div>
                 </div>
@@ -473,13 +473,13 @@ const Billing = () => {
                   <span className="text-muted-foreground">Billing Amount:</span>
                   {subscription?.profileCount && subscription?.pricePerProfile ? (
                     <div>
-                      <p className="font-medium text-lg">${(subscription.amount / 100).toFixed(0)}/{currentPlan.interval}</p>
+                      <p className="font-medium text-lg">₹{(subscription.amount / 100).toFixed(0)}/{currentPlan.interval}</p>
                       <p className="text-sm text-muted-foreground">
-                        {subscription.paidSlots || subscription.profileCount} slot{(subscription.paidSlots || subscription.profileCount) > 1 ? 's' : ''} × ${(subscription.pricePerProfile / 100).toFixed(0)}/year
+                        {subscription.paidSlots || subscription.profileCount} slot{(subscription.paidSlots || subscription.profileCount) > 1 ? 's' : ''} × ₹{(subscription.pricePerProfile / 100).toFixed(0)}/year
                       </p>
                     </div>
                   ) : (
-                    <p className="font-medium text-lg">${(currentPlan.amount / 100).toFixed(0)}/{currentPlan.interval}</p>
+                    <p className="font-medium text-lg">₹{(currentPlan.amount / 100).toFixed(0)}/{currentPlan.interval}</p>
                   )}
                 </div>
                 {subscription?.lastPaymentDate && (
@@ -526,7 +526,7 @@ const Billing = () => {
               {subscription?.profileCount && subscription.profileCount < 5 && (
                 <div className="mt-3 p-3 bg-green-50 rounded-lg border border-green-200">
                   <p className="text-sm text-green-800">
-                    💡 <strong>Need more profiles?</strong> Scale your business by adding more Google Business Profiles at just $99/profile/year.
+                    💡 <strong>Need more profiles?</strong> Scale your business by adding more Google Business Profiles at just ₹8,399/profile/year.
                   </p>
                 </div>
               )}

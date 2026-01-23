@@ -271,10 +271,10 @@ export const TrialSetupModal: React.FC<TrialSetupModalProps> = ({
               <h3 className="font-semibold text-blue-900">After Trial: Simple Per-Profile Pricing</h3>
             </div>
             <p className="text-sm text-blue-800 mb-2">
-              Just $99/year per Google Business Profile you want to manage.
+              Just ₹8,399/year per Google Business Profile you want to manage.
             </p>
             <p className="text-xs text-blue-600">
-              {profileCount} profile detected → ${profileCount * 99}/year after trial
+              {profileCount} profile detected → ₹{(profileCount * 8399).toLocaleString('en-IN')}/year after trial
             </p>
           </div>
 

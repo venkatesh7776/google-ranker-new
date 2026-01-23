@@ -452,13 +452,13 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
               <div className="space-y-1">
                 <p>You currently have {paidSlots} paid slot{paidSlots !== 1 ? 's' : ''} and {totalConnectedProfiles} profile{totalConnectedProfiles !== 1 ? 's' : ''}.</p>
                 {additionalProfilesNeeded > 0 ? (
-                  <p className="text-primary font-medium">Pay only for {additionalProfilesNeeded} additional profile{additionalProfilesNeeded !== 1 ? 's' : ''} at $99/profile/year.</p>
+                  <p className="text-primary font-medium">Pay only for {additionalProfilesNeeded} additional profile{additionalProfilesNeeded !== 1 ? 's' : ''} at ₹8,399/profile/year.</p>
                 ) : (
                   <p className="text-green-600 font-medium">All your profiles are covered! You have {paidSlots - totalConnectedProfiles} unused slot{(paidSlots - totalConnectedProfiles) !== 1 ? 's' : ''}.</p>
                 )}
               </div>
             ) : (
-              <p>Choose how many Google Business Profiles you want to manage. Pay only for what you need at $99 per profile per year.</p>
+              <p>Choose how many Google Business Profiles you want to manage. Pay only for what you need at ₹8,399 per profile per year.</p>
             )}
           </DialogDescription>
         </DialogHeader>
@@ -592,7 +592,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 {couponDetails && couponDetails.success && (
                   <div className="bg-green-100 rounded-md p-2">
                     <p className="text-sm text-green-800">
-                      ✓ {couponDetails.description} - You save ${(couponDetails.discountAmount / 100).toFixed(2)}!
+                      ✓ {couponDetails.description} - You save ₹{(couponDetails.discountAmount / 100).toFixed(0)}!
                     </p>
                   </div>
                 )}
@@ -626,10 +626,7 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                     </div>
                   </div>
                   <p className="text-sm text-blue-700 mt-2">
-                    Your payment information is encrypted and secure. We support Cards, PayPal, and international payment methods via Razorpay.
-                  </p>
-                  <p className="text-xs text-blue-600 mt-1">
-                    💡 Payment is processed in INR (Indian Rupees) at live exchange rate: 1 USD = ₹{exchangeRate.toFixed(2)}
+                    Your payment information is encrypted and secure. We support Cards, UPI, Net Banking, and all major payment methods via Razorpay.
                   </p>
                 </div>
               </div>
@@ -659,34 +656,28 @@ export const PaymentModal: React.FC<PaymentModalProps> = ({
                 <div>
                   <p className="text-sm text-gray-500 line-through">
                     {selectedPlanId === 'per_profile_yearly'
-                      ? `$${(SubscriptionService.calculateTotalPrice(profileCount) / 100).toFixed(0)}`
-                      : `$${(selectedPlan?.amount / 100).toFixed(0)}`
+                      ? `₹${(SubscriptionService.calculateTotalPrice(profileCount) / 100).toFixed(0)}`
+                      : `₹${(selectedPlan?.amount / 100).toFixed(0)}`
                     }
                   </p>
                   <p className="text-2xl font-bold text-green-600">
-                    ${(getFinalAmount() / 100).toFixed(0)}
+                    ₹{(getFinalAmount() / 100).toFixed(0)}
                     <span className="text-sm font-normal text-gray-500 ml-1">
                       /{selectedPlan?.interval === 'monthly' ? 'month' : 'year'}
                     </span>
-                  </p>
-                  <p className="text-sm text-gray-600">
-                    ₹{Math.round((getFinalAmount() / 100) * exchangeRate)}/{selectedPlan?.interval === 'monthly' ? 'month' : 'year'}
                   </p>
                 </div>
               ) : (
                 <div>
                   <p className="text-2xl font-bold">
-                    ${(getFinalAmount() / 100).toFixed(0)}
+                    ₹{(getFinalAmount() / 100).toFixed(0)}
                     <span className="text-sm font-normal text-gray-500 ml-1">
                       /{selectedPlan?.interval === 'monthly' ? 'month' : 'year'}
                     </span>
                   </p>
-                  <p className="text-sm text-gray-600">
-                    ₹{Math.round((getFinalAmount() / 100) * exchangeRate)}/{selectedPlan?.interval === 'monthly' ? 'month' : 'year'}
-                  </p>
                   {selectedPlanId === 'per_profile_yearly' && (
                     <p className="text-sm text-gray-600">
-                      {profileCount} profile{profileCount > 1 ? 's' : ''} × $99/year
+                      {profileCount} profile{profileCount > 1 ? 's' : ''} × ₹8,399/year
                     </p>
                   )}
                 </div>
