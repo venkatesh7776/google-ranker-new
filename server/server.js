@@ -20,7 +20,7 @@ import welcomeEmailRoutes from './routes/welcomeEmail.js';
 import emailTestRoutes from './routes/emailTest.js';
 import rankTrackingRoutes from './routes/rankTracking.js';
 import placesRoutes from './routes/places.js';
-import reviewRequestsV2Routes from './routes/reviewRequests.js';
+// import reviewRequestsV2Routes from './routes/reviewRequests.js'; // TODO: Enable when feature is ready
 import { checkSubscription, trackTrialStart, addTrialHeaders } from './middleware/subscriptionCheck.js';
 import SubscriptionService from './services/subscriptionService.js';
 import subscriptionGuard from './services/subscriptionGuard.js';
@@ -259,8 +259,8 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/rank-tracking', rankTrackingRoutes);
 app.use('/api/places', placesRoutes);
 
-// Review Requests V2 (with Gmail pool and file uploads)
-app.use('/api/v2/review-requests', reviewRequestsV2Routes);
+// Review Requests V2 (with Gmail pool and file uploads) - TODO: Enable when feature is ready
+// app.use('/api/v2/review-requests', reviewRequestsV2Routes);
 
 // Admin routes (protected by admin auth middleware)
 app.use('/api/admin', adminRoutes);
