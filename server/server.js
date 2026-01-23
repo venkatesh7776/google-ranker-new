@@ -20,6 +20,7 @@ import welcomeEmailRoutes from './routes/welcomeEmail.js';
 import emailTestRoutes from './routes/emailTest.js';
 import rankTrackingRoutes from './routes/rankTracking.js';
 import placesRoutes from './routes/places.js';
+import reviewRequestsV2Routes from './routes/reviewRequests.js';
 import { checkSubscription, trackTrialStart, addTrialHeaders } from './middleware/subscriptionCheck.js';
 import SubscriptionService from './services/subscriptionService.js';
 import subscriptionGuard from './services/subscriptionGuard.js';
@@ -257,6 +258,9 @@ app.use('/api/qr-codes', qrCodesRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/rank-tracking', rankTrackingRoutes);
 app.use('/api/places', placesRoutes);
+
+// Review Requests V2 (with Gmail pool and file uploads)
+app.use('/api/v2/review-requests', reviewRequestsV2Routes);
 
 // Admin routes (protected by admin auth middleware)
 app.use('/api/admin', adminRoutes);
@@ -2091,7 +2095,7 @@ app.post('/api/locations/:locationParam/posts', async (req, res) => {
   }
 });
 
-// Get posts for a location using same approach as successful post creation
+// Get posts for a location - fetches ALL pages
 app.get('/api/locations/:locationId/posts', async (req, res) => {
   try {
     const { locationId } = req.params;
@@ -2104,58 +2108,69 @@ app.get('/api/locations/:locationId/posts', async (req, res) => {
     const accessToken = authHeader.split(' ')[1];
     oauth2Client.setCredentials({ access_token: accessToken });
 
-    console.log('🔍 Fetching posts for location:', locationId);
-    console.log('🔍 Full location path for posts: accounts/' + HARDCODED_ACCOUNT_ID + '/locations/' + locationId);
+    console.log('🔍 Fetching ALL posts for location:', locationId);
 
-    // Use the same approach as successful post creation - try multiple endpoints
-    let posts = [];
+    // Fetch ALL posts by looping through all pages
+    let allPosts = [];
+    let currentPageToken = null;
     let apiUsed = '';
+    let totalPagesFetched = 0;
+    const MAX_PAGES = 50; // Safety limit
 
-    // Based on logs analysis, only the v4 API endpoint works reliably for posts
-    // Prioritize the working endpoint and only fallback to others if necessary
-    const endpoints = [
-      `https://mybusiness.googleapis.com/v4/accounts/${HARDCODED_ACCOUNT_ID}/locations/${locationId}/localPosts`, // Working endpoint first
-      `https://mybusinessbusinessinformation.googleapis.com/v1/locations/${locationId}/localPosts`,
-      `https://businessprofile.googleapis.com/v1/locations/${locationId}/localPosts`
-    ];
+    const baseApiUrl = `https://mybusiness.googleapis.com/v4/accounts/${HARDCODED_ACCOUNT_ID}/locations/${locationId}/localPosts`;
 
-    for (let i = 0; i < endpoints.length; i++) {
-      const endpoint = endpoints[i];
-
-      console.log(`🌐 Trying posts endpoint ${i + 1}/${endpoints.length}: ${endpoint}`);
-
+    // Loop through all pages until no more nextPageToken
+    do {
       try {
-        const response = await fetch(endpoint, {
+        const url = new URL(baseApiUrl);
+        url.searchParams.append('pageSize', '100'); // Max page size
+        if (currentPageToken) url.searchParams.append('pageToken', currentPageToken);
+
+        console.log(`🔍 Fetching posts page ${totalPagesFetched + 1}:`, url.toString());
+
+        const response = await fetch(url.toString(), {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json'
           }
         });
 
-        console.log(`📡 Posts endpoint ${i + 1} Response Status:`, response.status);
-
         if (response.ok) {
           const data = await response.json();
-          posts = data.localPosts || data.posts || [];
-          apiUsed = `Google Business v4 API (endpoint ${i + 1})`;
-          console.log(`✅ Success with ${apiUsed}: Found ${posts.length} posts`);
-          break;
+          const pagePosts = data.localPosts || data.posts || [];
+          allPosts = [...allPosts, ...pagePosts];
+          currentPageToken = data.nextPageToken || null;
+          totalPagesFetched++;
+          apiUsed = `Google Business v4 API`;
+          console.log(`✅ Page ${totalPagesFetched}: Found ${pagePosts.length} posts (Total so far: ${allPosts.length})`);
+
+          // Safety check
+          if (totalPagesFetched >= MAX_PAGES) {
+            console.log(`⚠️ Reached max pages limit (${MAX_PAGES}), stopping pagination`);
+            break;
+          }
         } else {
           const errorText = await response.text();
-          console.log(`❌ Posts endpoint ${i + 1} failed with:`, errorText.substring(0, 200));
+          console.log(`❌ Posts API failed: ${response.status} - ${errorText.substring(0, 200)}`);
+          break;
         }
       } catch (error) {
-        console.log(`❌ Posts endpoint ${i + 1} error:`, error.message);
+        console.log(`❌ Posts API error:`, error.message);
+        break;
       }
-    }
+    } while (currentPageToken);
 
-    console.log(`📊 Returning ${posts.length} posts for location ${locationId}`);
-    res.json({ posts });
+    console.log(`✅ Finished fetching posts: ${allPosts.length} total posts from ${totalPagesFetched} pages`);
+    res.json({
+      posts: allPosts,
+      totalCount: allPosts.length,
+      totalPagesFetched,
+      apiUsed
+    });
 
   } catch (error) {
     console.error('Error fetching posts:', error);
-    // Return empty array instead of error for graceful degradation
-    res.json({ posts: [] });
+    res.json({ posts: [], totalCount: 0 });
   }
 });
 
@@ -2265,119 +2280,95 @@ app.get('/api/locations/:locationId/reviews', async (req, res) => {
     console.log(`🔍 Fetching reviews for location: ${locationId}`);
     console.log(`🔍 Full request details - locationId: "${locationId}", type: ${typeof locationId}, forceRefresh: ${forceRefresh}`);
 
-    // Try multiple API endpoints for better compatibility
-    let reviews = [];
-    let nextPageToken = null;
+    // Fetch ALL reviews by looping through all pages
+    let allReviews = [];
+    let currentPageToken = pageToken || null;
     let apiUsed = '';
     let lastError = null;
+    let totalPagesFetched = 0;
+    const MAX_PAGES = 50; // Safety limit to prevent infinite loops
 
     // Use only the working Google Business Profile API endpoint
-    // Based on logs, only the v4 API is working properly
-    const apiEndpoints = [
-      `https://mybusiness.googleapis.com/v4/accounts/${HARDCODED_ACCOUNT_ID}/locations/${locationId}/reviews`
-    ];
+    const baseApiUrl = `https://mybusiness.googleapis.com/v4/accounts/${HARDCODED_ACCOUNT_ID}/locations/${locationId}/reviews`;
 
-    for (let i = 0; i < apiEndpoints.length; i++) {
+    console.log(`🔍 Starting to fetch ALL reviews for location: ${locationId}`);
+
+    // Loop through all pages until no more nextPageToken
+    do {
       try {
-        // Build URL with proper query parameters
-        const url = new URL(apiEndpoints[i]);
-        // Use larger page size to ensure we get all reviews (Google's max is usually 100)
-        url.searchParams.append('pageSize', '100');
-        if (pageToken) url.searchParams.append('pageToken', pageToken);
+        const url = new URL(baseApiUrl);
+        url.searchParams.append('pageSize', '100'); // Max page size
+        if (currentPageToken) url.searchParams.append('pageToken', currentPageToken);
 
-        console.log(`🔍 Trying Google Reviews API ${i + 1}/${apiEndpoints.length}:`, url.toString());
+        console.log(`🔍 Fetching reviews page ${totalPagesFetched + 1}:`, url.toString());
 
         const response = await fetch(url.toString(), {
           headers: {
             'Authorization': `Bearer ${accessToken}`,
             'Content-Type': 'application/json',
-            'Cache-Control': 'no-cache', // Always fetch fresh data
+            'Cache-Control': 'no-cache',
             'Pragma': 'no-cache'
           }
         });
 
         if (response.ok) {
           const data = await response.json();
-          reviews = data.reviews || [];
-          nextPageToken = data.nextPageToken || null;
-          apiUsed = `Google Business Profile API ${i + 1} (${response.status})`;
-          console.log(`✅ Success with ${apiUsed}: Found ${reviews.length} reviews`);
+          const pageReviews = data.reviews || [];
+          allReviews = [...allReviews, ...pageReviews];
+          currentPageToken = data.nextPageToken || null;
+          totalPagesFetched++;
+          apiUsed = `Google Business Profile API (${response.status})`;
+          console.log(`✅ Page ${totalPagesFetched}: Found ${pageReviews.length} reviews (Total so far: ${allReviews.length})`);
 
-          // DETAILED DEBUGGING - Log full API response
-          console.log(`🔍 RAW API Response:`, JSON.stringify({
-            reviewCount: reviews.length,
-            hasNextPageToken: !!nextPageToken,
-            nextPageToken: nextPageToken,
-            totalReviewsInResponse: data.totalSize || 'not provided',
-            rawReviewData: data
-          }, null, 2));
-
-          // Log review details for debugging
-          console.log(`📝 All ${reviews.length} reviews with FULL DATA:`);
-          reviews.forEach((review, index) => {
-            console.log(`
-  === REVIEW ${index + 1} ===`);
-            console.log(`  Reviewer: ${review.reviewer?.displayName}`);
-            console.log(`  Rating: ${review.starRating}`);
-            console.log(`  Created: ${review.createTime}`);
-            console.log(`  Updated: ${review.updateTime}`);
-            console.log(`  Review Name: ${review.name}`);
-            console.log(`  Comment: ${review.comment?.substring(0, 100)}...`);
-            // Check both 'reply' and 'reviewReply' fields (Google API inconsistency)
-            const hasReply = !!(review.reply || review.reviewReply);
-            console.log(`  Has Reply: ${hasReply}`);
-            const replyData = review.reply || review.reviewReply;
-            if (replyData) {
-              console.log(`  Reply Comment: ${replyData.comment}`);
-              console.log(`  Reply Time: ${replyData.updateTime}`);
-            }
-            console.log(`  Raw Reply Data:`, replyData || 'null');
-            if (review.reviewReply && !review.reply) {
-              console.log(`  ⚠️ DETECTED reviewReply field instead of reply field`);
-            }
-          });
-
-          // Check for rating format issues and normalize, and fix reply field inconsistency
-          reviews = reviews.map(review => {
-            let normalizedRating = review.starRating;
-            if (typeof review.starRating === 'string') {
-              // Convert string ratings to numbers
-              const ratingMap = {
-                'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5
-              };
-              normalizedRating = ratingMap[review.starRating] || 5;
-            }
-
-            // Fix reply field inconsistency - Google API sometimes returns 'reviewReply' instead of 'reply'
-            let replyData = review.reply;
-            if (!replyData && review.reviewReply) {
-              replyData = review.reviewReply;
-              console.log(`🔧 Fixed reply field for review ${review.name?.split('/').pop()}: reviewReply → reply`);
-            }
-
-            return {
-              ...review,
-              starRating: normalizedRating,
-              reply: replyData // Ensure consistent field name
-            };
-          });
-
-          break;
+          // Safety check
+          if (totalPagesFetched >= MAX_PAGES) {
+            console.log(`⚠️ Reached max pages limit (${MAX_PAGES}), stopping pagination`);
+            break;
+          }
         } else {
           const errorText = await response.text();
-          lastError = `API ${i + 1} failed: ${response.status} - ${errorText.substring(0, 200)}`;
+          lastError = `API failed: ${response.status} - ${errorText.substring(0, 200)}`;
           console.log(`❌ ${lastError}`);
+          break;
         }
       } catch (endpointError) {
-        lastError = `API ${i + 1} exception: ${endpointError.message}`;
+        lastError = `API exception: ${endpointError.message}`;
         console.log(`❌ ${lastError}`);
+        break;
       }
-    }
+    } while (currentPageToken);
 
-    // Log the final results
+    console.log(`✅ Finished fetching reviews: ${allReviews.length} total reviews from ${totalPagesFetched} pages`);
+    let reviews = allReviews;
+
+    // Normalize ratings and fix reply field inconsistency
     if (reviews.length > 0) {
-      console.log(`🔍 Found ${reviews.length} reviews from ${apiUsed}`);
-      console.log(`🔍 Reviews processing completed - using primary API results`);
+      apiUsed = `Google Business Profile API - ${totalPagesFetched} pages`;
+      console.log(`📝 Processing ${reviews.length} reviews...`);
+
+      reviews = reviews.map(review => {
+        let normalizedRating = review.starRating;
+        if (typeof review.starRating === 'string') {
+          const ratingMap = {
+            'ONE': 1, 'TWO': 2, 'THREE': 3, 'FOUR': 4, 'FIVE': 5
+          };
+          normalizedRating = ratingMap[review.starRating] || 5;
+        }
+
+        // Fix reply field inconsistency - Google API sometimes returns 'reviewReply' instead of 'reply'
+        let replyData = review.reply;
+        if (!replyData && review.reviewReply) {
+          replyData = review.reviewReply;
+        }
+
+        return {
+          ...review,
+          starRating: normalizedRating,
+          reply: replyData
+        };
+      });
+
+      console.log(`✅ Processed ${reviews.length} reviews from ${apiUsed}`);
     }
 
     // If still no reviews after all attempts, return error
@@ -2396,9 +2387,10 @@ app.get('/api/locations/:locationId/reviews', async (req, res) => {
     // Add timestamp to help with change detection
     const responseData = {
       reviews,
-      nextPageToken,
+      nextPageToken: null, // All pages already fetched
       apiUsed,
       totalCount: reviews.length,
+      totalPagesFetched,
       lastFetched: new Date().toISOString(),
       fromCache: false
     };
@@ -2703,11 +2695,10 @@ app.get('/api/locations/:locationId/reviews-debug', async (req, res) => {
   }
 });
 
-// Get photos/media for a location
+// Get photos/media for a location - fetches ALL pages
 app.get('/api/locations/:locationId/photos', async (req, res) => {
   try {
     const { locationId } = req.params;
-    const { pageSize = 50, pageToken } = req.query;
     const authHeader = req.headers.authorization;
 
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
@@ -2730,12 +2721,16 @@ app.get('/api/locations/:locationId/photos', async (req, res) => {
       oauth2Client.setCredentials({ access_token: accessToken });
     }
 
-    console.log(`🔍 Fetching photos for location: ${locationId}`);
+    console.log(`🔍 Fetching ALL photos for location: ${locationId}`);
 
-    let photos = [];
-    let nextPageToken = null;
+    // Fetch ALL photos by looping through all pages
+    let allPhotos = [];
+    let currentPageToken = null;
     let apiUsed = '';
     let lastError = null;
+    let totalPagesFetched = 0;
+    const MAX_PAGES = 50; // Safety limit
+    let workingEndpoint = null;
 
     // Try multiple API endpoints for photos/media
     const apiEndpoints = [
@@ -2744,14 +2739,51 @@ app.get('/api/locations/:locationId/photos', async (req, res) => {
       `https://mybusinessbusinessinformation.googleapis.com/v1/accounts/${HARDCODED_ACCOUNT_ID}/locations/${locationId}/media`
     ];
 
+    // Find the first working endpoint
     for (let i = 0; i < apiEndpoints.length; i++) {
       try {
-        // Build URL with proper query parameters
-        const url = new URL(apiEndpoints[i]);
-        url.searchParams.append('pageSize', pageSize.toString());
-        if (pageToken) url.searchParams.append('pageToken', pageToken);
+        const testUrl = new URL(apiEndpoints[i]);
+        testUrl.searchParams.append('pageSize', '1');
 
-        console.log(`🔍 Trying Google Photos API ${i + 1}/${apiEndpoints.length}:`, url.toString());
+        const response = await fetch(testUrl.toString(), {
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json'
+          }
+        });
+
+        if (response.ok) {
+          workingEndpoint = apiEndpoints[i];
+          apiUsed = `Google Business Profile Media API ${i + 1}`;
+          console.log(`✅ Found working photos endpoint: ${apiUsed}`);
+          break;
+        }
+      } catch (e) {
+        // Continue to next endpoint
+      }
+    }
+
+    if (!workingEndpoint) {
+      console.log('⚠️ No working photos endpoint found');
+      return res.json({
+        photos: [],
+        nextPageToken: null,
+        totalCount: 0,
+        apiUsed: 'No photos available',
+        message: 'No photos found for this location.',
+        lastFetched: new Date().toISOString(),
+        fromCache: false
+      });
+    }
+
+    // Now fetch all pages from the working endpoint
+    do {
+      try {
+        const url = new URL(workingEndpoint);
+        url.searchParams.append('pageSize', '100'); // Max page size
+        if (currentPageToken) url.searchParams.append('pageToken', currentPageToken);
+
+        console.log(`🔍 Fetching photos page ${totalPagesFetched + 1}:`, url.toString());
 
         const response = await fetch(url.toString(), {
           headers: {
@@ -2764,46 +2796,48 @@ app.get('/api/locations/:locationId/photos', async (req, res) => {
 
         if (response.ok) {
           const data = await response.json();
-          photos = data.mediaItems || data.media || [];
-          nextPageToken = data.nextPageToken || null;
-          apiUsed = `Google Business Profile Media API ${i + 1} (${response.status})`;
-          console.log(`✅ Success with ${apiUsed}: Found ${photos.length} photos`);
+          const pagePhotos = data.mediaItems || data.media || [];
+          allPhotos = [...allPhotos, ...pagePhotos];
+          currentPageToken = data.nextPageToken || null;
+          totalPagesFetched++;
+          console.log(`✅ Page ${totalPagesFetched}: Found ${pagePhotos.length} photos (Total so far: ${allPhotos.length})`);
 
-          // Log photo details for debugging
-          console.log(`📸 Found ${photos.length} photos:`);
-          photos.forEach((photo, index) => {
-            console.log(`  Photo ${index + 1}: ${photo.name} - ${photo.mediaFormat} - Category: ${photo.locationAssociation?.category}`);
-          });
-
-          break;
+          // Safety check
+          if (totalPagesFetched >= MAX_PAGES) {
+            console.log(`⚠️ Reached max pages limit (${MAX_PAGES}), stopping pagination`);
+            break;
+          }
         } else {
           const errorText = await response.text();
-          lastError = `API ${i + 1} failed: ${response.status} - ${errorText.substring(0, 200)}`;
+          lastError = `API failed: ${response.status} - ${errorText.substring(0, 200)}`;
           console.log(`❌ ${lastError}`);
+          break;
         }
       } catch (endpointError) {
-        lastError = `API ${i + 1} exception: ${endpointError.message}`;
+        lastError = `API exception: ${endpointError.message}`;
         console.log(`❌ ${lastError}`);
+        break;
       }
-    }
+    } while (currentPageToken);
 
-    // If no real photos found, return empty array (graceful degradation)
-    if (photos.length === 0) {
-      console.log('⚠️ No photos found via Google Business Profile API');
+    console.log(`✅ Finished fetching photos: ${allPhotos.length} total photos from ${totalPagesFetched} pages`);
 
+    // If no photos found, return empty array
+    if (allPhotos.length === 0) {
       return res.json({
         photos: [],
         nextPageToken: null,
         totalCount: 0,
-        apiUsed: 'No photos available',
-        message: 'No photos found for this location. Photos may need to be added via Google Business Profile manager.',
+        totalPagesFetched,
+        apiUsed,
+        message: 'No photos found for this location.',
         lastFetched: new Date().toISOString(),
         fromCache: false
       });
     }
 
     // Process and normalize photo data
-    const normalizedPhotos = photos.map(photo => ({
+    const normalizedPhotos = allPhotos.map(photo => ({
       id: photo.name ? photo.name.split('/').pop() : Math.random().toString(36).substr(2, 9),
       name: photo.name || 'Unknown Photo',
       url: photo.googleUrl || photo.sourceUrl || '',
@@ -2817,9 +2851,10 @@ app.get('/api/locations/:locationId/photos', async (req, res) => {
 
     const responseData = {
       photos: normalizedPhotos,
-      nextPageToken,
+      nextPageToken: null, // All pages already fetched
       apiUsed,
       totalCount: normalizedPhotos.length,
+      totalPagesFetched,
       lastFetched: new Date().toISOString(),
       fromCache: false,
       realTime: true

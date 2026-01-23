@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Clock, Play, Pause, Calendar, Timer, RefreshCw } from 'lucide-react';
 
@@ -28,6 +28,7 @@ export function NextPostCountdown({
     total: number;
   } | null>(null);
 
+  // ALL useEffect hooks must be at the top, BEFORE any conditional returns
   useEffect(() => {
     if (!nextPostTime || !isEnabled) {
       setTimeRemaining(null);
@@ -61,6 +62,24 @@ export function NextPostCountdown({
 
     return () => clearInterval(interval);
   }, [nextPostTime, isEnabled]);
+
+  // When time reaches 0, request a refresh to get the new next post date
+  useEffect(() => {
+    if (timeRemaining && timeRemaining.total <= 0 && !hasRequestedRefresh && onRefreshNeeded && isEnabled) {
+      setHasRequestedRefresh(true);
+      // Wait a few seconds for the post to be created, then refresh
+      const refreshTimer = setTimeout(() => {
+        onRefreshNeeded();
+        setHasRequestedRefresh(false);
+      }, 5000); // Wait 5 seconds before refreshing
+      return () => clearTimeout(refreshTimer);
+    }
+  }, [timeRemaining, hasRequestedRefresh, onRefreshNeeded, isEnabled]);
+
+  // Reset refresh flag when nextPostTime changes
+  useEffect(() => {
+    setHasRequestedRefresh(false);
+  }, [nextPostTime]);
 
   // Format the next post date/time
   const formatNextPostDate = () => {
@@ -150,24 +169,6 @@ export function NextPostCountdown({
       </Card>
     );
   }
-
-  // When time reaches 0, request a refresh to get the new next post date
-  useEffect(() => {
-    if (timeRemaining && timeRemaining.total <= 0 && !hasRequestedRefresh && onRefreshNeeded) {
-      setHasRequestedRefresh(true);
-      // Wait a few seconds for the post to be created, then refresh
-      const refreshTimer = setTimeout(() => {
-        onRefreshNeeded();
-        setHasRequestedRefresh(false);
-      }, 5000); // Wait 5 seconds before refreshing
-      return () => clearTimeout(refreshTimer);
-    }
-  }, [timeRemaining, hasRequestedRefresh, onRefreshNeeded]);
-
-  // Reset refresh flag when nextPostTime changes
-  useEffect(() => {
-    setHasRequestedRefresh(false);
-  }, [nextPostTime]);
 
   // No next post time or time has passed
   if (!timeRemaining || timeRemaining.total <= 0) {
